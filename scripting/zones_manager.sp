@@ -8,6 +8,8 @@
 #define MAX_ZONE_NAME_LENGTH 128
 #define MAX_ZONE_TYPE_LENGTH 64
 
+#define MAX_EFFECTS 64
+
 #define MAX_ENTITY_LIMIT 4096
 
 #define DEFAULT_MODELINDEX "sprites/laserbeam.vmt"
@@ -48,6 +50,14 @@ float fCreateZone_Radius[MAXPLAYERS + 1];
 bool bIsViewingZone[MAXPLAYERS + 1];
 bool bSettingName[MAXPLAYERS + 1];
 
+//Forwards
+Handle g_Forward_StartTouchZone;
+Handle g_Forward_TouchZone;
+Handle g_Forward_EndTouchZone;
+Handle g_Forward_StartTouchZone_Post;
+Handle g_Forward_TouchZone_Post;
+Handle g_Forward_EndTouchZone_Post;
+
 public Plugin myinfo =
 {
 	name = "Zones-Manager",
@@ -59,6 +69,15 @@ public Plugin myinfo =
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
+	RegPluginLibrary("zones_manager");
+
+	g_Forward_StartTouchZone = CreateGlobalForward("ZonesManager_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String);
+	g_Forward_TouchZone = CreateGlobalForward("ZonesManager_OnTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String);
+	g_Forward_EndTouchZone = CreateGlobalForward("ZonesManager_OnEndTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String);
+	g_Forward_StartTouchZone_Post = CreateGlobalForward("ZonesManager_OnStartTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String);
+	g_Forward_TouchZone_Post = CreateGlobalForward("ZonesManager_OnTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String);
+	g_Forward_EndTouchZone_Post = CreateGlobalForward("ZonesManager_OnEndTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String);
+
 	bLate = late;
 	return APLRes_Success;
 }
@@ -211,14 +230,13 @@ public Action Command_OpenZonesMenu(int client, int args)
 
 void OpenZonesMenu(int client)
 {
-	bool flags = CheckCommandAccess(client, "sm_zones_viewallzones", ADMFLAG_ROOT);
-
 	Menu menu = CreateMenu(MenuHandle_ZonesMenu);
 	SetMenuTitle(menu, "Zones Manager");
 
 	AddMenuItem(menu, "manage", "Manage Zones");
 	AddMenuItem(menu, "create", "Create a Zone");
-	AddMenuItemFormat(menu, "viewall", flags ? ITEMDRAW_DEFAULT : ITEMDRAW_RAWLINE, "(admin) View all zones: %s", bShowAllZones[client] ? "On" : "Off");
+	AddMenuItem(menu, "---", "---", ITEMDRAW_DISABLED);
+	AddMenuItemFormat(menu, "viewall", ITEMDRAW_DEFAULT, "Draw Zones: %s", bShowAllZones[client] ? "On" : "Off");
 
 	DisplayMenu(menu, client, MENU_TIME_FOREVER);
 }
@@ -371,7 +389,9 @@ void OpenZonePropertiesMenu(int client, const char[] name, eZoneTypes type)
 	Menu menu = CreateMenu(MenuHandle_ZonePropertiesMenu);
 	SetMenuTitle(menu, "Edit properties for zone '%s':", name);
 
-	AddMenuItem(menu, "kappa", "Kappa");
+	AddMenuItem(menu, "effect_add", "Add Zone Effect");
+	AddMenuItem(menu, "effect_edit", "Edit Zone Effect", ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "effect_remove", "Remove Zone Effect");
 
 	PushMenuString(menu, "name", name);
 	PushMenuCell(menu, "type", type);
@@ -393,7 +413,22 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 
 			eZoneTypes type = view_as<eZoneTypes>(GetMenuCell(menu, "type"));
 
-			OpenZonePropertiesMenu(param1, sName, type);
+			if (StrEqual(sInfo, "effect_add"))
+			{
+				OpenAddZoneEffectMenu(param1, sName, type);
+			}
+			else if (StrEqual(sInfo, "effect_edit"))
+			{
+
+			}
+			else if (StrEqual(sInfo, "effect_remove"))
+			{
+				OpenRemoveZoneEffectMenu(param1, sName, type);
+			}
+			else
+			{
+				OpenZonePropertiesMenu(param1, sName, type);
+			}
 		}
 
 		case MenuAction_Cancel:
@@ -414,6 +449,16 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			CloseHandle(menu);
 		}
 	}
+}
+
+void OpenAddZoneEffectMenu(int client, const char[] name, eZoneTypes type)
+{
+
+}
+
+void OpenRemoveZoneEffectMenu(int client, const char[] name, eZoneTypes type)
+{
+
 }
 
 void DisplayConfirmDeleteZoneMenu(int client, const char[] name, eZoneTypes type)
@@ -786,9 +831,12 @@ void CreateZone(const char[] sName, eZoneTypes type, float start[3], float end[3
 		SetEntPropVector(entity, Prop_Data, "m_vecMaxs", end);
 		SetEntProp(entity, Prop_Send, "m_nSolidType", 2);
 
-		SDKHook(entity, SDKHook_StartTouchPost, StartTouchPost);
-		SDKHook(entity, SDKHook_TouchPost, TouchPost);
-		SDKHook(entity, SDKHook_EndTouchPost, EndTouchPost);
+		SDKHook(entity, SDKHook_StartTouchPost, Zones_StartTouch);
+		SDKHook(entity, SDKHook_TouchPost, Zones_Touch);
+		SDKHook(entity, SDKHook_EndTouchPost, Zones_EndTouch);
+		SDKHook(entity, SDKHook_StartTouchPost, Zones_StartTouchPost);
+		SDKHook(entity, SDKHook_TouchPost, Zones_TouchPost);
+		SDKHook(entity, SDKHook_EndTouchPost, Zones_EndTouchPost);
 
 		bIsZone[entity] = true;
 	}
@@ -796,19 +844,88 @@ void CreateZone(const char[] sName, eZoneTypes type, float start[3], float end[3
 	LogDebug("Zone %s has been spawned %s with ID %i.", sName, IsValidEntity(entity) ? "successfully" : "not successfully", entity);
 }
 
-public void StartTouchPost(int entity, int other)
+public Action Zones_StartTouch(int entity, int other)
 {
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
+	Call_StartForward(g_Forward_StartTouchZone);
+	Call_PushCell(other);
+	Call_PushCell(entity);
+	Call_PushString(sName);
+
+	Action result = Plugin_Continue;
+	Call_Finish(result);
+
+	return result;
 }
 
-public void TouchPost(int entity, int other)
+public Action Zones_Touch(int entity, int other)
 {
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
+	Call_StartForward(g_Forward_TouchZone);
+	Call_PushCell(other);
+	Call_PushCell(entity);
+	Call_PushString(sName);
+
+	Action result = Plugin_Continue;
+	Call_Finish(result);
+
+	return result;
 }
 
-public void EndTouchPost(int entity, int other)
+public Action Zones_EndTouch(int entity, int other)
 {
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
+	Call_StartForward(g_Forward_EndTouchZone);
+	Call_PushCell(other);
+	Call_PushCell(entity);
+	Call_PushString(sName);
+
+	Action result = Plugin_Continue;
+	Call_Finish(result);
+
+	return result;
+}
+
+public void Zones_StartTouchPost(int entity, int other)
+{
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	Call_StartForward(g_Forward_StartTouchZone_Post);
+	Call_PushCell(other);
+	Call_PushCell(entity);
+	Call_PushString(sName);
+	Call_Finish();
+}
+
+public void Zones_TouchPost(int entity, int other)
+{
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	Call_StartForward(g_Forward_TouchZone_Post);
+	Call_PushCell(other);
+	Call_PushCell(entity);
+	Call_PushString(sName);
+	Call_Finish();
+}
+
+public void Zones_EndTouchPost(int entity, int other)
+{
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	Call_StartForward(g_Forward_EndTouchZone_Post);
+	Call_PushCell(other);
+	Call_PushCell(entity);
+	Call_PushString(sName);
+	Call_Finish();
 }
 
 void DeleteZone(const char[] sName, eZoneTypes type)
