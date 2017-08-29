@@ -7,7 +7,6 @@
 #define PLUGIN_DESCRIPTION "A sourcemod plugin with rich features for dynamic zone development."
 #define PLUGIN_VERSION "1.0.0"
 
-#define MAX_ENTITY_LIMIT 4096
 #define MAX_RADIUS_ZONES 256
 #define MAX_ZONES 256
 
@@ -29,11 +28,11 @@
 
 //Sourcemod Includes
 #include <sourcemod>
+#include <sourcemod-misc>
 #include <sdktools>
 #include <sdkhooks>
 
 //External Includes
-#include <menus-stocks>
 #include <colorvariables>
 
 //ConVars
@@ -57,21 +56,14 @@ int iDefaultModelIndex;
 int iDefaultHaloIndex;
 char sErrorModel[] = "models/error.mdl";
 
-//Zones Data
-char g_sZonesData_Name[MAX_ZONES][MAX_ZONE_NAME_LENGTH];
-int g_iZonesData_Type[MAX_ZONES];
-float g_vecZonesData_Start[MAX_ZONES][3];
-float g_vecZonesData_End[MAX_ZONES][3];
-float g_fZonesData_Radius[MAX_ZONES];
-StringMap g_hZonesData_Effects[MAX_ZONES];
-int g_iTotalZones;
-
 //Entities Data
-int g_iZoneID[MAX_ENTITY_LIMIT + 1] = {-1, ...};
+bool g_bIsZone[MAX_ENTITY_LIMIT];
+float g_fZoneRadius[MAX_ENTITY_LIMIT];
+Handle g_hZoneEffects[MAX_ENTITY_LIMIT];
 
 //Radius Management
-bool bInsideRadius[MAXPLAYERS + 1][MAX_RADIUS_ZONES];
-bool bInsideRadius_Post[MAXPLAYERS + 1][MAX_RADIUS_ZONES];
+bool bInsideRadius[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
+bool bInsideRadius_Post[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 
 //Effects Data
 StringMap g_hTrie_EffectCalls;
@@ -86,7 +78,7 @@ float fCreateZone_Radius[MAXPLAYERS + 1];
 
 bool bIsViewingZone[MAXPLAYERS + 1];
 bool bSettingName[MAXPLAYERS + 1];
-int iEditingName[MAXPLAYERS + 1] = {-1, ...};
+int iEditingName[MAXPLAYERS + 1] = {INVALID_ENT_REFERENCE, ...};
 
 //Plugin Information
 public Plugin myinfo =
@@ -104,12 +96,12 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 	CreateNative("Zones_Manager_Register_Effect", Native_Register_Effect);
 
-	g_Forward_StartTouchZone = CreateGlobalForward("ZonesManager_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell, Param_Cell);
-	g_Forward_TouchZone = CreateGlobalForward("ZonesManager_OnTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell, Param_Cell);
-	g_Forward_EndTouchZone = CreateGlobalForward("ZonesManager_OnEndTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell, Param_Cell);
-	g_Forward_StartTouchZone_Post = CreateGlobalForward("ZonesManager_OnStartTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell, Param_Cell);
-	g_Forward_TouchZone_Post = CreateGlobalForward("ZonesManager_OnTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell, Param_Cell);
-	g_Forward_EndTouchZone_Post = CreateGlobalForward("ZonesManager_OnEndTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell, Param_Cell);
+	g_Forward_StartTouchZone = CreateGlobalForward("ZonesManager_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	g_Forward_TouchZone = CreateGlobalForward("ZonesManager_OnTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	g_Forward_EndTouchZone = CreateGlobalForward("ZonesManager_OnEndTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	g_Forward_StartTouchZone_Post = CreateGlobalForward("ZonesManager_OnStartTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	g_Forward_TouchZone_Post = CreateGlobalForward("ZonesManager_OnTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	g_Forward_EndTouchZone_Post = CreateGlobalForward("ZonesManager_OnEndTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
 
 	bLate = late;
 	return APLRes_Success;
@@ -132,7 +124,7 @@ public void OnPluginStart()
 	RegAdminCmd("sm_deleteallzones", Command_DeleteAllZones, ADMFLAG_ROOT, "Delete all zones on the map.");
 
 	g_hTrie_EffectCalls = CreateTrie();
-	g_hArray_EffectsList = CreateArray(ByteCountToCells(MAX_ZONE_NAME_LENGTH));
+	g_hArray_EffectsList = CreateArray(ByteCountToCells(MAX_EFFECT_NAME_LENGTH));
 
 	CreateTimer(0.1, Timer_DisplayZones, _, TIMER_REPEAT);
 }
@@ -143,7 +135,7 @@ public void OnMapStart()
 	iDefaultHaloIndex = PrecacheModel(DEFAULT_HALOINDEX);
 	PrecacheModel(sErrorModel);
 
-	LogDebug("Deleting current zones map configuration from memory.");
+	LogDebug("zonesmanager", "Deleting current zones map configuration from memory.");
 
 	SaveMapConfig();
 	ReparseMapZonesConfig();
@@ -168,21 +160,21 @@ void ReparseMapZonesConfig(bool delete_config = false)
 		DeleteFile(sPath);
 	}
 
-	LogDebug("Creating keyvalues for the new map before pulling new map zones info.");
+	LogDebug("zonesmanager", "Creating keyvalues for the new map before pulling new map zones info.");
 	kZonesConfig = CreateKeyValues("zones_manager");
 
 	if (FileExists(sPath))
 	{
-		LogDebug("Config exists, retrieving the zones...");
+		LogDebug("zonesmanager", "Config exists, retrieving the zones...");
 		FileToKeyValues(kZonesConfig, sPath);
 	}
 	else
 	{
-		LogDebug("Config doesn't exist, creating new zones config for the map: %s", sMap);
+		LogDebug("zonesmanager", "Config doesn't exist, creating new zones config for the map: %s", sMap);
 		KeyValuesToFile(kZonesConfig, sPath);
 	}
 
-	LogDebug("New config successfully loaded.");
+	LogDebug("zonesmanager", "New config successfully loaded.");
 }
 
 public void OnConfigsExecuted()
@@ -206,37 +198,21 @@ public void OnRoundStart(Event event, const char[] name, bool dontBroadcast)
 
 void ClearAllZones()
 {
-	int entity = INVALID_ENT_REFERENCE;
-	while ((entity = FindEntityByClassname(entity, "trigger_multiple")) != INVALID_ENT_REFERENCE)
+	int entity = INVALID_ENT_INDEX;
+	while ((entity = FindEntityByClassname(entity, "*")) != INVALID_ENT_INDEX)
 	{
-		if (g_iZoneID[entity] > -1)
+		if (IsEntityIndex(entity) && g_bIsZone[entity])
 		{
 			AcceptEntityInput(entity, "Kill");
-			g_iZoneID[entity] = -1;
+			g_bIsZone[entity] = false;
+			delete g_hZoneEffects[entity];
 		}
 	}
-
-	for (int i = 0; i < g_iTotalZones; i++)
-	{
-		g_sZonesData_Name[i][0] = '\0';
-		g_iZonesData_Type[i] = ZONE_TYPE_BOX;
-		Array_Fill(g_vecZonesData_Start[i], 3, 0.0);
-		Array_Fill(g_vecZonesData_End[i], 3, 0.0);
-		g_fZonesData_Radius[i] = 0.0;
-
-		for (int x = 1; x <= MaxClients; x++)
-		{
-			bInsideRadius[x][i] = false;
-			bInsideRadius_Post[x][i] = false;
-		}
-	}
-
-	g_iTotalZones = 0;
 }
 
 void SpawnAllZones()
 {
-	LogDebug("Spawning all zones...");
+	LogDebug("zonesmanager", "Spawning all zones...");
 
 	KvRewind(kZonesConfig);
 	if (KvGotoFirstSubKey(kZonesConfig))
@@ -263,7 +239,7 @@ void SpawnAllZones()
 		while(KvGotoNextKey(kZonesConfig));
 	}
 
-	LogDebug("Zones have been spawned.");
+	LogDebug("zonesmanager", "Zones have been spawned.");
 }
 
 public void OnClientSayCommand_Post(int client, const char[] command, const char[] sArgs)
@@ -280,15 +256,18 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 		OpenCreateZonesMenu(client);
 	}
 
-	if (iEditingName[client] > -1)
+	if (iEditingName[client] != INVALID_ENT_REFERENCE)
 	{
-		int ID = iEditingName[client];
+		int entity = EntRefToEntIndex(iEditingName[client]);
 
-		UpdateZonesSectionName(ID, sArgs);
-		CPrintToChat(client, "Zone '%s' has been renamed successfully to '%s'.", g_sZonesData_Name[ID], sArgs);
-		iEditingName[client] = -1;
+		char sName[MAX_ZONE_NAME_LENGTH];
+		GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-		OpenZonePropertiesMenu(client, ID);
+		UpdateZonesSectionName(entity, sArgs);
+		CPrintToChat(client, "Zone '%s' has been renamed successfully to '%s'.", sName, sArgs);
+		iEditingName[client] = INVALID_ENT_REFERENCE;
+
+		OpenZonePropertiesMenu(client, entity);
 	}
 }
 
@@ -304,29 +283,34 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		float vecPosition[3];
 		GetClientAbsOrigin(client, vecPosition);
 
-		for (int i = 0; i < g_iTotalZones; i++)
+		float vecOrigin[3];
+
+		int entity = INVALID_ENT_INDEX;
+		while ((entity = FindEntityByClassname(entity, "info_target")) != INVALID_ENT_INDEX)
 		{
-			if (g_iZonesData_Type[i] != ZONE_TYPE_CIRCLE)
+			if (g_bIsZone[entity])
 			{
-				continue;
-			}
+				GetEntPropVector(entity, Prop_Data, "m_vecOrigin", vecOrigin);
+				float distance = GetVectorDistance(vecOrigin, vecPosition);
+				//PrintToDrixevel("%.2f <= %.2f", distance, g_fZoneRadius[entity]);
 
-			if (GetVectorDistance(g_vecZonesData_Start[i], vecPosition) <= g_fZonesData_Radius[i])
-			{
-				Action action = IsNearRadiusZone(client, i);
-
-				if (action <= Plugin_Changed)
+				if (distance <= (g_fZoneRadius[entity] / 2.0))
 				{
-					IsNearRadiusZone_Post(client, i);
+					Action action = IsNearRadiusZone(client, entity);
+
+					if (action <= Plugin_Changed)
+					{
+						IsNearRadiusZone_Post(client, entity);
+					}
 				}
-			}
-			else
-			{
-				Action action = IsNotNearRadiusZone(client, i);
-
-				if (action <= Plugin_Changed)
+				else
 				{
-					IsNotNearRadiusZone_Post(client, i);
+					Action action = IsNotNearRadiusZone(client, entity);
+
+					if (action <= Plugin_Changed)
+					{
+						IsNotNearRadiusZone_Post(client, entity);
+					}
 				}
 			}
 		}
@@ -457,12 +441,21 @@ void OpenManageZonesMenu(int client)
 	Menu menu = CreateMenu(MenuHandle_ManageZonesMenu);
 	SetMenuTitle(menu, "Manage Zones:");
 
-	for (int i = 0; i < g_iTotalZones; i++)
+	int entity = INVALID_ENT_INDEX;
+	while ((entity = FindEntityByClassname(entity, "*")) != INVALID_ENT_INDEX)
 	{
-		char sID[12];
-		IntToString(i, sID, sizeof(sID));
+		if (!IsEntityIndex(entity) || !g_bIsZone[entity])
+		{
+			continue;
+		}
 
-		AddMenuItem(menu, sID, g_sZonesData_Name[i]);
+		char sEntity[12];
+		IntToString(entity, sEntity, sizeof(sEntity));
+
+		char sName[MAX_ZONE_NAME_LENGTH];
+		GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+		AddMenuItem(menu, sEntity, sName);
 	}
 
 	if (GetMenuItemCount(menu) == 0)
@@ -480,10 +473,10 @@ public int MenuHandle_ManageZonesMenu(Menu menu, MenuAction action, int param1, 
 	{
 		case MenuAction_Select:
 		{
-			char sID[12]; char sName[MAX_ZONE_NAME_LENGTH];
-			GetMenuItem(menu, param2, sID, sizeof(sID), _, sName, sizeof(sName));
+			char sEntity[12]; char sName[MAX_ZONE_NAME_LENGTH];
+			GetMenuItem(menu, param2, sEntity, sizeof(sEntity), _, sName, sizeof(sName));
 
-			OpenEditZoneMenu(param1, StringToInt(sID));
+			OpenEditZoneMenu(param1, StringToInt(sEntity));
 		}
 
 		case MenuAction_Cancel:
@@ -501,10 +494,13 @@ public int MenuHandle_ManageZonesMenu(Menu menu, MenuAction action, int param1, 
 	}
 }
 
-void OpenEditZoneMenu(int client, int ID)
+void OpenEditZoneMenu(int client, int entity)
 {
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
 	Menu menu = CreateMenu(MenuHandle_ManageEditMenu);
-	SetMenuTitle(menu, "Manage Zone '%s':", g_sZonesData_Name[ID]);
+	SetMenuTitle(menu, "Manage Zone '%s':", sName);
 
 	AddMenuItem(menu, "edit", "Edit Zone");
 	AddMenuItem(menu, "delete", "Delete Zone");
@@ -512,7 +508,7 @@ void OpenEditZoneMenu(int client, int ID)
 	AddMenuItem(menu, "effects_add", "Add Effect");
 	AddMenuItem(menu, "effects_remove", "Remove Effect");
 
-	PushMenuCell(menu, "id", ID);
+	PushMenuCell(menu, "entity", entity);
 
 	SetMenuExitBackButton(menu, true);
 	DisplayMenu(menu, client, MENU_TIME_FOREVER);
@@ -527,28 +523,28 @@ public int MenuHandle_ManageEditMenu(Menu menu, MenuAction action, int param1, i
 			char sInfo[32];
 			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 
-			int ID = GetMenuCell(menu, "id");
+			int entity = GetMenuCell(menu, "entity");
 
 			if (StrEqual(sInfo, "edit"))
 			{
-				OpenZonePropertiesMenu(param1, ID);
+				OpenZonePropertiesMenu(param1, entity);
 			}
 			else if (StrEqual(sInfo, "delete"))
 			{
-				DisplayConfirmDeleteZoneMenu(param1, ID);
+				DisplayConfirmDeleteZoneMenu(param1, entity);
 			}
 			else if (StrEqual(sInfo, "effects_add"))
 			{
-				if (!AddZoneEffectMenu(param1, ID))
+				if (!AddZoneEffectMenu(param1, entity))
 				{
-					OpenEditZoneMenu(param1, ID);
+					OpenEditZoneMenu(param1, entity);
 				}
 			}
 			else if (StrEqual(sInfo, "effects_remove"))
 			{
-				if (!RemoveZoneEffectMenu(param1, ID))
+				if (!RemoveZoneEffectMenu(param1, entity))
 				{
-					OpenEditZoneMenu(param1, ID);
+					OpenEditZoneMenu(param1, entity);
 				}
 			}
 		}
@@ -568,17 +564,32 @@ public int MenuHandle_ManageEditMenu(Menu menu, MenuAction action, int param1, i
 	}
 }
 
-void OpenZonePropertiesMenu(int client, int ID)
+void OpenZonePropertiesMenu(int client, int entity)
 {
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
 	Menu menu = CreateMenu(MenuHandle_ZonePropertiesMenu);
-	SetMenuTitle(menu, "Edit properties for zone '%s':", g_sZonesData_Name[ID]);
+	SetMenuTitle(menu, "Edit properties for zone '%s':", sName);
 
-	AddMenuItem(menu, "edit_name", "Edit: Name");
-	AddMenuItem(menu, "edit_type", "Edit: Type");
-	AddMenuItem(menu, "edit_startpoint_a", "Edit: StartPoint A");
-	AddMenuItem(menu, "edit_startpoint_b", "Edit: StartPoint B");
+	AddMenuItem(menu, "edit_name", "Name");
+	AddMenuItem(menu, "edit_type", "Type", ITEMDRAW_DISABLED);
 
-	PushMenuCell(menu, "id", ID);
+	switch (GetZoneType(entity))
+	{
+		case ZONE_TYPE_BOX:
+		{
+			AddMenuItem(menu, "edit_startpoint_a", "StartPoint A");
+			AddMenuItem(menu, "edit_startpoint_b", "StartPoint B");
+		}
+		case ZONE_TYPE_CIRCLE:
+		{
+			AddMenuItem(menu, "edit_startpoint", "StartPoint");
+			AddMenuItem(menu, "edit_radius", "Radius", ITEMDRAW_DISABLED);
+		}
+	}
+
+	PushMenuCell(menu, "entity", entity);
 
 	SetMenuExitBackButton(menu, true);
 	DisplayMenu(menu, client, MENU_TIME_FOREVER);
@@ -593,28 +604,97 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			char sInfo[32];
 			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 
-			int ID = GetMenuCell(menu, "id");
+			int entity = GetMenuCell(menu, "entity");
+
+			char sName[MAX_ZONE_NAME_LENGTH];
+			GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 			if (StrEqual(sInfo, "edit_name"))
 			{
-				iEditingName[param1] = ID;
-				CPrintToChat(param1, "Type the new name for the zone '%s' in chat:", g_sZonesData_Name[ID]);
+				iEditingName[param1] = EntIndexToEntRef(entity);
+				CPrintToChat(param1, "Type the new name for the zone '%s' in chat:", sName);
 			}
 			else if (StrEqual(sInfo, "edit_type"))
 			{
-
-			}
-			else if (StrEqual(sInfo, "edit_startpoint_a"))
-			{
-
+				OpenZonePropertiesMenu(param1, entity);
 			}
 			else if (StrEqual(sInfo, "edit_startpoint_b"))
 			{
+				float start[3];
+				GetClientLookPoint(param1, start);
 
+				float end[3];
+				GetEntPropVector(entity, Prop_Data, "m_vecMaxs", end);
+
+				float fMiddle[3];
+				GetMiddleOfABox(start, end, fMiddle);
+
+				TeleportEntity(entity, fMiddle, NULL_VECTOR, NULL_VECTOR);
+
+				// Have the mins always be negative
+				start[0] = start[0] - fMiddle[0];
+				if(start[0] > 0.0)
+				start[0] *= -1.0;
+				start[1] = start[1] - fMiddle[1];
+				if(start[1] > 0.0)
+				start[1] *= -1.0;
+				start[2] = start[2] - fMiddle[2];
+				if(start[2] > 0.0)
+				start[2] *= -1.0;
+
+				SetEntPropVector(entity, Prop_Data, "m_vecMins", start);
+				SetEntPropVector(entity, Prop_Data, "m_vecMaxs", end);
+
+				UpdateZonesConfigKeyVector(entity, "start", start);
+				OpenZonePropertiesMenu(param1, entity);
+			}
+			else if (StrEqual(sInfo, "edit_startpoint_a"))
+			{
+				float start[3];
+				GetEntPropVector(entity, Prop_Data, "m_vecMins", start);
+
+				float end[3];
+				GetClientLookPoint(param1, end);
+
+				float fMiddle[3];
+				GetMiddleOfABox(start, end, fMiddle);
+
+				TeleportEntity(entity, fMiddle, NULL_VECTOR, NULL_VECTOR);
+
+				// And the maxs always be positive
+				end[0] = end[0] - fMiddle[0];
+				if(end[0] < 0.0)
+				end[0] *= -1.0;
+				end[1] = end[1] - fMiddle[1];
+				if(end[1] < 0.0)
+				end[1] *= -1.0;
+				end[2] = end[2] - fMiddle[2];
+				if(end[2] < 0.0)
+				end[2] *= -1.0;
+
+				SetEntPropVector(entity, Prop_Data, "m_vecMins", start);
+				SetEntPropVector(entity, Prop_Data, "m_vecMaxs", end);
+
+				UpdateZonesConfigKeyVector(entity, "end", end);
+				OpenZonePropertiesMenu(param1, entity);
+			}
+			else if (StrEqual(sInfo, "edit_startpoint"))
+			{
+				float start[3];
+				GetClientLookPoint(param1, start);
+
+				TeleportEntity(entity, start, NULL_VECTOR, NULL_VECTOR);
+
+				UpdateZonesConfigKeyVector(entity, "start", start);
+				OpenZonePropertiesMenu(param1, entity);
+			}
+			else if (StrEqual(sInfo, "edit_radius"))
+			{
+				OpenZonePropertiesMenu(param1, entity);
 			}
 			else
 			{
-				OpenZonePropertiesMenu(param1, ID);
+				OpenZonePropertiesMenu(param1, entity);
 			}
 		}
 
@@ -622,7 +702,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 		{
 			if (param2 == MenuCancel_ExitBack)
 			{
-				OpenEditZoneMenu(param1, GetMenuCell(menu, "id"));
+				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
 			}
 		}
 
@@ -633,16 +713,19 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 	}
 }
 
-stock void UpdateZonesConfigKey(int ID, const char[] key, const char[] value)
+stock void UpdateZonesConfigKey(int entity, const char[] key, const char[] value)
 {
 	if (kZonesConfig == null)
 	{
 		return;
 	}
 
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
 	KvRewind(kZonesConfig);
 
-	if (KvJumpToKey(kZonesConfig, g_sZonesData_Name[ID]))
+	if (KvJumpToKey(kZonesConfig, sName))
 	{
 		KvSetString(kZonesConfig, key, value);
 		KvRewind(kZonesConfig);
@@ -651,33 +734,62 @@ stock void UpdateZonesConfigKey(int ID, const char[] key, const char[] value)
 	SaveMapConfig();
 }
 
-void UpdateZonesSectionName(int ID, const char[] name)
+void UpdateZonesConfigKeyVector(int entity, const char[] key, float[3] value)
 {
 	if (kZonesConfig == null)
 	{
 		return;
 	}
 
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
 	KvRewind(kZonesConfig);
 
-	if (KvJumpToKey(kZonesConfig, g_sZonesData_Name[ID]))
+	if (KvJumpToKey(kZonesConfig, sName))
 	{
-		KvSetSectionName(kZonesConfig, name);
+		KvSetVector(kZonesConfig, key, value);
 		KvRewind(kZonesConfig);
 	}
 
 	SaveMapConfig();
 }
 
-void DisplayConfirmDeleteZoneMenu(int client, int ID)
+void UpdateZonesSectionName(int entity, const char[] name)
 {
+	if (kZonesConfig == null)
+	{
+		return;
+	}
+
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	KvRewind(kZonesConfig);
+
+	if (KvJumpToKey(kZonesConfig, sName))
+	{
+		KvSetSectionName(kZonesConfig, name);
+		KvRewind(kZonesConfig);
+	}
+
+	SaveMapConfig();
+
+	SetEntPropString(entity, Prop_Data, "m_iName", name);
+}
+
+void DisplayConfirmDeleteZoneMenu(int client, int entity)
+{
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
 	Menu menu = CreateMenu(MenuHandle_ManageConfirmDeleteZoneMenu);
-	SetMenuTitle(menu, "Are you sure you want to delete '%s':", g_sZonesData_Name[ID]);
+	SetMenuTitle(menu, "Are you sure you want to delete '%s':", sName);
 
 	AddMenuItem(menu, "yes", "Yes");
 	AddMenuItem(menu, "no", "No");
 
-	PushMenuCell(menu, "id", ID);
+	PushMenuCell(menu, "entity", entity);
 
 	SetMenuExitBackButton(menu, true);
 	DisplayMenu(menu, client, MENU_TIME_FOREVER);
@@ -692,16 +804,19 @@ public int MenuHandle_ManageConfirmDeleteZoneMenu(Menu menu, MenuAction action, 
 			char sInfo[32];
 			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 
-			int ID = GetMenuCell(menu, "id");
+			int entity = GetMenuCell(menu, "entity");
 
 			if (StrEqual(sInfo, "no"))
 			{
-				OpenEditZoneMenu(param1, ID);
+				OpenEditZoneMenu(param1, entity);
 				return;
 			}
 
-			DeleteZone(ID);
-			CPrintToChat(param1, "You have deleted the zone '%s'.", g_sZonesData_Name[ID]);
+			char sName[MAX_ZONE_NAME_LENGTH];
+			GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+			DeleteZone(entity);
+			CPrintToChat(param1, "You have deleted the zone '%s'.", sName);
 			OpenManageZonesMenu(param1);
 		}
 
@@ -709,7 +824,7 @@ public int MenuHandle_ManageConfirmDeleteZoneMenu(Menu menu, MenuAction action, 
 		{
 			if (param2 == MenuCancel_ExitBack)
 			{
-				OpenEditZoneMenu(param1, GetMenuCell(menu, "id"));
+				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
 			}
 		}
 
@@ -784,7 +899,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
 				Array_Copy(vLookPoint, fCreateZone_Start[param1], 3);
-				CPrintToChat(param1, "Starting point: %.2f/%.2f/%.2f", fCreateZone_Start[param1][0], fCreateZone_Start[param1][1], fCreateZone_Start[param1][2]);
+				//CPrintToChat(param1, "Starting point: %.2f/%.2f/%.2f", fCreateZone_Start[param1][0], fCreateZone_Start[param1][1], fCreateZone_Start[param1][2]);
 
 				OpenCreateZonesMenu(param1);
 			}
@@ -793,7 +908,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
 				Array_Copy(vLookPoint, fCreateZone_End[param1], 3);
-				CPrintToChat(param1, "Ending point: %.2f/%.2f/%.2f", fCreateZone_End[param1][0], fCreateZone_End[param1][1], fCreateZone_End[param1][2]);
+				//CPrintToChat(param1, "Ending point: %.2f/%.2f/%.2f", fCreateZone_End[param1][0], fCreateZone_End[param1][1], fCreateZone_End[param1][2]);
 
 				OpenCreateZonesMenu(param1);
 			}
@@ -835,10 +950,13 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 	}
 }
 
-bool AddZoneEffectMenu(int client, int ID)
+bool AddZoneEffectMenu(int client, int entity)
 {
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
 	Menu menu = CreateMenu(MenuHandler_AddZoneEffect);
-	SetMenuTitle(menu, "Add a zone type to %s to add:", g_sZonesData_Name[ID]);
+	SetMenuTitle(menu, "Add a zone effect to %s:", sName);
 
 	for (int i = 0; i < GetArraySize(g_hArray_EffectsList); i++)
 	{
@@ -848,7 +966,7 @@ bool AddZoneEffectMenu(int client, int ID)
 		int draw = ITEMDRAW_DEFAULT;
 
 		StringMap values;
-		if (GetTrieValue(g_hZonesData_Effects[ID], sEffect, values) && values != null)
+		if (GetTrieValue(g_hZoneEffects[entity], sEffect, values) && values != null)
 		{
 			draw = ITEMDRAW_DISABLED;
 		}
@@ -856,7 +974,12 @@ bool AddZoneEffectMenu(int client, int ID)
 		AddMenuItem(menu, sEffect, sEffect, draw);
 	}
 
-	PushMenuCell(menu, "id", ID);
+	if (GetMenuItemCount(menu) == 0)
+	{
+		AddMenuItem(menu, "", "[No Effects]", ITEMDRAW_DISABLED);
+	}
+
+	PushMenuCell(menu, "entity", entity);
 
 	SetMenuExitBackButton(menu, true);
 	DisplayMenu(menu, client, MENU_TIME_FOREVER);
@@ -872,21 +995,21 @@ public int MenuHandler_AddZoneEffect(Menu menu, MenuAction action, int param1, i
 			char sEffect[MAX_EFFECT_NAME_LENGTH];
 			GetMenuItem(menu, param2, sEffect, sizeof(sEffect));
 
-			int ID = GetMenuCell(menu, "id");
+			int entity = GetMenuCell(menu, "entity");
 
 			StringMap values = CreateTrie();
 			SetTrieValue(values, "value1", 5);
 			SetTrieString(values, "valu2", "peaches");
 
-			SetTrieValue(g_hZonesData_Effects[ID], sEffect, values);
-			OpenEditZoneMenu(param1, ID);
+			SetTrieValue(g_hZoneEffects[entity], sEffect, values);
+			OpenEditZoneMenu(param1, entity);
 		}
 
 		case MenuAction_Cancel:
 		{
 			if (param2 == MenuCancel_ExitBack)
 			{
-				OpenEditZoneMenu(param1, GetMenuCell(menu, "id"));
+				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
 			}
 		}
 
@@ -897,10 +1020,13 @@ public int MenuHandler_AddZoneEffect(Menu menu, MenuAction action, int param1, i
 	}
 }
 
-bool RemoveZoneEffectMenu(int client, int ID)
+bool RemoveZoneEffectMenu(int client, int entity)
 {
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
 	Menu menu = CreateMenu(MenuHandler_RemoveZoneEffect);
-	SetMenuTitle(menu, "Add a zone type to %s to remove:", g_sZonesData_Name[ID]);
+	SetMenuTitle(menu, "Add a zone type to %s to remove:", sName);
 
 	for (int i = 0; i < GetArraySize(g_hArray_EffectsList); i++)
 	{
@@ -910,7 +1036,7 @@ bool RemoveZoneEffectMenu(int client, int ID)
 		AddMenuItem(menu, "", sEffect);
 	}
 
-	PushMenuCell(menu, "id", ID);
+	PushMenuCell(menu, "entity", entity);
 
 	SetMenuExitBackButton(menu, true);
 	DisplayMenu(menu, client, MENU_TIME_FOREVER);
@@ -926,21 +1052,21 @@ public int MenuHandler_RemoveZoneEffect(Menu menu, MenuAction action, int param1
 			char sEffect[MAX_EFFECT_NAME_LENGTH];
 			GetMenuItem(menu, param2, sEffect, sizeof(sEffect));
 
-			int ID = GetMenuCell(menu, "id");
+			int entity = GetMenuCell(menu, "entity");
 
 			StringMap values;
-			GetTrieValue(g_hZonesData_Effects[ID], sEffect, values);
+			GetTrieValue(g_hZoneEffects[entity], sEffect, values);
 			delete values;
 
-			RemoveFromTrie(g_hZonesData_Effects[ID], sEffect);
-			OpenEditZoneMenu(param1, ID);
+			RemoveFromTrie(g_hZoneEffects[entity], sEffect);
+			OpenEditZoneMenu(param1, entity);
 		}
 
 		case MenuAction_Cancel:
 		{
 			if (param2 == MenuCancel_ExitBack)
 			{
-				OpenEditZoneMenu(param1, GetMenuCell(menu, "id"));
+				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
 			}
 		}
 
@@ -1074,6 +1200,23 @@ void GetZoneTypeName(int type, char[] buffer, int size)
 	}
 }
 
+int GetZoneType(int entity)
+{
+	char sClassname[64];
+	GetEntityClassname(entity, sClassname, sizeof(sClassname));
+
+	if (StrEqual(sClassname, "trigger_multiple"))
+	{
+		return ZONE_TYPE_BOX;
+	}
+	else if (StrEqual(sClassname, "info_target"))
+	{
+		return ZONE_TYPE_CIRCLE;
+	}
+
+	return ZONE_TYPE_BOX;
+}
+
 int GetZoneNameType(const char[] sType)
 {
 	if (StrEqual(sType, "Standard"))
@@ -1113,7 +1256,10 @@ public Action Timer_DisplayZones(Handle timer)
 		{
 			switch (iCreateZone_Type[i])
 			{
-				case ZONE_TYPE_BOX: Effect_DrawBeamBoxToClient(i, fCreateZone_Start[i], fCreateZone_End[i], iDefaultModelIndex, iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, {255, 0, 0, 255}, 0);
+				case ZONE_TYPE_BOX:
+				{
+					Effect_DrawBeamBoxToClient(i, fCreateZone_Start[i], fCreateZone_End[i], iDefaultModelIndex, iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, {255, 0, 0, 255}, 0);
+				}
 				case ZONE_TYPE_CIRCLE:
 				{
 					TE_SetupBeamRingPoint(fCreateZone_Start[i], fCreateZone_Radius[i], fCreateZone_Radius[i] + 4.0, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, {255, 0, 0, 255}, 0, 0);
@@ -1124,14 +1270,30 @@ public Action Timer_DisplayZones(Handle timer)
 
 		if (IsClientInGame(i) && bShowAllZones[i])
 		{
-			for (int x = 0; x < g_iTotalZones; x++)
+			float vecOrigin[3];
+			float vecStart[3];
+			float vecEnd[3];
+
+			int entity = INVALID_ENT_INDEX;
+			while ((entity = FindEntityByClassname(entity, "*")) != INVALID_ENT_INDEX)
 			{
-				switch (g_iZonesData_Type[x])
+				if (!IsEntityIndex(entity) || !g_bIsZone[entity])
 				{
-					case ZONE_TYPE_BOX: Effect_DrawBeamBoxToClient(i, g_vecZonesData_Start[x], g_vecZonesData_End[x], iDefaultModelIndex, iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, {255, 255, 0, 255}, 0);
+					continue;
+				}
+
+				GetEntPropVector(entity, Prop_Data, "m_vecOrigin", vecOrigin);
+
+				switch (GetZoneType(entity))
+				{
+					case ZONE_TYPE_BOX:
+					{
+						GetAbsBoundingBox(entity, vecStart, vecEnd);
+						Effect_DrawBeamBoxToClient(i, vecStart, vecEnd, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, {255, 255, 0, 255}, 0);
+					}
 					case ZONE_TYPE_CIRCLE:
 					{
-						TE_SetupBeamRingPoint(g_vecZonesData_Start[x], g_fZonesData_Radius[x], g_fZonesData_Radius[x] + 4.0, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, {255, 255, 0, 255}, 0, 0);
+						TE_SetupBeamRingPoint(vecOrigin, g_fZoneRadius[entity], g_fZoneRadius[entity] + 4.0, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, {255, 255, 0, 255}, 0, 0);
 						TE_SendToClient(i, 0.0);
 					}
 				}
@@ -1140,7 +1302,7 @@ public Action Timer_DisplayZones(Handle timer)
 	}
 }
 
-stock void GetAbsBoundingBox(int ent, float mins[3], float maxs[3])
+void GetAbsBoundingBox(int ent, float mins[3], float maxs[3])
 {
     float origin[3];
 
@@ -1162,13 +1324,7 @@ void CreateZone(const char[] sName, int type, float start[3], float end[3], floa
 	char sType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneTypeName(type, sType, sizeof(sType));
 
-	LogDebug("Spawning Zone: %s - %s - %.2f/%.2f/%.2f - %.2f/%.2f/%.2f - %.2f", sName, sType, start[0], start[1], start[2], end[0], end[1], end[2], radius);
-
-	strcopy(g_sZonesData_Name[g_iTotalZones], MAX_ZONE_NAME_LENGTH, sName);
-	g_iZonesData_Type[g_iTotalZones] = type;
-	g_vecZonesData_Start[g_iTotalZones] = start;
-	g_vecZonesData_End[g_iTotalZones] = end;
-	g_fZonesData_Radius[g_iTotalZones] = radius;
+	LogDebug("zonesmanager", "Spawning Zone: %s - %s - %.2f/%.2f/%.2f - %.2f/%.2f/%.2f - %.2f", sName, sType, start[0], start[1], start[2], end[0], end[1], end[2], radius);
 
 	switch (type)
 	{
@@ -1222,123 +1378,151 @@ void CreateZone(const char[] sName, int type, float start[3], float end[3], floa
 				SDKHook(entity, SDKHook_TouchPost, Zones_TouchPost);
 				SDKHook(entity, SDKHook_EndTouchPost, Zones_EndTouchPost);
 
-				g_iZoneID[entity] = g_iTotalZones;
+				g_bIsZone[entity] = true;
+				g_fZoneRadius[entity] = radius;
+
+				delete g_hZoneEffects[entity];
+				g_hZoneEffects[entity] = CreateTrie();
 			}
 
-			LogDebug("Zone %s has been spawned %s with ID %i and the entity index %i.", sName, IsValidEntity(entity) ? "successfully" : "not successfully", g_iTotalZones, entity);
+			LogDebug("zonesmanager", "Zone %s has been spawned %s with the entity index %i.", sName, IsValidEntity(entity) ? "successfully" : "not successfully", entity);
 		}
 
 		case ZONE_TYPE_CIRCLE:
 		{
-			LogDebug("Zone %s has been spawned with ID %i and the radius %.2f.", sName, g_iTotalZones, radius);
+			int entity = CreateEntityByName("info_target");
+
+			if (IsValidEntity(entity))
+			{
+				DispatchKeyValue(entity, "targetname", sName);
+				DispatchKeyValueVector(entity, "origin", start);
+				DispatchSpawn(entity);
+
+				g_bIsZone[entity] = true;
+				g_fZoneRadius[entity] = radius;
+
+				delete g_hZoneEffects[entity];
+				g_hZoneEffects[entity] = CreateTrie();
+			}
+
+			LogDebug("zonesmanager", "Zone %s has been spawned with the radius %.2f.", sName, radius);
 		}
 	}
-
-	g_iTotalZones++;
 }
 
-Action IsNearRadiusZone(int client, int ID)
+Action IsNearRadiusZone(int client, int entity)
 {
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
 	Action result = Plugin_Continue;
 
-	if (!bInsideRadius[client][ID])
+	if (!bInsideRadius[client][entity])
 	{
 		Call_StartForward(g_Forward_StartTouchZone);
 		Call_PushCell(client);
-		Call_PushCell(ID);
-		Call_PushString(g_sZonesData_Name[ID]);
+		Call_PushCell(entity);
+		Call_PushString(sName);
 		Call_PushCell(ZONE_TYPE_CIRCLE);
-		Call_PushCell(-1);
 		Call_Finish(result);
 
-		bInsideRadius[client][ID] = true;
+		bInsideRadius[client][entity] = true;
 	}
 	else
 	{
 		Call_StartForward(g_Forward_TouchZone);
 		Call_PushCell(client);
-		Call_PushCell(ID);
-		Call_PushString(g_sZonesData_Name[ID]);
+		Call_PushCell(entity);
+		Call_PushString(sName);
 		Call_PushCell(ZONE_TYPE_CIRCLE);
-		Call_PushCell(-1);
 		Call_Finish(result);
 	}
 
 	return result;
 }
 
-Action IsNotNearRadiusZone(int client, int ID)
+Action IsNotNearRadiusZone(int client, int entity)
 {
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
 	Action result = Plugin_Continue;
 
-	if (bInsideRadius[client][ID])
+	if (bInsideRadius[client][entity])
 	{
 		Call_StartForward(g_Forward_EndTouchZone);
 		Call_PushCell(client);
-		Call_PushCell(ID);
-		Call_PushString(g_sZonesData_Name[ID]);
+		Call_PushCell(entity);
+		Call_PushString(sName);
 		Call_PushCell(ZONE_TYPE_CIRCLE);
-		Call_PushCell(-1);
 		Call_Finish(result);
 
-		bInsideRadius[client][ID] = false;
+		bInsideRadius[client][entity] = false;
 	}
 
 	return result;
 }
 
-void IsNearRadiusZone_Post(int client, int ID)
+void IsNearRadiusZone_Post(int client, int entity)
 {
-	if (!bInsideRadius_Post[client][ID])
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	if (!bInsideRadius_Post[client][entity])
 	{
 		Call_StartForward(g_Forward_StartTouchZone_Post);
 		Call_PushCell(client);
-		Call_PushCell(ID);
-		Call_PushString(g_sZonesData_Name[ID]);
+		Call_PushCell(entity);
+		Call_PushString(sName);
 		Call_PushCell(ZONE_TYPE_CIRCLE);
-		Call_PushCell(-1);
 		Call_Finish();
 
-		bInsideRadius_Post[client][ID] = true;
+		bInsideRadius_Post[client][entity] = true;
 	}
 	else
 	{
 		Call_StartForward(g_Forward_TouchZone_Post);
 		Call_PushCell(client);
-		Call_PushCell(ID);
-		Call_PushString(g_sZonesData_Name[ID]);
+		Call_PushCell(entity);
+		Call_PushString(sName);
 		Call_PushCell(ZONE_TYPE_CIRCLE);
-		Call_PushCell(-1);
 		Call_Finish();
 	}
 }
 
-void IsNotNearRadiusZone_Post(int client, int ID)
+void IsNotNearRadiusZone_Post(int client, int entity)
 {
-	if (bInsideRadius_Post[client][ID])
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	if (bInsideRadius_Post[client][entity])
 	{
 		Call_StartForward(g_Forward_EndTouchZone_Post);
 		Call_PushCell(client);
-		Call_PushCell(ID);
-		Call_PushString(g_sZonesData_Name[ID]);
+		Call_PushCell(entity);
+		Call_PushString(sName);
 		Call_PushCell(ZONE_TYPE_CIRCLE);
-		Call_PushCell(-1);
 		Call_Finish();
 
-		bInsideRadius_Post[client][ID] = false;
+		bInsideRadius_Post[client][entity] = false;
 	}
 }
 
 public Action Zones_StartTouch(int entity, int other)
 {
-	int ID = g_iZoneID[entity];
+	if (!g_bIsZone[entity])
+	{
+		return Plugin_Continue;
+	}
+
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	Call_StartForward(g_Forward_StartTouchZone);
 	Call_PushCell(other);
-	Call_PushCell(ID);
-	Call_PushString(g_sZonesData_Name[ID]);
-	Call_PushCell(g_iZonesData_Type[ID]);
 	Call_PushCell(entity);
+	Call_PushString(sName);
+	Call_PushCell(ZONE_TYPE_BOX);
 
 	Action result = Plugin_Continue;
 	Call_Finish(result);
@@ -1348,14 +1532,19 @@ public Action Zones_StartTouch(int entity, int other)
 
 public Action Zones_Touch(int entity, int other)
 {
-	int ID = g_iZoneID[entity];
+	if (!g_bIsZone[entity])
+	{
+		return Plugin_Continue;
+	}
+
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	Call_StartForward(g_Forward_TouchZone);
 	Call_PushCell(other);
-	Call_PushCell(ID);
-	Call_PushString(g_sZonesData_Name[ID]);
-	Call_PushCell(g_iZonesData_Type[ID]);
 	Call_PushCell(entity);
+	Call_PushString(sName);
+	Call_PushCell(ZONE_TYPE_BOX);
 
 	Action result = Plugin_Continue;
 	Call_Finish(result);
@@ -1365,14 +1554,19 @@ public Action Zones_Touch(int entity, int other)
 
 public Action Zones_EndTouch(int entity, int other)
 {
-	int ID = g_iZoneID[entity];
+	if (!g_bIsZone[entity])
+	{
+		return Plugin_Continue;
+	}
+
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	Call_StartForward(g_Forward_EndTouchZone);
 	Call_PushCell(other);
-	Call_PushCell(ID);
-	Call_PushString(g_sZonesData_Name[ID]);
-	Call_PushCell(g_iZonesData_Type[ID]);
 	Call_PushCell(entity);
+	Call_PushString(sName);
+	Call_PushCell(ZONE_TYPE_BOX);
 
 	Action result = Plugin_Continue;
 	Call_Finish(result);
@@ -1382,75 +1576,126 @@ public Action Zones_EndTouch(int entity, int other)
 
 public void Zones_StartTouchPost(int entity, int other)
 {
-	int ID = g_iZoneID[entity];
+	if (!g_bIsZone[entity])
+	{
+		return;
+	}
 
 	for (int i = 0; i < GetArraySize(g_hArray_EffectsList); i++)
 	{
 		char sEffect[MAX_EFFECT_NAME_LENGTH];
 		GetArrayString(g_hArray_EffectsList, i, sEffect, sizeof(sEffect));
 
-		Handle callbacks[1];
-		if (GetTrieArray(g_hTrie_EffectCalls, sEffect, callbacks, sizeof(callbacks)) && callbacks[0] != null && GetForwardFunctionCount(callbacks[0]) > 0)
+		Handle callbacks[3];
+		if (GetTrieArray(g_hTrie_EffectCalls, sEffect, callbacks, sizeof(callbacks)) && callbacks[EFFECT_CALLBACK_ONENTERZONE] != null && GetForwardFunctionCount(callbacks[EFFECT_CALLBACK_ONENTERZONE]) > 0)
 		{
 			StringMap values;
-			GetTrieValue(g_hZonesData_Effects[ID], sEffect, values);
+			GetTrieValue(g_hZoneEffects[entity], sEffect, values);
 
-			Call_StartForward(callbacks[0]);
+			Call_StartForward(callbacks[EFFECT_CALLBACK_ONENTERZONE]);
 			Call_PushCell(other);
+			Call_PushCell(entity);
 			Call_PushCell(values);
 			Call_Finish();
 		}
 	}
 
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
 	Call_StartForward(g_Forward_StartTouchZone_Post);
 	Call_PushCell(other);
-	Call_PushCell(ID);
-	Call_PushString(g_sZonesData_Name[ID]);
-	Call_PushCell(g_iZonesData_Type[ID]);
 	Call_PushCell(entity);
+	Call_PushString(sName);
+	Call_PushCell(ZONE_TYPE_BOX);
 	Call_Finish();
 }
 
 public void Zones_TouchPost(int entity, int other)
 {
-	int ID = g_iZoneID[entity];
+	if (!g_bIsZone[entity])
+	{
+		return;
+	}
+
+	for (int i = 0; i < GetArraySize(g_hArray_EffectsList); i++)
+	{
+		char sEffect[MAX_EFFECT_NAME_LENGTH];
+		GetArrayString(g_hArray_EffectsList, i, sEffect, sizeof(sEffect));
+
+		Handle callbacks[3];
+		if (GetTrieArray(g_hTrie_EffectCalls, sEffect, callbacks, sizeof(callbacks)) && callbacks[EFFECT_CALLBACK_ONACTIVEZONE] != null && GetForwardFunctionCount(callbacks[EFFECT_CALLBACK_ONACTIVEZONE]) > 0)
+		{
+			StringMap values;
+			GetTrieValue(g_hZoneEffects[entity], sEffect, values);
+
+			Call_StartForward(callbacks[EFFECT_CALLBACK_ONACTIVEZONE]);
+			Call_PushCell(other);
+			Call_PushCell(entity);
+			Call_PushCell(values);
+			Call_Finish();
+		}
+	}
+
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	Call_StartForward(g_Forward_TouchZone_Post);
 	Call_PushCell(other);
-	Call_PushCell(ID);
-	Call_PushString(g_sZonesData_Name[ID]);
-	Call_PushCell(g_iZonesData_Type[ID]);
 	Call_PushCell(entity);
+	Call_PushString(sName);
+	Call_PushCell(ZONE_TYPE_BOX);
 	Call_Finish();
 }
 
 public void Zones_EndTouchPost(int entity, int other)
 {
-	int ID = g_iZoneID[entity];
-
-	Call_StartForward(g_Forward_EndTouchZone_Post);
-	Call_PushCell(other);
-	Call_PushCell(ID);
-	Call_PushString(g_sZonesData_Name[ID]);
-	Call_PushCell(g_iZonesData_Type[ID]);
-	Call_PushCell(entity);
-	Call_Finish();
-}
-
-void DeleteZone(int ID)
-{
-	int entity = INVALID_ENT_REFERENCE;
-	while ((entity = FindEntityByClassname(entity, "trigger_multiple")) != INVALID_ENT_REFERENCE)
+	if (!g_bIsZone[entity])
 	{
-		if (g_iZoneID[entity] == ID)
+		return;
+	}
+
+	for (int i = 0; i < GetArraySize(g_hArray_EffectsList); i++)
+	{
+		char sEffect[MAX_EFFECT_NAME_LENGTH];
+		GetArrayString(g_hArray_EffectsList, i, sEffect, sizeof(sEffect));
+
+		Handle callbacks[3];
+		if (GetTrieArray(g_hTrie_EffectCalls, sEffect, callbacks, sizeof(callbacks)) && callbacks[EFFECT_CALLBACK_ONLEAVEZONE] != null && GetForwardFunctionCount(callbacks[EFFECT_CALLBACK_ONLEAVEZONE]) > 0)
 		{
-			AcceptEntityInput(entity, "Kill");
-			g_iZoneID[entity] = -1;
+			StringMap values;
+			GetTrieValue(g_hZoneEffects[entity], sEffect, values);
+
+			Call_StartForward(callbacks[EFFECT_CALLBACK_ONLEAVEZONE]);
+			Call_PushCell(other);
+			Call_PushCell(entity);
+			Call_PushCell(values);
+			Call_Finish();
 		}
 	}
 
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	Call_StartForward(g_Forward_EndTouchZone_Post);
+	Call_PushCell(other);
+	Call_PushCell(entity);
+	Call_PushString(sName);
+	Call_PushCell(ZONE_TYPE_BOX);
+	Call_Finish();
+}
+
+void DeleteZone(int entity)
+{
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	AcceptEntityInput(entity, "Kill");
+	g_bIsZone[entity] = false;
+	delete g_hZoneEffects[entity];
+
 	KvRewind(kZonesConfig);
-	if (KvJumpToKey(kZonesConfig, g_sZonesData_Name[ID]))
+	if (KvJumpToKey(kZonesConfig, sName))
 	{
 		KvDeleteThis(kZonesConfig);
 	}
@@ -1458,19 +1703,31 @@ void DeleteZone(int ID)
 	SaveMapConfig();
 }
 
-void RegisterNewEffect(Handle plugin, const char[] name, Function function1 = INVALID_FUNCTION)
+void RegisterNewEffect(Handle plugin, const char[] name, Function function1 = INVALID_FUNCTION, Function function2 = INVALID_FUNCTION, Function function3 = INVALID_FUNCTION)
 {
 	if (plugin == null || strlen(name) == 0 || FindStringInArray(g_hArray_EffectsList, name) != -1)
 	{
 		return;
 	}
 
-	Handle callbacks[1];
+	Handle callbacks[3];
 
 	if (function1 != INVALID_FUNCTION)
 	{
-		callbacks[EFFECT_CALLBACK_ONENTERZONE] = CreateForward(ET_Ignore, Param_Cell);
+		callbacks[EFFECT_CALLBACK_ONENTERZONE] = CreateForward(ET_Ignore, Param_Cell, Param_Cell, Param_Cell);
 		AddToForward(callbacks[EFFECT_CALLBACK_ONENTERZONE], plugin, function1);
+	}
+
+	if (function2 != INVALID_FUNCTION)
+	{
+		callbacks[EFFECT_CALLBACK_ONACTIVEZONE] = CreateForward(ET_Ignore, Param_Cell, Param_Cell, Param_Cell);
+		AddToForward(callbacks[EFFECT_CALLBACK_ONACTIVEZONE], plugin, function2);
+	}
+
+	if (function3 != INVALID_FUNCTION)
+	{
+		callbacks[EFFECT_CALLBACK_ONLEAVEZONE] = CreateForward(ET_Ignore, Param_Cell, Param_Cell, Param_Cell);
+		AddToForward(callbacks[EFFECT_CALLBACK_ONLEAVEZONE], plugin, function3);
 	}
 
 	SetTrieArray(g_hTrie_EffectCalls, name, callbacks, sizeof(callbacks));
@@ -1542,17 +1799,6 @@ stock void Array_Copy(const any[] array, any[] newArray, int size)
 	{
 		newArray[i] = array[i];
 	}
-}
-
-void LogDebug(const char[] format, any ...)
-{
-	char sBuffer[255];
-	VFormat(sBuffer, sizeof(sBuffer), format, 2);
-
-	char sPath[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, sPath, sizeof(sPath), "logs/zonesmanager.debugs.log");
-
-	LogToFile(sPath, sBuffer);
 }
 
 stock void Effect_DrawBeamBoxToClient(int client, const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame = 0, int frameRate = 30, float life = 5.0, float width = 5.0, float endWidth = 5.0, int fadeLength = 2, float amplitude = 1.0, const color[4] = {255, 0, 0, 255}, int speed = 0)
@@ -1628,6 +1874,8 @@ public int Native_Register_Effect(Handle plugin, int numParams)
 	GetNativeString(1, sEffect, size + 1);
 
 	Function function1 = GetNativeFunction(2);
+	Function function2 = GetNativeFunction(3);
+	Function function3 = GetNativeFunction(4);
 
-	RegisterNewEffect(plugin, sEffect, function1);
+	RegisterNewEffect(plugin, sEffect, function1, function2, function3);
 }
