@@ -28,9 +28,9 @@ public void OnPluginStart()
 	convar_Status = CreateConVar("sm_zones_effect_meleeonly_status", "1", "Status of the plugin.\n(1 = on, 0 = off)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 }
 
-public void OnConfigsExecuted()
+public void OnAllPluginsLoaded()
 {
-	Zones_Manager_Register_Effect("melee only", Effect_OnEnterZone, INVALID_FUNCTION, Effect_OnLeaveZone);
+	ZonesManager_Register_Effect("melee only", Effect_OnEnterZone, INVALID_FUNCTION, Effect_OnLeaveZone);
 }
 
 public void Effect_OnEnterZone(int client, int entity, StringMap values)

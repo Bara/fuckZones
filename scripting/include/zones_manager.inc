@@ -10,7 +10,8 @@ typedef Zones_Manager_Effect_OnLeaveZone = function void (int client, int entity
 /**----------------------------------------------------------*/
 //Forwards
 
-native void Zones_Manager_Register_Effect(const char[] name, Zones_Manager_Effect_OnEnterZone OnEnterZone = INVALID_FUNCTION, Zones_Manager_Effect_OnActiveZone OnActiveZone = INVALID_FUNCTION, Zones_Manager_Effect_OnLeaveZone OnLeaveZone = INVALID_FUNCTION);
+native void ZonesManager_Register_Effect(const char[] name, Zones_Manager_Effect_OnEnterZone OnEnterZone = INVALID_FUNCTION, Zones_Manager_Effect_OnActiveZone OnActiveZone = INVALID_FUNCTION, Zones_Manager_Effect_OnLeaveZone OnLeaveZone = INVALID_FUNCTION);
+native bool ZonesManager_IsClientInZone(int client, const char[] name);
 
 /**----------------------------------------------------------*/
 //Forwards
@@ -90,7 +91,9 @@ forward void ZonesManager_OnEndTouchZone_Post(int client, int entity, const char
 #if !defined REQUIRE_PLUGIN
 public void __pl_zones_manager_SetNTVOptional()
 {
-	MarkNativeAsOptional("Zones_Manager_Register_Effect");
+	MarkNativeAsOptional("ZonesManager_Register_Effect");
+	MarkNativeAsOptional("ZonesManager_IsClientInZone");
+	MarkNativeAsOptional("ZonesManager_IsEntityInZone");
 }
 #endif
 
