@@ -10,6 +10,7 @@
 ConVar convar_Status;
 
 //Globals
+bool g_bLate;
 int g_iPrintCap[MAXPLAYERS + 1];
 int g_iPrintCap_Post[MAXPLAYERS + 1];
 
@@ -22,6 +23,12 @@ public Plugin myinfo =
 	url = "http://www.drixevel.com/"
 };
 
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
+	g_bLate = late;
+	return APLRes_Success;
+}
+
 public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
@@ -29,51 +36,66 @@ public void OnPluginStart()
 	convar_Status = CreateConVar("sm_zones_effect_testzones_status", "1", "Status of the plugin.\n(1 = on, 0 = off)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 }
 
-public void OnAllPluginsLoaded()
+public void OnConfigsExecuted()
+{
+	if (g_bLate)
+	{
+		ZonesManager_Request_QueueEffects();
+		g_bLate = false;
+	}
+}
+
+public void ZonesManager_OnQueueEffects_Post()
 {
 	ZonesManager_Register_Effect("test zones", Effect_OnEnterZone, Effect_OnActiveZone, Effect_OnLeaveZone);
 }
 
 public void Effect_OnEnterZone(int client, int entity, StringMap values)
 {
-	int value1;
+	char value1[12];
 	char value2[12];
+	char value3[12];
 
 	if (values != null)
 	{
-		GetTrieValue(values, "value1", value1);
-		GetTrieString(values, "value2", value2, sizeof(value2));
+		GetTrieString(values, "status", value1, sizeof(value1));
+		GetTrieString(values, "test1", value2, sizeof(value2));
+		GetTrieString(values, "test2", value3, sizeof(value3));
 	}
 
-	PrintToChat(client, "You have entered this zone. [Value1: %i - Value 2: %s]", value1, strlen(value2) > 0 ? value2 : "N/A");
+	PrintToChat(client, "You have entered this zone. [Value1: %s - Value 2: %s - Value 3: %s]", value1, value2, value3);
 }
 
 public void Effect_OnActiveZone(int client, int entity, StringMap values)
 {
-	int value1;
+	char value1[12];
 	char value2[12];
+	char value3[12];
 
 	if (values != null)
 	{
-		GetTrieValue(values, "value1", value1);
-		GetTrieString(values, "value2", value2, sizeof(value2));
+		GetTrieString(values, "status", value1, sizeof(value1));
+		GetTrieString(values, "test1", value2, sizeof(value2));
+		GetTrieString(values, "test2", value3, sizeof(value3));
 	}
 
-	PrintToChat(client, "You are active in this zone. [Value1: %i - Value 2: %s]", value1, strlen(value2) > 0 ? value2 : "N/A");
+	PrintToChat(client, "You are sitting in this zone. [Value1: %s - Value 2: %s - Value 3: %s]", value1, value2, value3);
 }
 
 public void Effect_OnLeaveZone(int client, int entity, StringMap values)
 {
-	int value1;
+	char value1[12];
 	char value2[12];
+	char value3[12];
 
 	if (values != null)
 	{
-		GetTrieValue(values, "value1", value1);
-		GetTrieString(values, "value2", value2, sizeof(value2));
+		GetTrieString(values, "status", value1, sizeof(value1));
+		GetTrieString(values, "test1", value2, sizeof(value2));
+		GetTrieString(values, "test2", value3, sizeof(value3));
 	}
 
-	PrintToChat(client, "You have left this zone. [Value1: %i - Value 2: %s]", value1, strlen(value2) > 0 ? value2 : "N/A");
+	PrintToChat(client, "You have left this zone. [Value1: %s - Value 2: %s - Value 3: %s]", value1, value2, value3);
 }
 
 public void OnClientDisconnect(int client)

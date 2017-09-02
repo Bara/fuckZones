@@ -11,10 +11,19 @@ typedef Zones_Manager_Effect_OnLeaveZone = function void (int client, int entity
 //Forwards
 
 native void ZonesManager_Register_Effect(const char[] name, Zones_Manager_Effect_OnEnterZone OnEnterZone = INVALID_FUNCTION, Zones_Manager_Effect_OnActiveZone OnActiveZone = INVALID_FUNCTION, Zones_Manager_Effect_OnLeaveZone OnLeaveZone = INVALID_FUNCTION);
+native void ZonesManager_Request_QueueEffects();
 native bool ZonesManager_IsClientInZone(int client, const char[] name);
 
 /**----------------------------------------------------------*/
 //Forwards
+
+/**
+* Called whenever the plugin requests for effects to be registered.
+* You should use this post forward to register new effects.
+*
+* noreturn
+**/
+forward void ZonesManager_OnQueueEffects_Post();
 
 /**
 * Called right before a player enters the zone.
@@ -92,8 +101,8 @@ forward void ZonesManager_OnEndTouchZone_Post(int client, int entity, const char
 public void __pl_zones_manager_SetNTVOptional()
 {
 	MarkNativeAsOptional("ZonesManager_Register_Effect");
+	MarkNativeAsOptional("ZonesManager_Request_QueueEffects");
 	MarkNativeAsOptional("ZonesManager_IsClientInZone");
-	MarkNativeAsOptional("ZonesManager_IsEntityInZone");
 }
 #endif
 

@@ -15,6 +15,7 @@
 
 #define MAX_EFFECT_NAME_LENGTH 128
 
+#define MAX_EFFECT_CALLBACKS 3
 #define EFFECT_CALLBACK_ONENTERZONE 0
 #define EFFECT_CALLBACK_ONACTIVEZONE 1
 #define EFFECT_CALLBACK_ONLEAVEZONE 2
@@ -40,6 +41,7 @@
 ConVar convar_Status;
 
 //Forwards
+Handle g_Forward_QueueEffects_Post;
 Handle g_Forward_StartTouchZone;
 Handle g_Forward_TouchZone;
 Handle g_Forward_EndTouchZone;
@@ -63,7 +65,7 @@ char sErrorModel[] = "models/error.mdl";
 //Entities Data
 ArrayList g_hZoneEntities;
 float g_fZoneRadius[MAX_ENTITY_LIMIT];
-Handle g_hZoneEffects[MAX_ENTITY_LIMIT];
+StringMap g_hZoneEffects[MAX_ENTITY_LIMIT];
 
 //Radius Management
 bool bInsideRadius[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
@@ -99,8 +101,10 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	RegPluginLibrary("zones_manager");
 
 	CreateNative("ZonesManager_Register_Effect", Native_Register_Effect);
+	CreateNative("ZonesManager_Request_QueueEffects", Native_Request_QueueEffects);
 	CreateNative("ZonesManager_IsClientInZone", Native_IsClientInZone);
 
+	g_Forward_QueueEffects_Post = CreateGlobalForward("ZonesManager_OnQueueEffects_Post", ET_Ignore);
 	g_Forward_StartTouchZone = CreateGlobalForward("ZonesManager_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	g_Forward_TouchZone = CreateGlobalForward("ZonesManager_OnTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	g_Forward_EndTouchZone = CreateGlobalForward("ZonesManager_OnEndTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
@@ -127,6 +131,7 @@ public void OnPluginStart()
 	RegAdminCmd("sm_zones", Command_OpenZonesMenu, ADMFLAG_ROOT, "Display the zones manager menu.");
 	RegAdminCmd("sm_regeneratezones", Command_RegenerateZones, ADMFLAG_ROOT, "Regenerate all zones on the map.");
 	RegAdminCmd("sm_deleteallzones", Command_DeleteAllZones, ADMFLAG_ROOT, "Delete all zones on the map.");
+	RegAdminCmd("sm_reloadeffects", Command_ReloadEffects, ADMFLAG_ROOT, "Reload all effects data and their callbacks.");
 
 	g_hZoneEntities = CreateArray();
 
@@ -217,6 +222,37 @@ public void OnConfigsExecuted()
 	}
 }
 
+public void OnAllPluginsLoaded()
+{
+	QueueEffects();
+}
+
+void QueueEffects(bool reset = true)
+{
+	if (reset)
+	{
+		for (int i = 0; i < GetArraySize(g_hArray_EffectsList); i++)
+		{
+			char sEffect[MAX_EFFECT_NAME_LENGTH];
+			GetArrayString(g_hArray_EffectsList, i, sEffect, sizeof(sEffect));
+
+			Handle callbacks[MAX_EFFECT_CALLBACKS];
+			GetTrieArray(g_hTrie_EffectCalls, sEffect, callbacks, sizeof(callbacks));
+
+			for (int x = 0; x < MAX_EFFECT_CALLBACKS; x++)
+			{
+				delete callbacks[x];
+			}
+		}
+
+		ClearTrie(g_hTrie_EffectCalls);
+		ClearArray(g_hArray_EffectsList);
+	}
+
+	Call_StartForward(g_Forward_QueueEffects_Post);
+	Call_Finish();
+}
+
 public void OnPluginEnd()
 {
 	ClearAllZones();
@@ -296,7 +332,42 @@ void SpawnAllZones()
 
 			float fRadius = KvGetFloat(kZonesConfig, "radius");
 
-			CreateZone(sName, type, vStartPosition, vEndPosition, fRadius);
+			StringMap effects = CreateTrie();
+			if (KvJumpToKey(kZonesConfig, "effects") && KvGotoFirstSubKey(kZonesConfig))
+			{
+				do
+				{
+					char sEffect[256];
+					KvGetSectionName(kZonesConfig, sEffect, sizeof(sEffect));
+
+					StringMap effect_data = CreateTrie();
+
+					if (KvGotoFirstSubKey(kZonesConfig, false))
+					{
+						do
+						{
+							char sKey[256];
+							KvGetSectionName(kZonesConfig, sKey, sizeof(sKey));
+
+							char sValue[256];
+							KvGetString(kZonesConfig, NULL_STRING, sValue, sizeof(sValue));
+
+							SetTrieString(effect_data, sKey, sValue);
+						}
+						while (KvGotoNextKey(kZonesConfig, false));
+
+						KvGoBack(kZonesConfig);
+					}
+
+					SetTrieValue(effects, sEffect, effect_data);
+				}
+				while (KvGotoNextKey(kZonesConfig));
+
+				KvGoBack(kZonesConfig);
+				KvGoBack(kZonesConfig);
+			}
+
+			CreateZone(sName, type, vStartPosition, vEndPosition, fRadius, effects);
 		}
 		while(KvGotoNextKey(kZonesConfig));
 	}
@@ -417,6 +488,18 @@ public Action Command_DeleteAllZones(int client, int args)
 	}
 
 	DeleteAllZones(client);
+	return Plugin_Handled;
+}
+
+public Action Command_ReloadEffects(int client, int args)
+{
+	if (!GetConVarBool(convar_Status))
+	{
+		return Plugin_Handled;
+	}
+
+	QueueEffects();
+	CReplyToCommand(client, "Effects data has been reloaded.");
 	return Plugin_Handled;
 }
 
@@ -1390,7 +1473,7 @@ void GetAbsBoundingBox(int ent, float mins[3], float maxs[3])
     maxs[2] += origin[2];
 }
 
-void CreateZone(const char[] sName, int type, float start[3], float end[3], float radius)
+void CreateZone(const char[] sName, int type, float start[3], float end[3], float radius, StringMap effects = null)
 {
 	char sType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneTypeName(type, sType, sizeof(sType));
@@ -1471,10 +1554,12 @@ void CreateZone(const char[] sName, int type, float start[3], float end[3], floa
 		g_fZoneRadius[entity] = radius;
 
 		delete g_hZoneEffects[entity];
-		g_hZoneEffects[entity] = CreateTrie();
+		g_hZoneEffects[entity] = effects != null ? view_as<StringMap>(CloneHandle(effects)) : CreateTrie();
 	}
 
 	LogDebug("zonesmanager", "Zone %s has been spawned %s as a %s zone with the entity index %i.", sName, IsValidEntity(entity) ? "successfully" : "not successfully", sType, entity);
+
+	delete effects;
 }
 
 Action IsNearRadiusZone(int client, int entity)
@@ -1704,7 +1789,7 @@ void CallEffectCallback(int entity, int client, int callback)
 		char sEffect[MAX_EFFECT_NAME_LENGTH];
 		GetArrayString(g_hArray_EffectsList, i, sEffect, sizeof(sEffect));
 
-		Handle callbacks[3]; StringMap values;
+		Handle callbacks[MAX_EFFECT_CALLBACKS]; StringMap values;
 		if (GetTrieArray(g_hTrie_EffectCalls, sEffect, callbacks, sizeof(callbacks)) && callbacks[callback] != null && GetForwardFunctionCount(callbacks[callback]) > 0 && GetTrieValue(g_hZoneEffects[entity], sEffect, values))
 		{
 			Call_StartForward(callbacks[callback]);
@@ -1744,7 +1829,7 @@ void RegisterNewEffect(Handle plugin, const char[] name, Function function1 = IN
 		return;
 	}
 
-	Handle callbacks[3];
+	Handle callbacks[MAX_EFFECT_CALLBACKS];
 
 	if (function1 != INVALID_FUNCTION)
 	{
@@ -1898,6 +1983,11 @@ public int Native_Register_Effect(Handle plugin, int numParams)
 	Function function3 = GetNativeFunction(4);
 
 	RegisterNewEffect(plugin, sEffect, function1, function2, function3);
+}
+
+public int Native_Request_QueueEffects(Handle plugin, int numParams)
+{
+	QueueEffects();
 }
 
 public int Native_IsClientInZone(Handle plugin, int numParams)
