@@ -15,6 +15,9 @@
 
 #define MAX_EFFECT_NAME_LENGTH 128
 
+#define MAX_KEY_NAME_LENGTH 128
+#define MAX_KEY_VALUE_LENGTH 128
+
 #define MAX_EFFECT_CALLBACKS 3
 #define EFFECT_CALLBACK_ONENTERZONE 0
 #define EFFECT_CALLBACK_ONACTIVEZONE 1
@@ -73,6 +76,7 @@ bool bInsideRadius_Post[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 
 //Effects Data
 StringMap g_hTrie_EffectCalls;
+StringMap g_hTrie_EffectKeys;
 ArrayList g_hArray_EffectsList;
 
 //Create Zones Data
@@ -101,6 +105,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	RegPluginLibrary("zones_manager");
 
 	CreateNative("ZonesManager_Register_Effect", Native_Register_Effect);
+	CreateNative("ZonesManager_Register_Effect_Key", Native_Register_Effect_Key);
 	CreateNative("ZonesManager_Request_QueueEffects", Native_Request_QueueEffects);
 	CreateNative("ZonesManager_IsClientInZone", Native_IsClientInZone);
 
@@ -126,7 +131,8 @@ public void OnPluginStart()
 
 	//AutoExecConfig();
 
-	HookEvent("teamplay_round_start", OnRoundStart);
+	HookEventEx("teamplay_round_start", OnRoundStart);
+	HookEventEx("round_start", OnRoundStart);
 
 	RegAdminCmd("sm_zones", Command_OpenZonesMenu, ADMFLAG_ROOT, "Display the zones manager menu.");
 	RegAdminCmd("sm_regeneratezones", Command_RegenerateZones, ADMFLAG_ROOT, "Regenerate all zones on the map.");
@@ -136,6 +142,7 @@ public void OnPluginStart()
 	g_hZoneEntities = CreateArray();
 
 	g_hTrie_EffectCalls = CreateTrie();
+	g_hTrie_EffectKeys = CreateTrie();
 	g_hArray_EffectsList = CreateArray(ByteCountToCells(MAX_EFFECT_NAME_LENGTH));
 
 	g_hCookie_ShowZones = RegClientCookie("zones_manager_show_zones", "Show zones that are configured correctly to clients.", CookieAccess_Public);
@@ -1142,11 +1149,8 @@ public int MenuHandler_AddZoneEffect(Menu menu, MenuAction action, int param1, i
 
 			int entity = GetMenuCell(menu, "entity");
 
-			StringMap values = CreateTrie();
-			SetTrieValue(values, "value1", 5);
-			SetTrieString(values, "valu2", "peaches");
+			AddEffectToZone(entity, sEffect);
 
-			SetTrieValue(g_hZoneEffects[entity], sEffect, values);
 			OpenEditZoneMenu(param1, entity);
 		}
 
@@ -1163,6 +1167,75 @@ public int MenuHandler_AddZoneEffect(Menu menu, MenuAction action, int param1, i
 			CloseHandle(menu);
 		}
 	}
+}
+
+void AddEffectToZone(int entity, const char[] effect)
+{
+	if (kZonesConfig == null)
+	{
+		return;
+	}
+
+	KvRewind(kZonesConfig);
+
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	StringMap keys;
+	GetTrieValue(g_hTrie_EffectKeys, effect, keys);
+
+	if (KvJumpToKey(kZonesConfig, sName) && KvJumpToKey(kZonesConfig, "effects", true) && KvJumpToKey(kZonesConfig, effect, true))
+	{
+		Handle map = CreateTrieSnapshot(keys);
+
+		for (int i = 0; i < TrieSnapshotLength(map); i++)
+		{
+			char sKey[MAX_KEY_NAME_LENGTH];
+			GetTrieSnapshotKey(map, i, sKey, sizeof(sKey));
+
+			char sValue[MAX_KEY_VALUE_LENGTH];
+			GetTrieString(keys, sKey, sValue, sizeof(sValue));
+
+			KvSetString(kZonesConfig, sKey, sValue);
+		}
+
+		delete map;
+
+		KvRewind(kZonesConfig);
+	}
+
+	SetTrieValue(g_hZoneEffects[entity], effect, CloneHandle(keys));
+
+	SaveMapConfig();
+}
+
+stock void UpdateZoneEffectKey(int entity, const char[] effect_name, const char[] key, const char[] value)
+{
+	if (kZonesConfig == null)
+	{
+		return;
+	}
+
+	KvRewind(kZonesConfig);
+
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	if (KvJumpToKey(kZonesConfig, sName) && KvJumpToKey(kZonesConfig, "effects", true) && KvJumpToKey(kZonesConfig, effect_name, true))
+	{
+		if (strlen(value) == 0)
+		{
+			StringMap keys;
+			GetTrieValue(g_hTrie_EffectKeys, sName, keys);
+
+			GetTrieString(keys, key, sValue, sizeof(sValue));
+		}
+
+		KvSetString(kZonesConfig, key, sValue);
+		KvRewind(kZonesConfig);
+	}
+
+	SaveMapConfig();
 }
 
 bool RemoveZoneEffectMenu(int client, int entity)
@@ -1207,12 +1280,7 @@ public int MenuHandler_RemoveZoneEffect(Menu menu, MenuAction action, int param1
 
 			int entity = GetMenuCell(menu, "entity");
 
-			StringMap values;
-			if (GetTrieValue(g_hZoneEffects[entity], sEffect, values))
-			{
-				delete values;
-				RemoveFromTrie(g_hZoneEffects[entity], sEffect);
-			}
+			RemoveEffectFromZone(entity, sEffect);
 
 			OpenEditZoneMenu(param1, entity);
 		}
@@ -1230,6 +1298,37 @@ public int MenuHandler_RemoveZoneEffect(Menu menu, MenuAction action, int param1
 			CloseHandle(menu);
 		}
 	}
+}
+
+void RemoveEffectFromZone(int entity, const char[] effect)
+{
+	if (kZonesConfig == null)
+	{
+		return;
+	}
+
+	KvRewind(kZonesConfig);
+
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	StringMap values;
+	if (GetTrieValue(g_hZoneEffects[entity], effect, values))
+	{
+		delete values;
+		RemoveFromTrie(g_hZoneEffects[entity], effect);
+	}
+
+	StringMap keys;
+	GetTrieValue(g_hTrie_EffectKeys, sName, keys);
+
+	if (KvJumpToKey(kZonesConfig, sName) && KvJumpToKey(kZonesConfig, "effects", true) && KvJumpToKey(kZonesConfig, effect))
+	{
+		KvDeleteThis(kZonesConfig);
+		KvRewind(kZonesConfig);
+	}
+
+	SaveMapConfig();
 }
 
 void OpenZoneTypeMenu(int client)
@@ -1824,12 +1923,28 @@ void DeleteZone(int entity)
 
 void RegisterNewEffect(Handle plugin, const char[] name, Function function1 = INVALID_FUNCTION, Function function2 = INVALID_FUNCTION, Function function3 = INVALID_FUNCTION)
 {
-	if (plugin == null || strlen(name) == 0 || FindStringInArray(g_hArray_EffectsList, name) != -1)
+	if (plugin == null || strlen(name) == 0)
 	{
 		return;
 	}
 
 	Handle callbacks[MAX_EFFECT_CALLBACKS];
+	int index = FindStringInArray(g_hArray_EffectsList, name);
+
+	if (index != INVALID_ARRAY_INDEX)
+	{
+		GetTrieArray(g_hTrie_EffectCalls, name, callbacks, sizeof(callbacks));
+
+		for (int i = 0; i < MAX_EFFECT_CALLBACKS; i++)
+		{
+			delete callbacks[i];
+		}
+
+		ClearKeys(name);
+
+		RemoveFromTrie(g_hTrie_EffectCalls, name);
+		RemoveFromArray(g_hArray_EffectsList, index);
+	}
 
 	if (function1 != INVALID_FUNCTION)
 	{
@@ -1851,6 +1966,31 @@ void RegisterNewEffect(Handle plugin, const char[] name, Function function1 = IN
 
 	SetTrieArray(g_hTrie_EffectCalls, name, callbacks, sizeof(callbacks));
 	PushArrayString(g_hArray_EffectsList, name);
+}
+
+void RegisterNewEffectKey(const char[] name, const char[] key, const char[] defaultvalue)
+{
+	StringMap keys;
+
+	if (!GetTrieValue(g_hTrie_EffectKeys, name, keys) || keys == null)
+	{
+		keys = CreateTrie();
+	}
+
+	SetTrieString(keys, key, defaultvalue);
+	SetTrieValue(g_hTrie_EffectKeys, name, keys);
+	PrintToDrixevel("Key '%s' added to zone '%s' with the default value '%s'.", key, name, defaultvalue);
+}
+
+void ClearKeys(const char[] name)
+{
+	StringMap keys;
+	if (GetTrieValue(g_hTrie_EffectKeys, name, keys))
+	{
+		delete keys;
+	}
+
+	RemoveFromTrie(g_hTrie_EffectKeys, name);
 }
 
 void GetMiddleOfABox(const float vec1[3], const float vec2[3], float buffer[3])
@@ -1983,6 +2123,29 @@ public int Native_Register_Effect(Handle plugin, int numParams)
 	Function function3 = GetNativeFunction(4);
 
 	RegisterNewEffect(plugin, sEffect, function1, function2, function3);
+}
+
+public int Native_Register_Effect_Key(Handle plugin, int numParams)
+{
+	int size;
+	GetNativeStringLength(1, size);
+
+	char[] sEffect = new char[size + 1];
+	GetNativeString(1, sEffect, size + 1);
+
+	size = 0;
+	GetNativeStringLength(2, size);
+
+	char[] sKey = new char[size + 1];
+	GetNativeString(2, sKey, size + 1);
+
+	size = 0;
+	GetNativeStringLength(3, size);
+
+	char[] sDefaultValue = new char[size + 1];
+	GetNativeString(3, sDefaultValue, size + 1);
+
+	RegisterNewEffectKey(sEffect, sKey, sDefaultValue);
 }
 
 public int Native_Request_QueueEffects(Handle plugin, int numParams)

@@ -1400,6 +1400,16 @@ stock bool IsArenaActive()
 	return FindEntityByClassname(-1, "tf_logic_arena") != -1;
 }
 
+stock bool CalculateTime(int value, int timer)
+{
+	return view_as<bool>(value > 0 && GetTime() - value > timer);
+}
+
+stock bool CalculateFloatTime(float value, float timer)
+{
+	return view_as<bool>(value > 0.0 && GetGameTime() - value > timer);
+}
+
 /*---------------------------------------------------------*/
 //Menu stocks by Kisslick
 /*---------------------------------------------------------*/
