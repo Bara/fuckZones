@@ -5,7 +5,7 @@
 //Defines
 
 #define PLUGIN_DESCRIPTION "A sourcemod plugin with rich features for dynamic zone development."
-#define PLUGIN_VERSION "1.0.0"
+#define PLUGIN_VERSION "1.0.2"
 
 #define MAX_RADIUS_ZONES 256
 #define MAX_ZONES 256
@@ -42,6 +42,7 @@
 
 //ConVars
 ConVar convar_Status;
+ConVar convar_PrecisionValue;
 
 //Forwards
 Handle g_Forward_QueueEffects_Post;
@@ -60,6 +61,9 @@ Handle g_hCookie_ShowZones;
 
 bool g_bIsInZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 
+ArrayList g_hArray_Colors;
+StringMap g_hTrie_ColorsData;
+
 //Engine related stuff for entities.
 int iDefaultModelIndex;
 int iDefaultHaloIndex;
@@ -68,6 +72,7 @@ char sErrorModel[] = "models/error.mdl";
 //Entities Data
 ArrayList g_hZoneEntities;
 float g_fZoneRadius[MAX_ENTITY_LIMIT];
+int g_iZoneColor[MAX_ENTITY_LIMIT][4];
 StringMap g_hZoneEffects[MAX_ENTITY_LIMIT];
 
 //Radius Management
@@ -128,13 +133,18 @@ public void OnPluginStart()
 
 	CreateConVar("sm_zonesmanager_version", PLUGIN_VERSION, PLUGIN_DESCRIPTION, FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_SPONLY | FCVAR_DONTRECORD);
 	convar_Status = CreateConVar("sm_zonesmanager_status", "1", "Status of the plugin.", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	convar_PrecisionValue = CreateConVar("sm_zonesmanager_precision_value", "1.0", "Default value to use when setting a zones precision area.", FCVAR_NOTIFY, true, 0.0);
 
 	//AutoExecConfig();
 
 	HookEventEx("teamplay_round_start", OnRoundStart);
 	HookEventEx("round_start", OnRoundStart);
 
+	RegAdminCmd("sm_zone", Command_EditZoneMenu, ADMFLAG_ROOT, "Edit a certain zone that you're standing in.");
+	RegAdminCmd("sm_editzone", Command_EditZoneMenu, ADMFLAG_ROOT, "Edit a certain zone that you're standing in.");
+	RegAdminCmd("sm_editzonemenu", Command_EditZoneMenu, ADMFLAG_ROOT, "Edit a certain zone that you're standing in.");
 	RegAdminCmd("sm_zones", Command_OpenZonesMenu, ADMFLAG_ROOT, "Display the zones manager menu.");
+	RegAdminCmd("sm_zonesmenu", Command_OpenZonesMenu, ADMFLAG_ROOT, "Display the zones manager menu.");
 	RegAdminCmd("sm_regeneratezones", Command_RegenerateZones, ADMFLAG_ROOT, "Regenerate all zones on the map.");
 	RegAdminCmd("sm_deleteallzones", Command_DeleteAllZones, ADMFLAG_ROOT, "Delete all zones on the map.");
 	RegAdminCmd("sm_reloadeffects", Command_ReloadEffects, ADMFLAG_ROOT, "Reload all effects data and their callbacks.");
@@ -144,6 +154,9 @@ public void OnPluginStart()
 	g_hTrie_EffectCalls = CreateTrie();
 	g_hTrie_EffectKeys = CreateTrie();
 	g_hArray_EffectsList = CreateArray(ByteCountToCells(MAX_EFFECT_NAME_LENGTH));
+
+	g_hArray_Colors = CreateArray(ByteCountToCells(64));
+	g_hTrie_ColorsData = CreateTrie();
 
 	g_hCookie_ShowZones = RegClientCookie("zones_manager_show_zones", "Show zones that are configured correctly to clients.", CookieAccess_Public);
 
@@ -208,6 +221,8 @@ void ReparseMapZonesConfig(bool delete_config = false)
 
 public void OnConfigsExecuted()
 {
+	ParseColorsData();
+
 	if (bLate)
 	{
 		SpawnAllZones();
@@ -344,6 +359,9 @@ void SpawnAllZones()
 
 			float fRadius = KvGetFloat(kZonesConfig, "radius");
 
+			int iColor[4] = {0, 255, 255, 255};
+			KvGetColor(kZonesConfig, "color", iColor[0], iColor[1], iColor[2], iColor[3]);
+
 			StringMap effects = CreateTrie();
 			if (KvJumpToKey(kZonesConfig, "effects") && KvGotoFirstSubKey(kZonesConfig))
 			{
@@ -379,7 +397,7 @@ void SpawnAllZones()
 				KvGoBack(kZonesConfig);
 			}
 
-			CreateZone(sName, type, vStartPosition, vEndPosition, fRadius, effects);
+			CreateZone(sName, type, vStartPosition, vEndPosition, fRadius, iColor, effects);
 		}
 		while(KvGotoNextKey(kZonesConfig));
 	}
@@ -408,6 +426,9 @@ int SpawnAZone(const char[] name)
 		KvGetVector(kZonesConfig, "end", vEndPosition);
 
 		float fRadius = KvGetFloat(kZonesConfig, "radius");
+
+		int iColor[4] = {0, 255, 255, 255};
+		KvGetColor(kZonesConfig, "color", iColor[0], iColor[1], iColor[2], iColor[3]);
 
 		StringMap effects = CreateTrie();
 		if (KvJumpToKey(kZonesConfig, "effects") && KvGotoFirstSubKey(kZonesConfig))
@@ -444,7 +465,7 @@ int SpawnAZone(const char[] name)
 			KvGoBack(kZonesConfig);
 		}
 
-		return CreateZone(name, type, vStartPosition, vEndPosition, fRadius, effects);
+		return CreateZone(name, type, vStartPosition, vEndPosition, fRadius, iColor, effects);
 	}
 
 	return INVALID_ENT_INDEX;
@@ -527,6 +548,23 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 	return Plugin_Continue;
 }
 
+public Action Command_EditZoneMenu(int client, int args)
+{
+	if (!GetConVarBool(convar_Status))
+	{
+		return Plugin_Handled;
+	}
+
+	if (client == 0)
+	{
+		CReplyToCommand(client, "You must be in-game to use this command.");
+		return Plugin_Handled;
+	}
+
+	FindZoneToEdit(client);
+	return Plugin_Handled;
+}
+
 public Action Command_OpenZonesMenu(int client, int args)
 {
 	if (!GetConVarBool(convar_Status))
@@ -578,6 +616,39 @@ public Action Command_ReloadEffects(int client, int args)
 	return Plugin_Handled;
 }
 
+void FindZoneToEdit(int client)
+{
+	int entity = GetEarliestTouchZone(client);
+
+	if (entity == INVALID_ENT_INDEX || !IsValidEntity(entity))
+	{
+		CPrintToChat(client, "Error: You are not currently standing in a zone to edit.");
+		return;
+	}
+
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	PrintToDrixevel("%i - %s", entity, sName);
+
+	OpenEditZoneMenu(client, entity);
+}
+
+int GetEarliestTouchZone(int client)
+{
+	for (int i = 0; i < GetArraySize(g_hZoneEntities); i++)
+	{
+		int zone = EntRefToEntIndex(GetArrayCell(g_hZoneEntities, i));
+
+		if (IsValidEntity(zone) && g_bIsInZone[client][zone])
+		{
+			return zone;
+		}
+	}
+
+	return INVALID_ENT_INDEX;
+}
+
 void OpenZonesMenu(int client)
 {
 	Menu menu = CreateMenu(MenuHandle_ZonesMenu);
@@ -624,7 +695,6 @@ public int MenuHandle_ZonesMenu(Menu menu, MenuAction action, int param1, int pa
 			else if (StrEqual(sInfo, "deleteall"))
 			{
 				DeleteAllZones(param1);
-				OpenZonesMenu(param1);
 			}
 		}
 
@@ -640,20 +710,61 @@ void RegenerateZones(int client = -1)
 	ClearAllZones();
 	SpawnAllZones();
 
-	if (client > -1)
+	if (IsPlayerIndex(client))
 	{
 		CReplyToCommand(client, "All zones have been regenerated on the map.");
 	}
 }
 
-void DeleteAllZones(int client = -1)
+void DeleteAllZones(int client = -1, bool confirmation = true)
 {
-	ClearAllZones();
-	ReparseMapZonesConfig(true);
-
-	if (client > -1)
+	if (!IsPlayerIndex(client))
 	{
+		ClearAllZones();
+		ReparseMapZonesConfig(true);
+		return;
+	}
+
+	if (!confirmation)
+	{
+		ClearAllZones();
+		ReparseMapZonesConfig(true);
 		CReplyToCommand(client, "All zones have been deleted from the map.");
+		return;
+	}
+
+	Menu menu = CreateMenu(MenuHandle_ConfirmDeleteAllZones);
+	SetMenuTitle(menu, "Are you sure you want to delete all zones on this map?");
+
+	AddMenuItem(menu, "", "---", ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "Yes", "Yes");
+	AddMenuItem(menu, "No", "No");
+
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+}
+
+public int MenuHandle_ConfirmDeleteAllZones(Menu menu, MenuAction action, int param1, int param2)
+{
+	switch (action)
+	{
+		case MenuAction_Select:
+		{
+			char sInfo[32];
+			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
+
+			if (StrEqual(sInfo, "No"))
+			{
+				OpenZonesMenu(param1);
+				return;
+			}
+
+			DeleteAllZones(param1, false);
+		}
+
+		case MenuAction_End:
+		{
+			CloseHandle(menu);
+		}
 	}
 }
 
@@ -802,13 +913,16 @@ void OpenZonePropertiesMenu(int client, int entity)
 
 	AddMenuItem(menu, "edit_name", "Name");
 	AddMenuItem(menu, "edit_type", "Type");
+	AddMenuItem(menu, "edit_color", "Color");
 
 	switch (GetZoneType(entity))
 	{
 		case ZONE_TYPE_BOX:
 		{
 			AddMenuItem(menu, "edit_startpoint_a", "StartPoint A");
+			AddMenuItem(menu, "edit_startpoint_a_precision", "StartPoint A Precision");
 			AddMenuItem(menu, "edit_startpoint_b", "StartPoint B");
+			AddMenuItem(menu, "edit_startpoint_b_precision", "StartPoint B Precision");
 		}
 		case ZONE_TYPE_CIRCLE:
 		{
@@ -846,6 +960,10 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			{
 				OpenEditZoneTypeMenu(param1, entity);
 			}
+			else if (StrEqual(sInfo, "edit_color"))
+			{
+				OpenEditZoneColorMenu(param1, entity);
+			}
 			else if (StrEqual(sInfo, "edit_startpoint_a"))
 			{
 				float vecLook[3];
@@ -853,8 +971,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 
 				UpdateZonesConfigKeyVector(entity, "start", vecLook);
 
-				DeleteZone(entity);
-				entity = SpawnAZone(sName);
+				entity = RemakeZoneEntity(entity);
 
 				OpenZonePropertiesMenu(param1, entity);
 
@@ -892,8 +1009,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 
 				UpdateZonesConfigKeyVector(entity, "end", vecLook);
 
-				DeleteZone(entity);
-				entity = SpawnAZone(sName);
+				entity = RemakeZoneEntity(entity);
 
 				OpenZonePropertiesMenu(param1, entity);
 
@@ -925,6 +1041,14 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 				SetEntPropVector(entity, Prop_Data, "m_vecMaxs", end);*/
 
 				//UpdateZonesConfigKeyVector(entity, "end", end);
+			}
+			else if (StrEqual(sInfo, "edit_startpoint_a_precision"))
+			{
+				OpenEditZoneStartPointAMenu(param1, entity, true);
+			}
+			else if (StrEqual(sInfo, "edit_startpoint_b_precision"))
+			{
+				OpenEditZoneStartPointAMenu(param1, entity, false);
 			}
 			else if (StrEqual(sInfo, "edit_startpoint"))
 			{
@@ -970,6 +1094,218 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 		{
 			CloseHandle(menu);
 		}
+	}
+}
+
+void OpenEditZoneStartPointAMenu(int client, int entity, bool whichpoint)
+{
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	Menu menu = CreateMenu(MenuHandle_ZoneEditStartPointMenu);
+	SetMenuTitle(menu, "Edit start point %s properties for zone '%s':", whichpoint ? "A" : "B", sName);
+
+	if (whichpoint)
+	{
+		AddMenuItem(menu, "a_add_x", "Add to X");
+		AddMenuItem(menu, "a_add_y", "Add to Y");
+		AddMenuItem(menu, "a_add_z", "Add to Z");
+		AddMenuItem(menu, "a_remove_x", "Remove to X");
+		AddMenuItem(menu, "a_remove_y", "Remove to Y");
+		AddMenuItem(menu, "a_remove_z", "Remove to Z");
+	}
+	else
+	{
+		AddMenuItem(menu, "b_add_x", "Add to X");
+		AddMenuItem(menu, "b_add_y", "Add to Y");
+		AddMenuItem(menu, "b_add_z", "Add to Z");
+		AddMenuItem(menu, "b_remove_x", "Remove to X");
+		AddMenuItem(menu, "b_remove_y", "Remove to Y");
+		AddMenuItem(menu, "b_remove_z", "Remove to Z");
+	}
+
+	PushMenuCell(menu, "entity", entity);
+	PushMenuCell(menu, "whichpoint", whichpoint);
+
+	SetMenuExitBackButton(menu, true);
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+}
+
+public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int param1, int param2)
+{
+	switch (action)
+	{
+		case MenuAction_Select:
+		{
+			char sInfo[32];
+			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
+
+			int entity = GetMenuCell(menu, "entity");
+			bool whichpoint = view_as<bool>(GetMenuCell(menu, "whichpoint"));
+
+			char sName[MAX_ZONE_NAME_LENGTH];
+			GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+			float precision = GetConVarFloat(convar_PrecisionValue);
+
+			if (StrEqual(sInfo, "a_add_x"))
+			{
+				float vecPointA[3];
+				GetZonesVectorData(entity, "start", vecPointA);
+
+				vecPointA[0] += precision;
+
+				UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+			}
+			else if (StrEqual(sInfo, "a_add_y"))
+			{
+				float vecPointA[3];
+				GetZonesVectorData(entity, "start", vecPointA);
+
+				vecPointA[1] += precision;
+
+				UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+			}
+			else if (StrEqual(sInfo, "a_add_z"))
+			{
+				float vecPointA[3];
+				GetZonesVectorData(entity, "start", vecPointA);
+
+				vecPointA[2] += precision;
+
+				UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+			}
+			else if (StrEqual(sInfo, "a_remove_x"))
+			{
+				float vecPointA[3];
+				GetZonesVectorData(entity, "start", vecPointA);
+
+				vecPointA[0] -= precision;
+
+				UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+			}
+			else if (StrEqual(sInfo, "a_remove_y"))
+			{
+				float vecPointA[3];
+				GetZonesVectorData(entity, "start", vecPointA);
+
+				vecPointA[1] -= precision;
+
+				UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+			}
+			else if (StrEqual(sInfo, "a_remove_z"))
+			{
+				float vecPointA[3];
+				GetZonesVectorData(entity, "start", vecPointA);
+
+				vecPointA[2] -= precision;
+
+				UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+			}
+			else if (StrEqual(sInfo, "b_add_x"))
+			{
+				float vecPointB[3];
+				GetZonesVectorData(entity, "end", vecPointB);
+
+				vecPointB[0] += precision;
+
+				UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+			}
+			else if (StrEqual(sInfo, "b_add_y"))
+			{
+				float vecPointB[3];
+				GetZonesVectorData(entity, "end", vecPointB);
+
+				vecPointB[1] += precision;
+
+				UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+			}
+			else if (StrEqual(sInfo, "b_add_z"))
+			{
+				float vecPointB[3];
+				GetZonesVectorData(entity, "end", vecPointB);
+
+				vecPointB[2] += precision;
+
+				UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+			}
+			else if (StrEqual(sInfo, "b_remove_x"))
+			{
+				float vecPointB[3];
+				GetZonesVectorData(entity, "end", vecPointB);
+
+				vecPointB[0] -= precision;
+
+				UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+			}
+			else if (StrEqual(sInfo, "b_remove_y"))
+			{
+				float vecPointB[3];
+				GetZonesVectorData(entity, "end", vecPointB);
+
+				vecPointB[1] -= precision;
+
+				UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+			}
+			else if (StrEqual(sInfo, "b_remove_z"))
+			{
+				float vecPointB[3];
+				GetZonesVectorData(entity, "end", vecPointB);
+
+				vecPointB[2] -= precision;
+
+				UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+			}
+			else
+			{
+				OpenZonePropertiesMenu(param1, entity);
+			}
+
+			entity = RemakeZoneEntity(entity);
+
+			OpenEditZoneStartPointAMenu(param1, entity, whichpoint);
+		}
+
+		case MenuAction_Cancel:
+		{
+			if (param2 == MenuCancel_ExitBack)
+			{
+				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
+			}
+		}
+
+		case MenuAction_End:
+		{
+			CloseHandle(menu);
+		}
+	}
+}
+
+int RemakeZoneEntity(int entity)
+{
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	DeleteZone(entity);
+	return SpawnAZone(sName);
+}
+
+void GetZonesVectorData(int entity, const char[] name, float[3] vecdata)
+{
+	if (kZonesConfig == null)
+	{
+		return;
+	}
+
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	KvRewind(kZonesConfig);
+
+	if (KvJumpToKey(kZonesConfig, sName))
+	{
+		KvGetVector(kZonesConfig, name, vecdata);
+		KvRewind(kZonesConfig);
 	}
 }
 
@@ -1080,11 +1416,71 @@ public int MenuHandler_EditZoneTypeMenu(Menu menu, MenuAction action, int param1
 
 			UpdateZonesConfigKey(entity, "type", sType);
 
-			char sName[MAX_ZONE_NAME_LENGTH];
-			GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+			entity = RemakeZoneEntity(entity);
 
-			DeleteZone(entity);
-			entity = SpawnAZone(sName);
+			OpenZonePropertiesMenu(param1, entity);
+		}
+
+		case MenuAction_Cancel:
+		{
+			if (param2 == MenuCancel_ExitBack)
+			{
+				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
+			}
+		}
+
+		case MenuAction_End:
+		{
+			CloseHandle(menu);
+		}
+	}
+}
+
+void OpenEditZoneColorMenu(int client, int entity)
+{
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	char sAddendum[256];
+	FormatEx(sAddendum, sizeof(sAddendum), " for %s", sName);
+
+	Menu menu = CreateMenu(MenuHandler_EditZoneColorMenu);
+	SetMenuTitle(menu, "Choose a new zone color%s:", sAddendum);
+
+	for (int i = 0; i < GetArraySize(g_hArray_Colors); i++)
+	{
+		char sColor[64];
+		GetArrayString(g_hArray_Colors, i, sColor, sizeof(sColor));
+
+		int colors[4];
+		GetTrieArray(g_hTrie_ColorsData, sColor, colors, sizeof(colors));
+
+		char sVector[64];
+		FormatEx(sVector, sizeof(sVector), "%i %i %i %i", colors[0], colors[1], colors[2], colors[3]);
+
+		AddMenuItem(menu, sVector, sColor);
+	}
+
+	PushMenuCell(menu, "entity", entity);
+
+	SetMenuExitBackButton(menu, true);
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+}
+
+public int MenuHandler_EditZoneColorMenu(Menu menu, MenuAction action, int param1, int param2)
+{
+	switch (action)
+	{
+		case MenuAction_Select:
+		{
+			char sVector[64]; char sColor[64];
+			GetMenuItem(menu, param2, sVector, sizeof(sVector), _, sColor, sizeof(sColor));
+
+			int entity = GetMenuCell(menu, "entity");
+
+			UpdateZonesConfigKey(entity, "color", sVector);
+
+			entity = RemakeZoneEntity(entity);
 
 			OpenZonePropertiesMenu(param1, entity);
 		}
@@ -1143,6 +1539,7 @@ public int MenuHandle_ManageConfirmDeleteZoneMenu(Menu menu, MenuAction action, 
 
 			DeleteZone(entity, true);
 			CPrintToChat(param1, "You have deleted the zone '%s'.", sName);
+
 			OpenManageZonesMenu(param1);
 		}
 
@@ -1386,8 +1783,6 @@ public int MenuHandler_EditZoneEffect(Menu menu, MenuAction action, int param1, 
 
 			int entity = GetMenuCell(menu, "entity");
 
-
-
 			OpenEditZoneMenu(param1, entity);
 		}
 
@@ -1419,29 +1814,34 @@ void AddEffectToZone(int entity, const char[] effect)
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	StringMap keys;
-	GetTrieValue(g_hTrie_EffectKeys, effect, keys);
-
-	if (KvJumpToKey(kZonesConfig, sName) && KvJumpToKey(kZonesConfig, "effects", true) && KvJumpToKey(kZonesConfig, effect, true))
+	if (GetTrieValue(g_hTrie_EffectKeys, effect, keys) && keys != null)
 	{
-		Handle map = CreateTrieSnapshot(keys);
-
-		for (int i = 0; i < TrieSnapshotLength(map); i++)
+		if (KvJumpToKey(kZonesConfig, sName) && KvJumpToKey(kZonesConfig, "effects", true) && KvJumpToKey(kZonesConfig, effect, true))
 		{
-			char sKey[MAX_KEY_NAME_LENGTH];
-			GetTrieSnapshotKey(map, i, sKey, sizeof(sKey));
+			Handle map = CreateTrieSnapshot(keys);
 
-			char sValue[MAX_KEY_VALUE_LENGTH];
-			GetTrieString(keys, sKey, sValue, sizeof(sValue));
+			for (int i = 0; i < TrieSnapshotLength(map); i++)
+			{
+				char sKey[MAX_KEY_NAME_LENGTH];
+				GetTrieSnapshotKey(map, i, sKey, sizeof(sKey));
 
-			KvSetString(kZonesConfig, sKey, sValue);
+				char sValue[MAX_KEY_VALUE_LENGTH];
+				GetTrieString(keys, sKey, sValue, sizeof(sValue));
+
+				KvSetString(kZonesConfig, sKey, sValue);
+			}
+
+			delete map;
+
+			KvRewind(kZonesConfig);
 		}
-
-		delete map;
-
-		KvRewind(kZonesConfig);
+	}
+	else
+	{
+		keys = CreateTrie();
 	}
 
-	SetTrieValue(g_hZoneEffects[entity], effect, CloneHandle(keys));
+	SetTrieValue(g_hZoneEffects[entity], effect, keys);
 
 	SaveMapConfig();
 }
@@ -1665,7 +2065,7 @@ void CreateNewZone(int client)
 
 	SaveMapConfig();
 
-	CreateZone(sCreateZone_Name[client], iCreateZone_Type[client], fCreateZone_Start[client], fCreateZone_End[client], fCreateZone_Radius[client]);
+	CreateZone(sCreateZone_Name[client], iCreateZone_Type[client], fCreateZone_Start[client], fCreateZone_End[client], fCreateZone_Radius[client], {255, 255, 0, 255});
 	CPrintToChat(client, "Zone '%s' has been created successfully.", sCreateZone_Name[client]);
 	bIsViewingZone[client] = false;
 }
@@ -1778,11 +2178,11 @@ public Action Timer_DisplayZones(Handle timer)
 						case ZONE_TYPE_BOX:
 						{
 							GetAbsBoundingBox(zone, vecStart, vecEnd);
-							Effect_DrawBeamBoxToClient(i, vecStart, vecEnd, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, {255, 255, 0, 255}, 0);
+							Effect_DrawBeamBoxToClient(i, vecStart, vecEnd, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, g_iZoneColor[zone], 0);
 						}
 						case ZONE_TYPE_CIRCLE:
 						{
-							TE_SetupBeamRingPoint(vecOrigin, g_fZoneRadius[zone], g_fZoneRadius[zone] + 4.0, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, {255, 255, 0, 255}, 0, 0);
+							TE_SetupBeamRingPoint(vecOrigin, g_fZoneRadius[zone], g_fZoneRadius[zone] + 4.0, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, g_iZoneColor[zone], 0, 0);
 							TE_SendToClient(i, 0.0);
 						}
 					}
@@ -1809,7 +2209,7 @@ void GetAbsBoundingBox(int ent, float mins[3], float maxs[3])
     maxs[2] += origin[2];
 }
 
-int CreateZone(const char[] sName, int type, float start[3], float end[3], float radius, StringMap effects = null)
+int CreateZone(const char[] sName, int type, float start[3], float end[3], float radius, int color[4], StringMap effects = null)
 {
 	char sType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneTypeName(type, sType, sizeof(sType));
@@ -1892,6 +2292,8 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 
 		delete g_hZoneEffects[entity];
 		g_hZoneEffects[entity] = effects != null ? view_as<StringMap>(CloneHandle(effects)) : CreateTrie();
+
+		g_iZoneColor[entity] = color;
 	}
 
 	LogDebug("zonesmanager", "Zone %s has been spawned %s as a %s zone with the entity index %i.", sName, IsValidEntity(entity) ? "successfully" : "not successfully", sType, entity);
@@ -2012,6 +2414,11 @@ public Action Zones_StartTouch(int entity, int other)
 {
 	int client = other;
 
+	if (!IsPlayerIndex(client))
+	{
+		return Plugin_Continue;
+	}
+
 	g_bIsInZone[client][entity] = true;
 
 	char sName[MAX_ZONE_NAME_LENGTH];
@@ -2033,6 +2440,11 @@ public Action Zones_Touch(int entity, int other)
 {
 	int client = other;
 
+	if (!IsPlayerIndex(client))
+	{
+		return Plugin_Continue;
+	}
+
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
@@ -2051,6 +2463,11 @@ public Action Zones_Touch(int entity, int other)
 public Action Zones_EndTouch(int entity, int other)
 {
 	int client = other;
+
+	if (!IsPlayerIndex(client))
+	{
+		return Plugin_Continue;
+	}
 
 	g_bIsInZone[client][entity] = false;
 
@@ -2073,6 +2490,11 @@ public void Zones_StartTouchPost(int entity, int other)
 {
 	int client = other;
 
+	if (!IsPlayerIndex(client))
+	{
+		return;
+	}
+
 	CallEffectCallback(entity, client, EFFECT_CALLBACK_ONENTERZONE);
 
 	char sName[MAX_ZONE_NAME_LENGTH];
@@ -2090,6 +2512,11 @@ public void Zones_TouchPost(int entity, int other)
 {
 	int client = other;
 
+	if (!IsPlayerIndex(client))
+	{
+		return;
+	}
+
 	CallEffectCallback(entity, client, EFFECT_CALLBACK_ONACTIVEZONE);
 
 	char sName[MAX_ZONE_NAME_LENGTH];
@@ -2106,6 +2533,11 @@ public void Zones_TouchPost(int entity, int other)
 public void Zones_EndTouchPost(int entity, int other)
 {
 	int client = other;
+
+	if (!IsPlayerIndex(client))
+	{
+		return;
+	}
 
 	CallEffectCallback(entity, client, EFFECT_CALLBACK_ONLEAVEZONE);
 
@@ -2357,6 +2789,81 @@ stock void Effect_DrawBeamBox(int[] clients,int numClients, const float bottomCo
 		TE_SetupBeamPoints(corners[i], corners[i+4], modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
 		TE_Send(clients, numClients);
 	}
+}
+
+void ParseColorsData(const char[] config = "configs/zone_colors.cfg")
+{
+	ClearArray(g_hArray_Colors);
+	ClearTrie(g_hTrie_ColorsData);
+
+	char sPath[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, sPath, sizeof(sPath), config);
+
+	KeyValues kv = CreateKeyValues("zone_colors");
+
+	int color[4];
+	char sBuffer[64];
+
+	if (FileExists(sPath))
+	{
+		if (FileToKeyValues(kv, sPath) && KvGotoFirstSubKey(kv, false))
+		{
+			do
+			{
+				char sColor[64];
+				KvGetSectionName(kv, sColor, sizeof(sColor));
+
+				KvGetColor(kv, NULL_STRING, color[0], color[1], color[2], color[3]);
+
+				PushArrayString(g_hArray_Colors, sColor);
+				SetTrieArray(g_hTrie_ColorsData, sColor, color, sizeof(color));
+			}
+			while (KvGotoNextKey(kv, false));
+		}
+	}
+	else
+	{
+		PushArrayString(g_hArray_Colors, "Clear");
+		color = {255, 255, 255, 0};
+		SetTrieArray(g_hTrie_ColorsData, "Clear", color, sizeof(color));
+		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
+		KvSetString(kv, "Clear", sBuffer);
+
+		PushArrayString(g_hArray_Colors, "Red");
+		color = {255, 0, 0, 255};
+		SetTrieArray(g_hTrie_ColorsData, "Red", color, sizeof(color));
+		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
+		KvSetString(kv, "Red", sBuffer);
+
+		PushArrayString(g_hArray_Colors, "Green");
+		color = {0, 255, 0, 255};
+		SetTrieArray(g_hTrie_ColorsData, "Green", color, sizeof(color));
+		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
+		KvSetString(kv, "Green", sBuffer);
+
+		PushArrayString(g_hArray_Colors, "Blue");
+		color = {0, 0, 255, 255};
+		SetTrieArray(g_hTrie_ColorsData, "Blue", color, sizeof(color));
+		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
+		KvSetString(kv, "Blue", sBuffer);
+
+		PushArrayString(g_hArray_Colors, "White");
+		color = {255, 255, 255, 255};
+		SetTrieArray(g_hTrie_ColorsData, "White", color, sizeof(color));
+		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
+		KvSetString(kv, "White", sBuffer);
+
+		PushArrayString(g_hArray_Colors, "Black");
+		color = {0, 0, 0, 255};
+		SetTrieArray(g_hTrie_ColorsData, "Black", color, sizeof(color));
+		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
+		KvSetString(kv, "Black", sBuffer);
+
+		KeyValuesToFile(kv, sPath);
+	}
+
+	delete kv;
+	LogMessage("Successfully parsed %i colors for zones.", GetArraySize(g_hArray_Colors));
 }
 
 //Natives

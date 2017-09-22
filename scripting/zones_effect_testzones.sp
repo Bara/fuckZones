@@ -19,7 +19,7 @@ public Plugin myinfo =
 	name = "Zones Manager - Effect - Test Zones",
 	author = "Keith Warren (Drixevel)",
 	description = "A simple plugin to test the zones manager plugin and its API interface.",
-	version = "1.0.0",
+	version = "1.0.1",
 	url = "http://www.drixevel.com/"
 };
 
