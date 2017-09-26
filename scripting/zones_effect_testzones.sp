@@ -48,54 +48,46 @@ public void OnConfigsExecuted()
 public void ZonesManager_OnQueueEffects_Post()
 {
 	ZonesManager_Register_Effect("test zones", Effect_OnEnterZone, Effect_OnActiveZone, Effect_OnLeaveZone);
+	ZonesManager_Register_Effect_Key("test zones", "status", "1");
 }
 
 public void Effect_OnEnterZone(int client, int entity, StringMap values)
 {
-	char value1[12];
-	char value2[12];
-	char value3[12];
+	char sValue[32];
+	GetTrieString(values, "status", sValue, sizeof(sValue));
 
-	if (values != null)
+	if (StrEqual(sValue, "0"))
 	{
-		GetTrieString(values, "status", value1, sizeof(value1));
-		GetTrieString(values, "test1", value2, sizeof(value2));
-		GetTrieString(values, "test2", value3, sizeof(value3));
+		return;
 	}
 
-	PrintToChat(client, "You have entered this zone. [Value1: %s - Value 2: %s - Value 3: %s]", value1, value2, value3);
+	PrintToChat(client, "You have entered this zone.");
 }
 
 public void Effect_OnActiveZone(int client, int entity, StringMap values)
 {
-	char value1[12];
-	char value2[12];
-	char value3[12];
+	char sValue[32];
+	GetTrieString(values, "status", sValue, sizeof(sValue));
 
-	if (values != null)
+	if (StrEqual(sValue, "0"))
 	{
-		GetTrieString(values, "status", value1, sizeof(value1));
-		GetTrieString(values, "test1", value2, sizeof(value2));
-		GetTrieString(values, "test2", value3, sizeof(value3));
+		return;
 	}
 
-	PrintToChat(client, "You are sitting in this zone. [Value1: %s - Value 2: %s - Value 3: %s]", value1, value2, value3);
+	PrintToChat(client, "You are sitting in this zone.");
 }
 
 public void Effect_OnLeaveZone(int client, int entity, StringMap values)
 {
-	char value1[12];
-	char value2[12];
-	char value3[12];
+	char sValue[32];
+	GetTrieString(values, "status", sValue, sizeof(sValue));
 
-	if (values != null)
+	if (StrEqual(sValue, "0"))
 	{
-		GetTrieString(values, "status", value1, sizeof(value1));
-		GetTrieString(values, "test1", value2, sizeof(value2));
-		GetTrieString(values, "test2", value3, sizeof(value3));
+		return;
 	}
 
-	PrintToChat(client, "You have left this zone. [Value1: %s - Value 2: %s - Value 3: %s]", value1, value2, value3);
+	PrintToChat(client, "You have left this zone.");
 }
 
 public void OnClientDisconnect(int client)

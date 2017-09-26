@@ -26,9 +26,10 @@
 #define DEFAULT_MODELINDEX "sprites/laserbeam.vmt"
 #define DEFAULT_HALOINDEX "materials/sprites/halo.vmt"
 
-#define ZONE_TYPES 2
+#define ZONE_TYPES 3
 #define ZONE_TYPE_BOX 0
 #define ZONE_TYPE_CIRCLE 1
+#define ZONE_TYPE_POLY 2
 
 //Sourcemod Includes
 #include <sourcemod>
@@ -74,10 +75,15 @@ ArrayList g_hZoneEntities;
 float g_fZoneRadius[MAX_ENTITY_LIMIT];
 int g_iZoneColor[MAX_ENTITY_LIMIT][4];
 StringMap g_hZoneEffects[MAX_ENTITY_LIMIT];
+ArrayList g_hZonePointsData[MAX_ENTITY_LIMIT];
+float g_fZonePointsHeight[MAX_ENTITY_LIMIT];
+float g_fZonePointsDistance[MAX_ENTITY_LIMIT];
+float g_fZonePointsMin[MAX_ENTITY_LIMIT][3];
+float g_fZonePointsMax[MAX_ENTITY_LIMIT][3];
 
-//Radius Management
-bool bInsideRadius[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
-bool bInsideRadius_Post[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
+//Not Box Type Zones Management
+bool g_bIsInsideZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
+bool g_bIsInsideZone_Post[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 
 //Effects Data
 StringMap g_hTrie_EffectCalls;
@@ -90,6 +96,8 @@ int iCreateZone_Type[MAXPLAYERS + 1];
 float fCreateZone_Start[MAXPLAYERS + 1][3];
 float fCreateZone_End[MAXPLAYERS + 1][3];
 float fCreateZone_Radius[MAXPLAYERS + 1];
+ArrayList hCreateZone_PointsData[MAXPLAYERS + 1];
+float fCreateZone_PointsHeight[MAXPLAYERS + 1];
 
 bool bIsViewingZone[MAXPLAYERS + 1];
 bool bSettingName[MAXPLAYERS + 1];
@@ -113,6 +121,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("ZonesManager_Register_Effect_Key", Native_Register_Effect_Key);
 	CreateNative("ZonesManager_Request_QueueEffects", Native_Request_QueueEffects);
 	CreateNative("ZonesManager_IsClientInZone", Native_IsClientInZone);
+	CreateNative("ZonesManager_TeleportClientToZone", Native_TeleportClientToZone);
 
 	g_Forward_QueueEffects_Post = CreateGlobalForward("ZonesManager_OnQueueEffects_Post", ET_Ignore);
 	g_Forward_StartTouchZone = CreateGlobalForward("ZonesManager_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
@@ -133,7 +142,7 @@ public void OnPluginStart()
 
 	CreateConVar("sm_zonesmanager_version", PLUGIN_VERSION, PLUGIN_DESCRIPTION, FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_SPONLY | FCVAR_DONTRECORD);
 	convar_Status = CreateConVar("sm_zonesmanager_status", "1", "Status of the plugin.", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-	convar_PrecisionValue = CreateConVar("sm_zonesmanager_precision_value", "1.0", "Default value to use when setting a zones precision area.", FCVAR_NOTIFY, true, 0.0);
+	convar_PrecisionValue = CreateConVar("sm_zonesmanager_precision_value", "10.0", "Default value to use when setting a zones precision area.", FCVAR_NOTIFY, true, 0.0);
 
 	//AutoExecConfig();
 
@@ -145,6 +154,7 @@ public void OnPluginStart()
 	RegAdminCmd("sm_editzonemenu", Command_EditZoneMenu, ADMFLAG_ROOT, "Edit a certain zone that you're standing in.");
 	RegAdminCmd("sm_zones", Command_OpenZonesMenu, ADMFLAG_ROOT, "Display the zones manager menu.");
 	RegAdminCmd("sm_zonesmenu", Command_OpenZonesMenu, ADMFLAG_ROOT, "Display the zones manager menu.");
+	RegAdminCmd("sm_teleporttozone", Command_TeleportToZone, ADMFLAG_ROOT, "Teleport to a specific zone by name or by menu.");
 	RegAdminCmd("sm_regeneratezones", Command_RegenerateZones, ADMFLAG_ROOT, "Regenerate all zones on the map.");
 	RegAdminCmd("sm_deleteallzones", Command_DeleteAllZones, ADMFLAG_ROOT, "Delete all zones on the map.");
 	RegAdminCmd("sm_reloadeffects", Command_ReloadEffects, ADMFLAG_ROOT, "Reload all effects data and their callbacks.");
@@ -362,6 +372,30 @@ void SpawnAllZones()
 			int iColor[4] = {0, 255, 255, 255};
 			KvGetColor(kZonesConfig, "color", iColor[0], iColor[1], iColor[2], iColor[3]);
 
+			float points_height = KvGetFloat(kZonesConfig, "points_height", 256.0);
+
+			ArrayList points = CreateArray(3);
+			if (KvJumpToKey(kZonesConfig, "points") && KvGotoFirstSubKey(kZonesConfig, false))
+			{
+				do
+				{
+					char sPointID[12];
+					KvGetSectionName(kZonesConfig, sPointID, sizeof(sPointID));
+					int point_id = StringToInt(sPointID);
+
+					float coordinates[3];
+					KvGetVector(kZonesConfig, NULL_STRING, coordinates);
+
+					ResizeArray(points, point_id + 1);
+					SetArrayCell(points, point_id, coordinates[0], 0);
+					SetArrayCell(points, point_id, coordinates[1], 1);
+					SetArrayCell(points, point_id, coordinates[2], 2);
+				}
+				while (KvGotoNextKey(kZonesConfig, false));
+
+				KvGoBack(kZonesConfig);
+			}
+
 			StringMap effects = CreateTrie();
 			if (KvJumpToKey(kZonesConfig, "effects") && KvGotoFirstSubKey(kZonesConfig))
 			{
@@ -397,7 +431,7 @@ void SpawnAllZones()
 				KvGoBack(kZonesConfig);
 			}
 
-			CreateZone(sName, type, vStartPosition, vEndPosition, fRadius, iColor, effects);
+			CreateZone(sName, type, vStartPosition, vEndPosition, fRadius, iColor, points, points_height, effects);
 		}
 		while(KvGotoNextKey(kZonesConfig));
 	}
@@ -429,6 +463,34 @@ int SpawnAZone(const char[] name)
 
 		int iColor[4] = {0, 255, 255, 255};
 		KvGetColor(kZonesConfig, "color", iColor[0], iColor[1], iColor[2], iColor[3]);
+
+		float points_height = KvGetFloat(kZonesConfig, "points_height", 256.0);
+
+		ArrayList points = CreateArray(3);
+		if (KvJumpToKey(kZonesConfig, "points") && KvGotoFirstSubKey(kZonesConfig))
+		{
+			do
+			{
+				char sPointID[12];
+				KvGetSectionName(kZonesConfig, sPointID, sizeof(sPointID));
+				int point_id = StringToInt(sPointID);
+
+				float coordinates[3];
+				KvGetVector(kZonesConfig, NULL_STRING, coordinates);
+
+				if (GetArraySize(points) < point_id + 1)
+				{
+					ResizeArray(points, point_id);
+				}
+
+				SetArrayCell(points, point_id, coordinates[0], 0);
+				SetArrayCell(points, point_id, coordinates[1], 1);
+				SetArrayCell(points, point_id, coordinates[2], 2);
+			}
+			while (KvGotoNextKey(kZonesConfig));
+
+			KvGoBack(kZonesConfig);
+		}
 
 		StringMap effects = CreateTrie();
 		if (KvJumpToKey(kZonesConfig, "effects") && KvGotoFirstSubKey(kZonesConfig))
@@ -465,7 +527,7 @@ int SpawnAZone(const char[] name)
 			KvGoBack(kZonesConfig);
 		}
 
-		return CreateZone(name, type, vStartPosition, vEndPosition, fRadius, iColor, effects);
+		return CreateZone(name, type, vStartPosition, vEndPosition, fRadius, iColor, points, points_height, effects);
 	}
 
 	return INVALID_ENT_INDEX;
@@ -520,25 +582,89 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 
 			if (IsValidEntity(zone))
 			{
-				GetEntPropVector(zone, Prop_Data, "m_vecOrigin", vecOrigin);
-				float distance = GetVectorDistance(vecOrigin, vecPosition);
-
-				if (distance <= (g_fZoneRadius[zone] / 2.0))
+				switch (GetZoneType(zone))
 				{
-					Action action = IsNearRadiusZone(client, zone);
-
-					if (action <= Plugin_Changed)
+					case ZONE_TYPE_CIRCLE:
 					{
-						IsNearRadiusZone_Post(client, zone);
+						GetEntPropVector(zone, Prop_Data, "m_vecOrigin", vecOrigin);
+						float distance = GetVectorDistance(vecOrigin, vecPosition);
+
+						if (distance <= (g_fZoneRadius[zone] / 2.0))
+						{
+							Action action = IsNearExternalZone(client, zone, ZONE_TYPE_CIRCLE);
+
+							if (action <= Plugin_Changed)
+							{
+								IsNearExternalZone_Post(client, zone, ZONE_TYPE_CIRCLE);
+							}
+						}
+						else
+						{
+							Action action = IsNotNearExternalZone(client, zone, ZONE_TYPE_CIRCLE);
+
+							if (action <= Plugin_Changed)
+							{
+								IsNotNearExternalZone_Post(client, zone, ZONE_TYPE_CIRCLE);
+							}
+						}
 					}
-				}
-				else
-				{
-					Action action = IsNotNearRadiusZone(client, zone);
 
-					if (action <= Plugin_Changed)
+					case ZONE_TYPE_POLY:
 					{
-						IsNotNearRadiusZone_Post(client, zone);
+						float origin[3];
+						origin[0] = vecPosition[0];
+						origin[1] = vecPosition[1];
+						origin[2] = vecPosition[2];
+
+						origin[2] += 42.5;
+
+						static float offset = 16.5;
+						float clientpoints[4][3];
+
+						clientpoints[0] = origin;
+						clientpoints[0][0] -= offset;
+						clientpoints[0][1] -= offset;
+
+						clientpoints[1] = origin;
+						clientpoints[1][0] += offset;
+						clientpoints[1][1] -= offset;
+
+						clientpoints[2] = origin;
+						clientpoints[2][0] -= offset;
+						clientpoints[2][1] += offset;
+
+						clientpoints[3] = origin;
+						clientpoints[3][0] += offset;
+						clientpoints[3][1] += offset;
+
+						bool IsInZone;
+						for (int x = 0; x < 4; x++)
+						{
+							if (IsPointInZone(clientpoints[i], zone))
+							{
+								IsInZone = true;
+								break;
+							}
+						}
+
+						if (IsInZone)
+						{
+							Action action = IsNearExternalZone(client, zone, ZONE_TYPE_POLY);
+
+							if (action <= Plugin_Changed)
+							{
+								IsNearExternalZone_Post(client, zone, ZONE_TYPE_POLY);
+							}
+						}
+						else
+						{
+							Action action = IsNotNearExternalZone(client, zone, ZONE_TYPE_POLY);
+
+							if (action <= Plugin_Changed)
+							{
+								IsNotNearExternalZone_Post(client, zone, ZONE_TYPE_POLY);
+							}
+						}
 					}
 				}
 			}
@@ -579,6 +705,56 @@ public Action Command_OpenZonesMenu(int client, int args)
 	}
 
 	OpenZonesMenu(client);
+	return Plugin_Handled;
+}
+
+public Action Command_TeleportToZone(int client, int args)
+{
+	if (!GetConVarBool(convar_Status))
+	{
+		return Plugin_Handled;
+	}
+
+	char sArg1[65];
+	GetCmdArg(1, sArg1, sizeof(sArg1));
+
+	char sArg2[65];
+	GetCmdArg(2, sArg2, sizeof(sArg2));
+
+	switch (args)
+	{
+		case 0:
+		{
+			OpenTeleportToZoneMenu(client);
+			return Plugin_Handled;
+		}
+		case 1:
+		{
+			char sCommand[64];
+			GetCmdArg(0, sCommand, sizeof(sCommand));
+
+			ReplyToCommand(client, "[SM] Usage: %s <#userid|name> <zone>", sCommand);
+			return Plugin_Handled;
+		}
+	}
+
+	char target_name[MAX_TARGET_LENGTH];
+	int target_list[MAXPLAYERS];
+	bool tn_is_ml;
+
+	int target_count = target_count = ProcessTargetString(sArg1, client, target_list, MAXPLAYERS, COMMAND_FILTER_ALIVE, target_name, sizeof(target_name), tn_is_ml);
+
+	if (target_count <= 0)
+	{
+		ReplyToTargetError(client, target_count);
+		return Plugin_Handled;
+	}
+
+	for (int i = 0; i < target_count; i++)
+	{
+		TeleportToZone(client, sArg2);
+	}
+
 	return Plugin_Handled;
 }
 
@@ -628,8 +804,6 @@ void FindZoneToEdit(int client)
 
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
-
-	PrintToDrixevel("%i - %s", entity, sName);
 
 	OpenEditZoneMenu(client, entity);
 }
@@ -696,6 +870,55 @@ public int MenuHandle_ZonesMenu(Menu menu, MenuAction action, int param1, int pa
 			{
 				DeleteAllZones(param1);
 			}
+		}
+
+		case MenuAction_End:
+		{
+			CloseHandle(menu);
+		}
+	}
+}
+
+void OpenTeleportToZoneMenu(int client)
+{
+	Menu menu = CreateMenu(MenuHandle_TeleportToZoneMenu);
+	SetMenuTitle(menu, "Teleport to which zone:");
+
+	for (int i = 0; i < GetArraySize(g_hZoneEntities); i++)
+	{
+		int zone = EntRefToEntIndex(GetArrayCell(g_hZoneEntities, i));
+
+		if (IsValidEntity(zone))
+		{
+			char sEntity[12];
+			IntToString(zone, sEntity, sizeof(sEntity));
+
+			char sName[MAX_ZONE_NAME_LENGTH];
+			GetEntPropString(zone, Prop_Data, "m_iName", sName, sizeof(sName));
+
+			AddMenuItem(menu, sEntity, sName);
+		}
+	}
+
+	if (GetMenuItemCount(menu) == 0)
+	{
+		AddMenuItem(menu, "", "[No Zones]", ITEMDRAW_DISABLED);
+	}
+
+	SetMenuExitBackButton(menu, true);
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+}
+
+public int MenuHandle_TeleportToZoneMenu(Menu menu, MenuAction action, int param1, int param2)
+{
+	switch (action)
+	{
+		case MenuAction_Select:
+		{
+			char sEntity[64]; char sName[MAX_ZONE_NAME_LENGTH];
+			GetMenuItem(menu, param2, sEntity, sizeof(sEntity), _, sName, sizeof(sName));
+
+			TeleportToZone(param1, sName);
 		}
 
 		case MenuAction_End:
@@ -908,8 +1131,11 @@ void OpenZonePropertiesMenu(int client, int entity)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
+	char sRadiusAmount[64];
+	FormatEx(sRadiusAmount, sizeof(sRadiusAmount), "\nRadius is currently: %.2f", g_fZoneRadius[entity]);
+
 	Menu menu = CreateMenu(MenuHandle_ZonePropertiesMenu);
-	SetMenuTitle(menu, "Edit properties for zone '%s':", sName);
+	SetMenuTitle(menu, "Edit properties for zone '%s':%s", sName, GetZoneType(entity) == ZONE_TYPE_CIRCLE ? sRadiusAmount : "");
 
 	AddMenuItem(menu, "edit_name", "Name");
 	AddMenuItem(menu, "edit_type", "Type");
@@ -924,10 +1150,19 @@ void OpenZonePropertiesMenu(int client, int entity)
 			AddMenuItem(menu, "edit_startpoint_b", "StartPoint B");
 			AddMenuItem(menu, "edit_startpoint_b_precision", "StartPoint B Precision");
 		}
+
 		case ZONE_TYPE_CIRCLE:
 		{
 			AddMenuItem(menu, "edit_startpoint", "StartPoint");
-			AddMenuItemFormat(menu, "edit_radius", ITEMDRAW_DEFAULT, "Edit Radius: %.2f", g_fZoneRadius[entity]);
+			AddMenuItem(menu, "edit_add_radius", "Add to Radius");
+			AddMenuItem(menu, "edit_remove_radius", "Remove from Radius");
+		}
+
+		case ZONE_TYPE_POLY:
+		{
+			AddMenuItem(menu, "edit_add_point", "Add a Point");
+			AddMenuItem(menu, "edit_remove_point", "Remove last Point");
+			AddMenuItem(menu, "edit_clear_points", "Clear all Points");
 		}
 	}
 
@@ -982,7 +1217,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 
 				float end[3];
 				//GetEntPropVector(entity, Prop_Data, "m_vecMaxs", end);
-				GetZoneVector(entity, "end", end);
+				GetZonesVectorData(entity, "end", end);
 
 				float fMiddle[3];
 				GetMiddleOfABox(start, end, fMiddle);
@@ -1017,7 +1252,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 
 				/*float start[3];
 				//GetEntPropVector(entity, Prop_Data, "m_vecMins", start);
-				GetZoneVector(entity, "start", start);
+				GetZonesVectorData(entity, "start", start);
 
 				float end[3];
 				GetClientLookPoint(param1, end, true);
@@ -1060,19 +1295,62 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 				UpdateZonesConfigKeyVector(entity, "start", start);
 				OpenZonePropertiesMenu(param1, entity);
 			}
-			else if (StrEqual(sInfo, "edit_radius"))
+			else if (StrEqual(sInfo, "edit_add_radius"))
 			{
 				g_fZoneRadius[entity] += 5.0;
-
-				if (g_fZoneRadius[entity] > 430.0)
-				{
-					g_fZoneRadius[entity] = 0.0;
-				}
+				g_fZoneRadius[entity] = ClampCell(g_fZoneRadius[entity], 0.0, 430.0);
 
 				char sValue[64];
 				FloatToString(g_fZoneRadius[entity], sValue, sizeof(sValue));
-
 				UpdateZonesConfigKey(entity, "radius", sValue);
+
+				OpenZonePropertiesMenu(param1, entity);
+			}
+			else if (StrEqual(sInfo, "edit_remove_radius"))
+			{
+				g_fZoneRadius[entity] -= 5.0;
+				g_fZoneRadius[entity] = ClampCell(g_fZoneRadius[entity], 0.0, 430.0);
+
+				char sValue[64];
+				FloatToString(g_fZoneRadius[entity], sValue, sizeof(sValue));
+				UpdateZonesConfigKey(entity, "radius", sValue);
+
+				OpenZonePropertiesMenu(param1, entity);
+			}
+			else if (StrEqual(sInfo, "edit_add_point"))
+			{
+				float vLookPoint[3];
+				GetClientLookPoint(param1, vLookPoint);
+
+				int size = GetArraySize(g_hZonePointsData[entity]);
+				int actual = size + 1;
+
+				ResizeArray(g_hZonePointsData[entity], actual);
+				SetArrayCell(g_hZonePointsData[entity], size, vLookPoint[0], 0);
+				SetArrayCell(g_hZonePointsData[entity], size, vLookPoint[1], 1);
+				SetArrayCell(g_hZonePointsData[entity], size, vLookPoint[2], 2);
+
+				SaveZonePointsData(entity);
+
+				OpenZonePropertiesMenu(param1, entity);
+			}
+			else if (StrEqual(sInfo, "edit_remove_point"))
+			{
+				int size = GetArraySize(g_hZonePointsData[entity]);
+				int actual = size - 1;
+
+				if (size > 0)
+				{
+					ResizeArray(g_hZonePointsData[entity], actual);
+					SaveZonePointsData(entity);
+				}
+
+				OpenZonePropertiesMenu(param1, entity);
+			}
+			else if (StrEqual(sInfo, "edit_clear_points"))
+			{
+				ClearArray(g_hZonePointsData[entity]);
+				SaveZonePointsData(entity);
 
 				OpenZonePropertiesMenu(param1, entity);
 			}
@@ -1374,6 +1652,42 @@ void UpdateZonesConfigKeyVector(int entity, const char[] key, float[3] value)
 	SaveMapConfig();
 }
 
+void SaveZonePointsData(int entity)
+{
+	if (kZonesConfig == null)
+	{
+		return;
+	}
+
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	KvRewind(kZonesConfig);
+
+	if (KvJumpToKey(kZonesConfig, sName))
+	{
+		KvDeleteKey(kZonesConfig, "points");
+
+		if (KvJumpToKey(kZonesConfig, "points", true))
+		{
+			for (int i = 0; i < GetArraySize(g_hZonePointsData[entity]); i++)
+			{
+				char sID[12];
+				IntToString(i, sID, sizeof(sID));
+
+				float coordinates[3];
+				GetArrayArray(g_hZonePointsData[entity], i, coordinates, sizeof(coordinates));
+
+				KvSetVector(kZonesConfig, sID, coordinates);
+			}
+		}
+
+		KvRewind(kZonesConfig);
+	}
+
+	SaveMapConfig();
+}
+
 void OpenEditZoneTypeMenu(int client, int entity)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
@@ -1480,9 +1794,11 @@ public int MenuHandler_EditZoneColorMenu(Menu menu, MenuAction action, int param
 
 			UpdateZonesConfigKey(entity, "color", sVector);
 
-			entity = RemakeZoneEntity(entity);
+			int color[4];
+			GetTrieArray(g_hTrie_ColorsData, sColor, color, sizeof(color));
+			g_iZoneColor[entity] = color;
 
-			OpenZonePropertiesMenu(param1, entity);
+			OpenEditZoneColorMenu(param1, entity);
 		}
 
 		case MenuAction_Cancel:
@@ -1565,6 +1881,15 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 		ResetCreateZoneVariables(client);
 	}
 
+	if (iCreateZone_Type[client] == ZONE_TYPE_POLY && hCreateZone_PointsData[client] == null)
+	{
+		hCreateZone_PointsData[client] = CreateArray(3);
+	}
+	else if (iCreateZone_Type[client] != ZONE_TYPE_POLY)
+	{
+		delete hCreateZone_PointsData[client];
+	}
+
 	char sType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneTypeName(iCreateZone_Type[client], sType, sizeof(sType));
 
@@ -1590,6 +1915,13 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 			AddMenuItem(menu, "start", "Set Starting Point", ITEMDRAW_DEFAULT);
 			AddMenuItemFormat(menu, "radius", ITEMDRAW_DEFAULT, "Set Radius: %.2f", fCreateZone_Radius[client]);
 		}
+
+		case ZONE_TYPE_POLY:
+		{
+			AddMenuItem(menu, "add", "Add Zone Point", ITEMDRAW_DEFAULT);
+			AddMenuItem(menu, "remove", "Remove Last Point", ITEMDRAW_DEFAULT);
+			AddMenuItem(menu, "clear", "Clear All Points", ITEMDRAW_DEFAULT);
+		}
 	}
 
 	AddMenuItemFormat(menu, "view", ITEMDRAW_DEFAULT, "View Zone: %s", bIsViewingZone[client] ? "On" : "Off");
@@ -1614,7 +1946,13 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			}
 			else if (StrEqual(sInfo, "type"))
 			{
-				iCreateZone_Type[param1] = iCreateZone_Type[param1] == ZONE_TYPE_BOX ? ZONE_TYPE_CIRCLE : ZONE_TYPE_BOX;
+				iCreateZone_Type[param1]++;
+
+				if (iCreateZone_Type[param1] > ZONE_TYPES)
+				{
+					iCreateZone_Type[param1] = ZONE_TYPE_BOX;
+				}
+
 				OpenZoneTypeMenu(param1);
 			}
 			else if (StrEqual(sInfo, "start"))
@@ -1643,6 +1981,39 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 				{
 					fCreateZone_Radius[param1] = 0.0;
 				}
+
+				OpenCreateZonesMenu(param1);
+			}
+			else if (StrEqual(sInfo, "add"))
+			{
+				float vLookPoint[3];
+				GetClientLookPoint(param1, vLookPoint);
+
+				int size = GetArraySize(hCreateZone_PointsData[param1]);
+				int actual = size + 1;
+
+				ResizeArray(hCreateZone_PointsData[param1], actual);
+				SetArrayCell(hCreateZone_PointsData[param1], size, vLookPoint[0], 0);
+				SetArrayCell(hCreateZone_PointsData[param1], size, vLookPoint[1], 1);
+				SetArrayCell(hCreateZone_PointsData[param1], size, vLookPoint[2], 2);
+
+				OpenCreateZonesMenu(param1);
+			}
+			else if (StrEqual(sInfo, "remove"))
+			{
+				int size = GetArraySize(hCreateZone_PointsData[param1]);
+				int actual = size - 1;
+
+				if (size > 0)
+				{
+					ResizeArray(hCreateZone_PointsData[param1], actual);
+				}
+
+				OpenCreateZonesMenu(param1);
+			}
+			else if (StrEqual(sInfo, "clear"))
+			{
+				ClearArray(hCreateZone_PointsData[param1]);
 
 				OpenCreateZonesMenu(param1);
 			}
@@ -1814,10 +2185,14 @@ void AddEffectToZone(int entity, const char[] effect)
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	StringMap keys;
-	if (GetTrieValue(g_hTrie_EffectKeys, effect, keys) && keys != null)
+	GetTrieValue(g_hTrie_EffectKeys, effect, keys);
+
+	if (KvJumpToKey(kZonesConfig, sName) && KvJumpToKey(kZonesConfig, "effects", true) && KvJumpToKey(kZonesConfig, effect, true))
 	{
-		if (KvJumpToKey(kZonesConfig, sName) && KvJumpToKey(kZonesConfig, "effects", true) && KvJumpToKey(kZonesConfig, effect, true))
+		if (keys != null)
 		{
+			SetTrieValue(g_hZoneEffects[entity], effect, CloneHandle(keys));
+
 			Handle map = CreateTrieSnapshot(keys);
 
 			for (int i = 0; i < TrieSnapshotLength(map); i++)
@@ -1832,21 +2207,15 @@ void AddEffectToZone(int entity, const char[] effect)
 			}
 
 			delete map;
-
-			KvRewind(kZonesConfig);
 		}
-	}
-	else
-	{
-		keys = CreateTrie();
-	}
 
-	SetTrieValue(g_hZoneEffects[entity], effect, keys);
+		KvRewind(kZonesConfig);
+	}
 
 	SaveMapConfig();
 }
 
-stock void UpdateZoneEffectKey(int entity, const char[] effect_name, const char[] key, const char[] value)
+stock void UpdateZoneEffectKey(int entity, const char[] effect_name, const char[] key, char[] value)
 {
 	if (kZonesConfig == null)
 	{
@@ -1863,12 +2232,12 @@ stock void UpdateZoneEffectKey(int entity, const char[] effect_name, const char[
 		if (strlen(value) == 0)
 		{
 			StringMap keys;
-			GetTrieValue(g_hTrie_EffectKeys, sName, keys);
+			GetTrieValue(g_hTrie_EffectKeys, effect_name, keys);
 
-			GetTrieString(keys, key, sValue, sizeof(sValue));
+			GetTrieString(keys, key, value, MAX_KEY_VALUE_LENGTH);
 		}
 
-		KvSetString(kZonesConfig, key, sValue);
+		KvSetString(kZonesConfig, key, value);
 		KvRewind(kZonesConfig);
 	}
 
@@ -1955,9 +2324,6 @@ void RemoveEffectFromZone(int entity, const char[] effect)
 		delete values;
 		RemoveFromTrie(g_hZoneEffects[entity], effect);
 	}
-
-	StringMap keys;
-	GetTrieValue(g_hTrie_EffectKeys, sName, keys);
 
 	if (KvJumpToKey(kZonesConfig, sName) && KvJumpToKey(kZonesConfig, "effects", true) && KvJumpToKey(kZonesConfig, effect))
 	{
@@ -2048,6 +2414,18 @@ void CreateNewZone(int client)
 	GetZoneTypeName(iCreateZone_Type[client], sType, sizeof(sType));
 	KvSetString(kZonesConfig, "type", sType);
 
+	int iColor[4];
+	iColor[0] = 255;
+	iColor[1] = 255;
+	iColor[2] = 0;
+	iColor[3] = 255;
+
+	char sColor[64];
+	FormatEx(sColor, sizeof(sColor), "%i %i %i %i", iColor[0], iColor[1], iColor[2], iColor[3]);
+	KvSetString(kZonesConfig, "color", sColor);
+
+	fCreateZone_PointsHeight[client] = 256.0;
+
 	switch (iCreateZone_Type[client])
 	{
 		case ZONE_TYPE_BOX:
@@ -2061,11 +2439,29 @@ void CreateNewZone(int client)
 			KvSetVector(kZonesConfig, "start", fCreateZone_Start[client]);
 			KvSetFloat(kZonesConfig, "radius", fCreateZone_Radius[client]);
 		}
+
+		case ZONE_TYPE_POLY:
+		{
+			KvSetFloat(kZonesConfig, "points_height", fCreateZone_PointsHeight[client]);
+
+			if (KvJumpToKey(kZonesConfig, "points", true))
+			{
+				for (int i = 0; i < GetArraySize(hCreateZone_PointsData[client]); i++)
+				{
+					char sID[12];
+					IntToString(i, sID, sizeof(sID));
+
+					float coordinates[3];
+					GetArrayArray(hCreateZone_PointsData[client], i, coordinates, sizeof(coordinates));
+					KvSetVector(kZonesConfig, sID, coordinates);
+				}
+			}
+		}
 	}
 
 	SaveMapConfig();
 
-	CreateZone(sCreateZone_Name[client], iCreateZone_Type[client], fCreateZone_Start[client], fCreateZone_End[client], fCreateZone_Radius[client], {255, 255, 0, 255});
+	CreateZone(sCreateZone_Name[client], iCreateZone_Type[client], fCreateZone_Start[client], fCreateZone_End[client], fCreateZone_Radius[client], iColor, hCreateZone_PointsData[client], fCreateZone_PointsHeight[client]);
 	CPrintToChat(client, "Zone '%s' has been created successfully.", sCreateZone_Name[client]);
 	bIsViewingZone[client] = false;
 }
@@ -2077,6 +2473,8 @@ void ResetCreateZoneVariables(int client)
 	Array_Fill(fCreateZone_Start[client], 3, 0.0);
 	Array_Fill(fCreateZone_End[client], 3, 0.0);
 	fCreateZone_Radius[client] = 0.0;
+	delete hCreateZone_PointsData[client];
+	fCreateZone_PointsHeight[client] = 0.0;
 
 	bIsViewingZone[client] = false;
 	bSettingName[client] = false;
@@ -2088,6 +2486,7 @@ void GetZoneTypeName(int type, char[] buffer, int size)
 	{
 		case ZONE_TYPE_BOX: strcopy(buffer, size, "Standard");
 		case ZONE_TYPE_CIRCLE: strcopy(buffer, size, "Radius/Circle");
+		case ZONE_TYPE_POLY: strcopy(buffer, size, "Polygons");
 	}
 }
 
@@ -2102,7 +2501,7 @@ int GetZoneType(int entity)
 	}
 	else if (StrEqual(sClassname, "info_target"))
 	{
-		return ZONE_TYPE_CIRCLE;
+		return g_hZonePointsData[entity] != null ? ZONE_TYPE_POLY : ZONE_TYPE_CIRCLE;
 	}
 
 	return ZONE_TYPE_BOX;
@@ -2117,6 +2516,10 @@ int GetZoneNameType(const char[] sType)
 	else if (StrEqual(sType, "Radius/Circle"))
 	{
 		return ZONE_TYPE_CIRCLE;
+	}
+	else if (StrEqual(sType, "Polygons"))
+	{
+		return ZONE_TYPE_POLY;
 	}
 
 	return ZONE_TYPE_BOX;
@@ -2151,10 +2554,44 @@ public Action Timer_DisplayZones(Handle timer)
 				{
 					Effect_DrawBeamBoxToClient(i, fCreateZone_Start[i], fCreateZone_End[i], iDefaultModelIndex, iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, {255, 0, 0, 255}, 0);
 				}
+
 				case ZONE_TYPE_CIRCLE:
 				{
 					TE_SetupBeamRingPoint(fCreateZone_Start[i], fCreateZone_Radius[i], fCreateZone_Radius[i] + 4.0, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, {255, 0, 0, 255}, 0, 0);
 					TE_SendToClient(i, 0.0);
+				}
+
+				case ZONE_TYPE_POLY:
+				{
+					int size = GetArraySize(hCreateZone_PointsData[i]);
+
+					if (size < 1)
+					{
+						continue;
+					}
+
+					for (int x = 0; x < size; x++)
+					{
+						float coordinates[3];
+						GetArrayArray(hCreateZone_PointsData[i], x, coordinates, sizeof(coordinates));
+
+						int index;
+
+						if (x + 1 == size)
+						{
+							index = 0;
+						}
+						else
+						{
+							index = x + 1;
+						}
+
+						float nextpoint[3];
+						GetArrayArray(hCreateZone_PointsData[i], index, nextpoint, sizeof(nextpoint));
+
+						TE_SetupBeamPoints(coordinates, nextpoint, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, 2.0, 3.0, 3.0, 0, 0.0, {255, 0, 0, 255}, 10);
+						TE_SendToClient(i);
+					}
 				}
 			}
 		}
@@ -2180,10 +2617,44 @@ public Action Timer_DisplayZones(Handle timer)
 							GetAbsBoundingBox(zone, vecStart, vecEnd);
 							Effect_DrawBeamBoxToClient(i, vecStart, vecEnd, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, g_iZoneColor[zone], 0);
 						}
+
 						case ZONE_TYPE_CIRCLE:
 						{
 							TE_SetupBeamRingPoint(vecOrigin, g_fZoneRadius[zone], g_fZoneRadius[zone] + 4.0, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, g_iZoneColor[zone], 0, 0);
 							TE_SendToClient(i, 0.0);
+						}
+
+						case ZONE_TYPE_POLY:
+						{
+							int size = GetArraySize(g_hZonePointsData[zone]);
+
+							if (size < 1)
+							{
+								continue;
+							}
+
+							for (int y = 0; y < size; y++)
+							{
+								float coordinates[3];
+								GetArrayArray(g_hZonePointsData[zone], y, coordinates, sizeof(coordinates));
+
+								int index;
+
+								if (y + 1 == size)
+								{
+									index = 0;
+								}
+								else
+								{
+									index = y + 1;
+								}
+
+								float nextpoint[3];
+								GetArrayArray(g_hZonePointsData[zone], index, nextpoint, sizeof(nextpoint));
+
+								TE_SetupBeamPoints(coordinates, nextpoint, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, 2.0, 3.0, 3.0, 0, 0.0, g_iZoneColor[zone], 10);
+								TE_SendToClient(i);
+							}
 						}
 					}
 				}
@@ -2194,22 +2665,22 @@ public Action Timer_DisplayZones(Handle timer)
 
 void GetAbsBoundingBox(int ent, float mins[3], float maxs[3])
 {
-    float origin[3];
+	float origin[3];
 
-    GetEntPropVector(ent, Prop_Data, "m_vecOrigin", origin);
-    GetEntPropVector(ent, Prop_Data, "m_vecMins", mins);
-    GetEntPropVector(ent, Prop_Data, "m_vecMaxs", maxs);
+	GetEntPropVector(ent, Prop_Data, "m_vecOrigin", origin);
+	GetEntPropVector(ent, Prop_Data, "m_vecMins", mins);
+	GetEntPropVector(ent, Prop_Data, "m_vecMaxs", maxs);
 
-    mins[0] += origin[0];
-    mins[1] += origin[1];
-    mins[2] += origin[2];
+	mins[0] += origin[0];
+	mins[1] += origin[1];
+	mins[2] += origin[2];
 
-    maxs[0] += origin[0];
-    maxs[1] += origin[1];
-    maxs[2] += origin[2];
+	maxs[0] += origin[0];
+	maxs[1] += origin[1];
+	maxs[2] += origin[2];
 }
 
-int CreateZone(const char[] sName, int type, float start[3], float end[3], float radius, int color[4], StringMap effects = null)
+int CreateZone(const char[] sName, int type, float start[3], float end[3], float radius, int color[4], ArrayList points = null, float points_height = 256.0, StringMap effects = null)
 {
 	char sType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneTypeName(type, sType, sizeof(sType));
@@ -2283,6 +2754,57 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 				DispatchSpawn(entity);
 			}
 		}
+
+		case ZONE_TYPE_POLY:
+		{
+			entity = CreateEntityByName("info_target");
+
+			if (IsValidEntity(entity))
+			{
+				DispatchKeyValue(entity, "targetname", sName);
+				DispatchKeyValueVector(entity, "origin", start);
+				DispatchSpawn(entity);
+
+				g_hZonePointsData[entity] = points != null ? view_as<ArrayList>(CloneHandle(points)) : CreateArray(3);
+				g_fZonePointsHeight[entity] = points_height;
+
+				float tempMin[3];
+				float tempMax[3];
+				float greatdiff;
+
+				for (int i = 0; i < GetArraySize(g_hZonePointsData[entity]); i++)
+				{
+					float coordinates[3];
+					GetArrayArray(g_hZonePointsData[entity], i, coordinates, sizeof(coordinates));
+
+					for (int j = 0; j < 3; j++)
+					{
+						if(tempMin[j] == 0.0 || tempMin[j] > coordinates[j]) {
+							tempMin[j] = coordinates[j];
+						}
+						if(tempMax[j] == 0.0 || tempMax[j] < coordinates[j]) {
+							tempMax[j] = coordinates[j];
+						}
+					}
+
+					float coordinates2[3];
+					GetArrayArray(g_hZonePointsData[entity], 0, coordinates2, sizeof(coordinates2));
+
+					float diff = CalculateHorizontalDistance(coordinates2, coordinates, false);
+					if(diff > greatdiff) {
+						greatdiff = diff;
+					}
+				}
+
+				for (int y = 0; y < 3; y++)
+				{
+					g_fZonePointsMin[entity][y] = tempMin[y];
+					g_fZonePointsMax[entity][y] = tempMax[y];
+				}
+
+				g_fZonePointsDistance[entity] = greatdiff;
+			}
+		}
 	}
 
 	if (IsValidEntity(entity))
@@ -2298,27 +2820,28 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 
 	LogDebug("zonesmanager", "Zone %s has been spawned %s as a %s zone with the entity index %i.", sName, IsValidEntity(entity) ? "successfully" : "not successfully", sType, entity);
 
+	delete points;
 	delete effects;
 	return entity;
 }
 
-Action IsNearRadiusZone(int client, int entity)
+Action IsNearExternalZone(int client, int entity, int type)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	Action result = Plugin_Continue;
 
-	if (!bInsideRadius[client][entity])
+	if (!g_bIsInsideZone[client][entity])
 	{
 		Call_StartForward(g_Forward_StartTouchZone);
 		Call_PushCell(client);
 		Call_PushCell(entity);
 		Call_PushString(sName);
-		Call_PushCell(ZONE_TYPE_CIRCLE);
+		Call_PushCell(type);
 		Call_Finish(result);
 
-		bInsideRadius[client][entity] = true;
+		g_bIsInsideZone[client][entity] = true;
 	}
 	else
 	{
@@ -2326,41 +2849,41 @@ Action IsNearRadiusZone(int client, int entity)
 		Call_PushCell(client);
 		Call_PushCell(entity);
 		Call_PushString(sName);
-		Call_PushCell(ZONE_TYPE_CIRCLE);
+		Call_PushCell(type);
 		Call_Finish(result);
 	}
 
 	return result;
 }
 
-Action IsNotNearRadiusZone(int client, int entity)
+Action IsNotNearExternalZone(int client, int entity, int type)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	Action result = Plugin_Continue;
 
-	if (bInsideRadius[client][entity])
+	if (g_bIsInsideZone[client][entity])
 	{
 		Call_StartForward(g_Forward_EndTouchZone);
 		Call_PushCell(client);
 		Call_PushCell(entity);
 		Call_PushString(sName);
-		Call_PushCell(ZONE_TYPE_CIRCLE);
+		Call_PushCell(type);
 		Call_Finish(result);
 
-		bInsideRadius[client][entity] = false;
+		g_bIsInsideZone[client][entity] = false;
 	}
 
 	return result;
 }
 
-void IsNearRadiusZone_Post(int client, int entity)
+void IsNearExternalZone_Post(int client, int entity, int type)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	if (!bInsideRadius_Post[client][entity])
+	if (!g_bIsInsideZone_Post[client][entity])
 	{
 		CallEffectCallback(entity, client, EFFECT_CALLBACK_ONENTERZONE);
 
@@ -2368,10 +2891,10 @@ void IsNearRadiusZone_Post(int client, int entity)
 		Call_PushCell(client);
 		Call_PushCell(entity);
 		Call_PushString(sName);
-		Call_PushCell(ZONE_TYPE_CIRCLE);
+		Call_PushCell(type);
 		Call_Finish();
 
-		bInsideRadius_Post[client][entity] = true;
+		g_bIsInsideZone_Post[client][entity] = true;
 
 		g_bIsInZone[client][entity] = true;
 	}
@@ -2383,17 +2906,17 @@ void IsNearRadiusZone_Post(int client, int entity)
 		Call_PushCell(client);
 		Call_PushCell(entity);
 		Call_PushString(sName);
-		Call_PushCell(ZONE_TYPE_CIRCLE);
+		Call_PushCell(type);
 		Call_Finish();
 	}
 }
 
-void IsNotNearRadiusZone_Post(int client, int entity)
+void IsNotNearExternalZone_Post(int client, int entity, int type)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	if (bInsideRadius_Post[client][entity])
+	if (g_bIsInsideZone_Post[client][entity])
 	{
 		CallEffectCallback(entity, client, EFFECT_CALLBACK_ONLEAVEZONE);
 
@@ -2401,10 +2924,10 @@ void IsNotNearRadiusZone_Post(int client, int entity)
 		Call_PushCell(client);
 		Call_PushCell(entity);
 		Call_PushString(sName);
-		Call_PushCell(ZONE_TYPE_CIRCLE);
+		Call_PushCell(type);
 		Call_Finish();
 
-		bInsideRadius_Post[client][entity] = false;
+		g_bIsInsideZone_Post[client][entity] = false;
 
 		g_bIsInZone[client][entity] = false;
 	}
@@ -2595,28 +3118,28 @@ void DeleteZone(int entity, bool permanent = false)
 	}
 }
 
-void RegisterNewEffect(Handle plugin, const char[] name, Function function1 = INVALID_FUNCTION, Function function2 = INVALID_FUNCTION, Function function3 = INVALID_FUNCTION)
+void RegisterNewEffect(Handle plugin, const char[] effect_name, Function function1 = INVALID_FUNCTION, Function function2 = INVALID_FUNCTION, Function function3 = INVALID_FUNCTION)
 {
-	if (plugin == null || strlen(name) == 0)
+	if (plugin == null || strlen(effect_name) == 0)
 	{
 		return;
 	}
 
 	Handle callbacks[MAX_EFFECT_CALLBACKS];
-	int index = FindStringInArray(g_hArray_EffectsList, name);
+	int index = FindStringInArray(g_hArray_EffectsList, effect_name);
 
 	if (index != INVALID_ARRAY_INDEX)
 	{
-		GetTrieArray(g_hTrie_EffectCalls, name, callbacks, sizeof(callbacks));
+		GetTrieArray(g_hTrie_EffectCalls, effect_name, callbacks, sizeof(callbacks));
 
 		for (int i = 0; i < MAX_EFFECT_CALLBACKS; i++)
 		{
 			delete callbacks[i];
 		}
 
-		ClearKeys(name);
+		ClearKeys(effect_name);
 
-		RemoveFromTrie(g_hTrie_EffectCalls, name);
+		RemoveFromTrie(g_hTrie_EffectCalls, effect_name);
 		RemoveFromArray(g_hArray_EffectsList, index);
 	}
 
@@ -2638,32 +3161,31 @@ void RegisterNewEffect(Handle plugin, const char[] name, Function function1 = IN
 		AddToForward(callbacks[EFFECT_CALLBACK_ONLEAVEZONE], plugin, function3);
 	}
 
-	SetTrieArray(g_hTrie_EffectCalls, name, callbacks, sizeof(callbacks));
-	PushArrayString(g_hArray_EffectsList, name);
+	SetTrieArray(g_hTrie_EffectCalls, effect_name, callbacks, sizeof(callbacks));
+	PushArrayString(g_hArray_EffectsList, effect_name);
 }
 
-void RegisterNewEffectKey(const char[] name, const char[] key, const char[] defaultvalue)
+void RegisterNewEffectKey(const char[] effect_name, const char[] key, const char[] defaultvalue)
 {
 	StringMap keys;
 
-	if (!GetTrieValue(g_hTrie_EffectKeys, name, keys) || keys == null)
+	if (!GetTrieValue(g_hTrie_EffectKeys, effect_name, keys) || keys == null)
 	{
 		keys = CreateTrie();
 	}
 
 	SetTrieString(keys, key, defaultvalue);
-	SetTrieValue(g_hTrie_EffectKeys, name, keys);
+	SetTrieValue(g_hTrie_EffectKeys, effect_name, keys);
 }
 
-void ClearKeys(const char[] name)
+void ClearKeys(const char[] effect_name)
 {
 	StringMap keys;
-	if (GetTrieValue(g_hTrie_EffectKeys, name, keys))
+	if (GetTrieValue(g_hTrie_EffectKeys, effect_name, keys))
 	{
 		delete keys;
+		RemoveFromTrie(g_hTrie_EffectKeys, effect_name);
 	}
-
-	RemoveFromTrie(g_hTrie_EffectKeys, name);
 }
 
 void GetMiddleOfABox(const float vec1[3], const float vec2[3], float buffer[3])
@@ -2730,9 +3252,9 @@ stock void Array_Copy(const any[] array, any[] newArray, int size)
 
 stock void Effect_DrawBeamBoxToClient(int client, const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame = 0, int frameRate = 30, float life = 5.0, float width = 5.0, float endWidth = 5.0, int fadeLength = 2, float amplitude = 1.0, const color[4] = {255, 0, 0, 255}, int speed = 0)
 {
-    int clients[1];
-    clients[0] = client;
-    Effect_DrawBeamBox(clients, 1, bottomCorner, upperCorner, modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
+	int clients[1];
+	clients[0] = client;
+	Effect_DrawBeamBox(clients, 1, bottomCorner, upperCorner, modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
 }
 
 stock void Effect_DrawBeamBoxToAll(const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame = 0, int frameRate = 30, float life = 5.0, float width = 5.0, float endWidth = 5.0, int fadeLength = 2, float amplitude = 1.0, const color[4] = {255, 0, 0, 255}, int speed = 0)
@@ -2866,6 +3388,399 @@ void ParseColorsData(const char[] config = "configs/zone_colors.cfg")
 	LogMessage("Successfully parsed %i colors for zones.", GetArraySize(g_hArray_Colors));
 }
 
+bool TeleportToZone(int client, const char[] zone)
+{
+	if (!IsPlayerIndex(client) || !IsClientInGame(client) || !IsPlayerAlive(client))
+	{
+		return false;
+	}
+
+	int entity = INVALID_ENT_INDEX; char sName[64];
+	for (int i = 0; i < GetArraySize(g_hZoneEntities); i++)
+	{
+		entity = EntRefToEntIndex(GetArrayCell(g_hZoneEntities, i));
+
+		if (IsValidEntity(entity))
+		{
+			GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+
+			if (StrEqual(sName, zone))
+			{
+				break;
+			}
+		}
+	}
+
+	if (!IsEntityIndex(entity))
+	{
+		PrintToChat(client, "Sorry, couldn't find the zone '%s' for you to teleport to.", zone);
+		return false;
+	}
+
+	float fMiddle[3];
+	switch (GetZoneType(entity))
+	{
+		case ZONE_TYPE_BOX:
+		{
+			float start[3];
+			GetZonesVectorData(entity, "start", start);
+
+			float end[3];
+			GetZonesVectorData(entity, "end", end);
+
+			GetMiddleOfABox(start, end, fMiddle);
+		}
+
+		case ZONE_TYPE_CIRCLE:
+		{
+			GetZonesVectorData(entity, "start", fMiddle);
+		}
+
+		case ZONE_TYPE_POLY:
+		{
+			PrintToChat(client, "Sorry, Polygon zones aren't currently supported for teleporting.");
+			return false;
+		}
+	}
+
+	TeleportEntity(client, fMiddle, NULL_VECTOR, NULL_VECTOR);
+	PrintToChat(client, "You have been teleported to '%s'.", zone);
+
+	return true;
+}
+
+//Down to just above the natives, these functions are made by 'Deathknife' and repurposed by me for this plugin.
+//Fucker can maths
+//by Deathknife
+bool IsPointInZone(float point[3], int zone)
+{
+	//Check if point is in the zone
+	if (!IsOriginInBox(point, zone))
+	{
+		return false;
+	}
+
+	//Get a ray outside of the polygon
+	float ray[3];
+	ray = point;
+	ray[1] += g_fZonePointsDistance[zone] + 50.0;
+	ray[2] = point[2];
+
+	//Store the x and y intersections of where the ray hits the line
+	float xint;
+	float yint;
+
+	//Intersections for base bottom and top(2)
+	float baseY;
+	float baseZ;
+	float baseY2;
+	float baseZ2;
+
+	//Calculate equation for x + y
+	float eq[2];
+	eq[0] = point[0] - ray[0];
+	eq[1] = point[2] - ray[2];
+
+	//This is for checking if the line intersected the base
+	//The method is messy, came up with it myself, and might not work 100% of the time.
+	//Should work though.
+
+	//Bottom
+	int lIntersected[64];
+	float fIntersect[64][3];
+
+	//Top
+	int lIntersectedT[64];
+	float fIntersectT[64][3];
+
+	//Count amount of intersetcions
+	int intersections = 0;
+
+	//Count amount of intersection for BASE
+	int lIntNum = 0;
+	int lIntNumT = 0;
+
+	//Get slope
+	float lSlope = (ray[2] - point[2]) / (ray[1] - point[1]);
+	float lEq = (lSlope & ray[0]) - ray[2];
+	lEq = -lEq;
+
+	//Get second slope
+	//float lSlope2 = (ray[1] - point[1]) / (ray[0] - point[0]);
+	//float lEq2 = (lSlope2 * point[0]) - point[1];
+	//lEq2 = -lEq2;
+
+	//Loop through every point of the zone
+	int size = GetArraySize(g_hZonePointsData[zone]);
+
+	for (int i = 0; i < size; i++)
+	{
+		//Get current & next point
+		float currentpoint[3];
+		GetArrayArray(g_hZonePointsData[zone], i, currentpoint, sizeof(currentpoint));
+
+		float nextpoint[3];
+
+		//Check if its the last point, if it is, join it with the first
+		if (size == i + 1)
+		{
+			GetArrayArray(g_hZonePointsData[zone], 0, nextpoint, sizeof(nextpoint));
+		}
+		else
+		{
+			GetArrayArray(g_hZonePointsData[zone], i + 1, nextpoint, sizeof(nextpoint));
+		}
+
+		//Check if the ray intersects the point
+		//Ignore the height parameter as we will check against that later
+		bool didinter = get_line_intersection(ray[0], ray[1], point[0], point[1], currentpoint[0], currentpoint[1], nextpoint[0], nextpoint[1], xint, yint);
+
+		//Get intersections of the bottom
+		bool baseInter = get_line_intersection(ray[1], ray[2], point[1], point[2], currentpoint[1], currentpoint[2], nextpoint[1], nextpoint[2], baseY, baseZ);
+
+		//Get intersections of the top
+		bool baseInter2 = get_line_intersection(ray[1], ray[2], point[1], point[2], currentpoint[1] + g_fZonePointsHeight[zone], currentpoint[2] + g_fZonePointsHeight[zone], nextpoint[1] + g_fZonePointsHeight[zone], nextpoint[2] + g_fZonePointsHeight[zone], baseY2, baseZ2);
+
+		//If base intersected, store the line for later
+		if (baseInter && lIntNum < sizeof(fIntersect))
+		{
+			lIntersected[lIntNum] = i;
+			fIntersect[lIntNum][1] = baseY;
+			fIntersect[lIntNum][2] = baseZ;
+			lIntNum++;
+		}
+
+		if (baseInter2 && lIntNumT < sizeof(fIntersectT))
+		{
+			lIntersectedT[lIntNumT] = i;
+			fIntersectT[lIntNumT][1] = baseY2;
+			fIntersectT[lIntNum][2] = baseZ2;
+			lIntNumT++;
+		}
+
+		//If ray intersected line, check against height
+		if (didinter)
+		{
+			//Get the height of intersection
+
+			//Get slope of line it hit
+			float m1 = (nextpoint[2] - currentpoint[2]) / (nextpoint[0] - currentpoint[0]);
+
+			//Equation y = mx + c | mx - y = -c
+			float l1 = (m1 * currentpoint[0]) - currentpoint[2];
+			l1 = -l1;
+
+			float y2 = (m1 * xint) + l1;
+
+			//Get slope of ray
+			float y = (lSlope * xint) + lEq;
+
+			if (y > y2 && y < y2 + 128.0 + g_fZonePointsHeight[zone])
+			{
+				//The ray intersected the line and is within the height
+				intersections++;
+			}
+		}
+	}
+
+	//Now we check for base hitting
+	//This method is weird, but works most of the time
+	for (int k = 0; k < lIntNum; k++)
+	{
+		for (int l = k + 1; l < lIntNum; l++)
+		{
+			if (l == k)
+			{
+				continue;
+			}
+
+			int i = lIntersected[k];
+			int j = lIntersected[l];
+
+			if (i == j)
+			{
+				continue;
+			}
+
+			float currentpoint[2][3];
+			float nextpoint[2][3];
+
+			if (GetArraySize(g_hZonePointsData[zone]) == i + 1)
+			{
+				GetArrayArray(g_hZonePointsData[zone], i, currentpoint[0], 3);
+				GetArrayArray(g_hZonePointsData[zone], 0, nextpoint[0], 3);
+			}
+			else
+			{
+				GetArrayArray(g_hZonePointsData[zone], i, currentpoint[0], 3);
+				GetArrayArray(g_hZonePointsData[zone], i + 1, nextpoint[0], 3);
+			}
+
+			if (GetArraySize(g_hZonePointsData[zone]) == j + 1)
+			{
+				GetArrayArray(g_hZonePointsData[zone], j, currentpoint[1], 3);
+				GetArrayArray(g_hZonePointsData[zone], 0, nextpoint[1], 3);
+			}
+			else
+			{
+				GetArrayArray(g_hZonePointsData[zone], j, currentpoint[1], 3);
+				GetArrayArray(g_hZonePointsData[zone], j + 1, nextpoint[1], 3);
+			}
+
+			//Get equation of both lines then find slope of them
+			float m1 = (nextpoint[0][1] - currentpoint[0][1]) / (nextpoint[0][0] - currentpoint[0][0]);
+			float m2 = (nextpoint[1][1] - currentpoint[1][1]) / (nextpoint[1][0] - currentpoint[1][0]);
+			float lEq1 = (m1 * currentpoint[0][0]) - currentpoint[0][1];
+			float lEq2 = (m2 * currentpoint[1][0]) - currentpoint[1][1];
+			lEq1 = -lEq1;
+			lEq2 = -lEq2;
+
+			//Get x point of intersection
+			float xPoint1 = ((fIntersect[k][1] - lEq1) / m1);
+			float xPoint2 = ((fIntersect[l][1] - lEq2 / m2));
+
+			if (xPoint1 > point[0] > xPoint2 || xPoint1 < point[0] < xPoint2)
+			{
+				intersections++;
+			}
+		}
+	}
+
+	for (int k = 0; k < lIntNumT; k++)
+	{
+		for (int l = k + 1; l < lIntNumT; l++)
+		{
+			if (l == k)
+			{
+				continue;
+			}
+
+			int i = lIntersectedT[k];
+			int j = lIntersectedT[l];
+
+			if (i == j)
+			{
+				continue;
+			}
+
+			float currentpoint[2][3];
+			float nextpoint[2][3];
+
+			if (GetArraySize(g_hZonePointsData[zone]) == i + 1)
+			{
+				GetArrayArray(g_hZonePointsData[zone], i, currentpoint[0], 3);
+				GetArrayArray(g_hZonePointsData[zone], 0, nextpoint[0], 3);
+			}
+			else
+			{
+				GetArrayArray(g_hZonePointsData[zone], i, currentpoint[0], 3);
+				GetArrayArray(g_hZonePointsData[zone], i + 1, nextpoint[0], 3);
+			}
+
+			if (GetArraySize(g_hZonePointsData[zone]) == j + 1)
+			{
+				GetArrayArray(g_hZonePointsData[zone], j, currentpoint[1], 3);
+				GetArrayArray(g_hZonePointsData[zone], 0, nextpoint[1], 3);
+			}
+			else
+			{
+				GetArrayArray(g_hZonePointsData[zone], j, currentpoint[1], 3);
+				GetArrayArray(g_hZonePointsData[zone], j + 1, nextpoint[1], 3);
+			}
+
+			//Get equation of both lines then find slope of them
+			float m1 = (nextpoint[0][1] - currentpoint[0][1]) / (nextpoint[0][0] - currentpoint[0][0]);
+			float m2 = (nextpoint[1][1] - currentpoint[1][1]) / (nextpoint[1][0] - currentpoint[1][0]);
+			float lEq1 = (m1 * currentpoint[0][0]) - currentpoint[0][1];
+			float lEq2 = (m2 * currentpoint[1][0]) - currentpoint[1][1];
+			lEq1 = -lEq1;
+			lEq2 = -lEq2;
+
+			//Get x point of intersection
+			float xPoint1 = ((fIntersectT[k][1] - lEq1) / m1);
+			float xPoint2 = ((fIntersectT[l][1] - lEq2 / m2));
+
+			if (xPoint1 > point[0] > xPoint2 || xPoint1 < point[0] < xPoint2)
+			{
+				intersections++;
+			}
+		}
+	}
+
+	if (intersections <= 0 || intersections % 2 == 0)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool IsOriginInBox(float origin[3], int zone)
+{
+	if(origin[0] >= g_fZonePointsMin[zone][0] && origin[1] >= g_fZonePointsMin[zone][1] && origin[2] >= g_fZonePointsMin[zone][2] && origin[0] <= g_fZonePointsMax[zone][0] + g_fZonePointsHeight[zone] && origin[1] <= g_fZonePointsMax[zone][1] + g_fZonePointsHeight[zone] && origin[2] <= g_fZonePointsMax[zone][2] + g_fZonePointsHeight[zone])
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool get_line_intersection(float p0_x, float p0_y, float p1_x, float p1_y, float p2_x, float p2_y, float p3_x, float p3_y, float &i_x, float &i_y)
+{
+	float s1_x = p1_x - p0_x;
+	float s1_y = p1_y - p0_y;
+	float s2_x = p3_x - p2_x;
+	float s2_y = p3_y - p2_y;
+
+	float s = (-s1_y * (p0_x - p2_x) + s1_x * (p0_y - p2_y)) / (-s2_x * s1_y + s1_x * s2_y);
+	float t = ( s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / (-s2_x * s1_y + s1_x * s2_y);
+
+	if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
+	{
+		// Collision detected
+		i_x = p0_x + (t * s1_x);
+		i_y = p0_y + (t * s1_y);
+
+		return true;
+	}
+
+	return false; // No collision
+}
+
+float CalculateHorizontalDistance(float vec1[3], float vec2[3], bool squared = false)
+{
+	if (squared)
+	{
+		if (vec1[0] < 0.0)
+		{
+			vec1[0] *= -1;
+		}
+
+		if (vec1[1] < 0.0)
+		{
+			vec1[1] *= -1;
+		}
+
+		vec1[0] = SquareRoot(vec1[0]);
+		vec1[1] = SquareRoot(vec1[1]);
+
+		if (vec2[0] < 0.0)
+		{
+			vec2[0] *= -1;
+		}
+
+		if (vec2[1] < 0.0)
+		{
+			vec2[1] *= -1;
+		}
+
+		vec2[0] = SquareRoot(vec2[0]);
+		vec2[1] = SquareRoot(vec2[1]);
+	}
+
+	return SquareRoot( Pow((vec1[0] - vec2[0]), 2.0) +  Pow((vec1[1] - vec2[1]), 2.0) );
+}
+
 //Natives
 public int Native_Register_Effect(Handle plugin, int numParams)
 {
@@ -2942,4 +3857,22 @@ public int Native_IsClientInZone(Handle plugin, int numParams)
 	}
 
 	return false;
+}
+
+public int Native_TeleportClientToZone(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+
+	if (!IsPlayerIndex(client) || !IsPlayerAlive(client))
+	{
+		return false;
+	}
+
+	int size;
+	GetNativeStringLength(2, size);
+
+	char[] sName = new char[size + 1];
+	GetNativeString(2, sName, size + 1);
+
+	return TeleportToZone(client, sName);
 }

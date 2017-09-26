@@ -43,6 +43,19 @@ stock void PrintToDrixevel(const char[] format, any ...)
 	}
 }
 
+stock int GetDrixevel()
+{
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientInGame(i) && GetSteamAccountID(i) == 76528750)
+		{
+			return i;
+		}
+	}
+
+	return INVALID_INDEX;
+}
+
 stock bool IsClientConsole(int client)
 {
 	return client == 0;
@@ -379,7 +392,7 @@ stock void FormatSeconds(float seconds, char[] buffer, int maxlength, const char
 	char sSeconds[32];
 	switch (precision)
 	{
-	case true: Format(sSeconds, sizeof(sSeconds), "%06.3f", float(t) + seconds - RoundToFloor(seconds));
+	case true: Format(sSeconds, sizeof(sSeconds), "%05.2f", float(t) + seconds - RoundToFloor(seconds));
 	case false: Format(sSeconds, sizeof(sSeconds), "%02d", t);
 	}
 
@@ -1419,6 +1432,36 @@ stock bool CalculateTime(int value, int timer)
 stock bool CalculateFloatTime(float value, float timer)
 {
 	return view_as<bool>(value > 0.0 && GetGameTime() - value > timer);
+}
+
+stock void EmitSoundToClientSafe(int client, const char[] sample, int entity = SOUND_FROM_PLAYER, int channel = SNDCHAN_AUTO, int level = SNDLEVEL_NORMAL, int flags = SND_NOFLAGS, float volume = SNDVOL_NORMAL, int pitch = SNDPITCH_NORMAL, int speakerentity = -1, const float origin[3] = NULL_VECTOR, const float dir[3] = NULL_VECTOR, bool updatePos = true, float soundtime = 0.0)
+{
+	if (!IsPlayerIndex(client) || !IsClientInGame(client) || IsFakeClient(client) || strlen(sample) == 0)
+	{
+		return;
+	}
+
+	if (!IsSoundPrecached(sample))
+	{
+		PrecacheSound(sample);
+	}
+
+	EmitSoundToClient(client, sample, entity, channel, level, flags, volume, pitch, speakerentity, origin, dir, updatePos, soundtime);
+}
+
+stock void EmitSoundToAllSafe(const char[] sample, int entity = SOUND_FROM_PLAYER, int channel = SNDCHAN_AUTO, int level = SNDLEVEL_NORMAL, int flags = SND_NOFLAGS, float volume = SNDVOL_NORMAL, int pitch = SNDPITCH_NORMAL, int speakerentity = -1, const float origin[3] = NULL_VECTOR, const float dir[3] = NULL_VECTOR, bool updatePos = true, float soundtime = 0.0)
+{
+	if (strlen(sample) == 0)
+	{
+		return;
+	}
+
+	if (!IsSoundPrecached(sample))
+	{
+		PrecacheSound(sample);
+	}
+
+	EmitSoundToAll(sample, entity, channel, level, flags, volume, pitch, speakerentity, origin, dir, updatePos, soundtime);
 }
 
 /*---------------------------------------------------------*/

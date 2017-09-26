@@ -14,6 +14,7 @@ native void ZonesManager_Register_Effect(const char[] name, Zones_Manager_Effect
 native void ZonesManager_Register_Effect_Key(const char[] name, const char[] effect, const char[] defaultvalue);
 native void ZonesManager_Request_QueueEffects();
 native bool ZonesManager_IsClientInZone(int client, const char[] name);
+native bool ZonesManager_TeleportClientToZone(int client, const char[] name);
 
 /**----------------------------------------------------------*/
 //Forwards
