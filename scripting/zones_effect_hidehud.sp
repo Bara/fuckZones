@@ -4,22 +4,21 @@
 
 //Sourcemod Includes
 #include <sourcemod>
-#include <sdktools>
-#include <sdkhooks>
 #include <zones_manager>
 
 //ConVars
 ConVar convar_Status;
+ConVar convar_HudBitFlag;
 
 //Globals
 bool g_bLate;
-bool g_bMeleeOnly[MAXPLAYERS + 1];
+int g_iCachedHud[MAXPLAYERS + 1];
 
 public Plugin myinfo =
 {
-	name = "Zones Manager - Effect - Melee Only",
+	name = "Zones Manager - Effect - Hide Hud",
 	author = "Keith Warren (Drixevel)",
-	description = "An effect for the zones manager plugin that applies melee only to clients.",
+	description = "An effect for hiding the hud for clients effectively with zones.",
 	version = "1.0.0",
 	url = "http://www.drixevel.com/"
 };
@@ -34,7 +33,8 @@ public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
 
-	convar_Status = CreateConVar("sm_zones_effect_meleeonly_status", "1", "Status of the plugin.\n(1 = on, 0 = off)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	convar_Status = CreateConVar("sm_zones_effect_hidehud_status", "1", "Status of the plugin.\n(1 = on, 0 = off)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	convar_HudBitFlag = CreateConVar("sm_zones_effect_hidehud_bitflag", "4096", "Bitflag to decimal to set on clients.", FCVAR_NOTIFY);
 }
 
 public void OnConfigsExecuted()
@@ -55,26 +55,13 @@ public void OnConfigsExecuted()
 
 public void OnClientPutInServer(int client)
 {
-	SDKHook(client, SDKHook_WeaponCanSwitchTo, OnWeaponCanSwitchTo);
-	g_bMeleeOnly[client] = false;
-}
-
-public Action OnWeaponCanSwitchTo(int client, int weapon)
-{
-	int melee = GetPlayerWeaponSlot(client, 2);
-	
-	if (IsValidEntity(melee) && melee != weapon && g_bMeleeOnly[client])
-	{
-		return Plugin_Handled;
-	}
-	
-	return Plugin_Continue;
+	g_iCachedHud[client] = 0;
 }
 
 public void ZonesManager_OnQueueEffects_Post()
 {
-	ZonesManager_Register_Effect("melee only", Effect_OnEnterZone, INVALID_FUNCTION, Effect_OnLeaveZone);
-	ZonesManager_Register_Effect_Key("melee only", "status", "1");
+	ZonesManager_Register_Effect("hide hud", Effect_OnEnterZone, INVALID_FUNCTION, Effect_OnLeaveZone);
+	ZonesManager_Register_Effect_Key("hide hud", "status", "1");
 }
 
 public void Effect_OnEnterZone(int client, int entity, StringMap values)
@@ -87,14 +74,9 @@ public void Effect_OnEnterZone(int client, int entity, StringMap values)
 		return;
 	}
 	
-	g_bMeleeOnly[client] = true;
+	g_iCachedHud[client] = GetEntProp(client, Prop_Send, "m_iHideHUD");
 	
-	int melee = GetPlayerWeaponSlot(client, 2);
-	
-	if (IsValidEntity(melee))
-	{
-		EquipPlayerWeapon(client, melee);
-	}
+	SetEntProp(client, Prop_Send, "m_iHideHUD", GetEntProp(client, Prop_Send, "m_iHideHUD") | GetConVarInt(convar_HudBitFlag));
 }
 
 public void Effect_OnLeaveZone(int client, int entity, StringMap values)
@@ -107,5 +89,6 @@ public void Effect_OnLeaveZone(int client, int entity, StringMap values)
 		return;
 	}
 	
-	g_bMeleeOnly[client] = false;
+	SetEntProp(client, Prop_Send, "m_iHideHUD", g_iCachedHud[client]);
+	g_iCachedHud[client] = 0;
 }
