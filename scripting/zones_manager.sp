@@ -122,6 +122,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("ZonesManager_Request_QueueEffects", Native_Request_QueueEffects);
 	CreateNative("ZonesManager_IsClientInZone", Native_IsClientInZone);
 	CreateNative("ZonesManager_TeleportClientToZone", Native_TeleportClientToZone);
+	CreateNative("ZonesManager_CreateZone", Native_Create_Zone);
 
 	g_Forward_QueueEffects_Post = CreateGlobalForward("ZonesManager_OnQueueEffects_Post", ET_Ignore);
 	g_Forward_StartTouchZone = CreateGlobalForward("ZonesManager_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
@@ -3875,4 +3876,27 @@ public int Native_TeleportClientToZone(Handle plugin, int numParams)
 	GetNativeString(2, sName, size + 1);
 
 	return TeleportToZone(client, sName);
+}
+
+public int Native_Create_Zone(Handle plugin, int numParams)
+{
+	char sName[MAX_ZONE_NAME_LENGTH]; GetNativeString(1, sName, sizeof(sName));
+	int type = GetNativeCell(2);
+	
+	float start[3]; GetNativeArray(3, start, 3);
+	float end[3]; GetNativeArray(4, end, 3);
+	float radius = view_as<float>(GetNativeCell(5));
+	int color[4]; GetNativeArray(6, color, 4);
+	ArrayList points = view_as<ArrayList>(GetNativeCell(7));
+	float points_height = view_as<float>(GetNativeCell(8));
+	StringMap effects = view_as<StringMap>(GetNativeCell(9));
+	bool save = GetNativeCell(10);
+	
+	int zone = CreateZone(sName, type, start, end, radius, color, points, points_height, effects);
+	
+	if (save) {
+		SaveMapConfig();
+	}
+	
+	return zone;
 }
