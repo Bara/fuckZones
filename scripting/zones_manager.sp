@@ -182,9 +182,6 @@ public void OnMapStart()
 
 	LogDebug("zonesmanager", "Deleting current zones map configuration from memory.");
 
-	SaveMapConfig();
-	ReparseMapZonesConfig();
-
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		for (int x = MaxClients; x < MAX_ENTITY_LIMIT; x++)
@@ -192,6 +189,29 @@ public void OnMapStart()
 			g_bIsInZone[i][x] = false;
 		}
 	}
+	
+	ReparseMapZonesConfig();
+}
+
+public void OnMapEnd()
+{
+	SaveMapConfig();
+	
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		for (int x = MaxClients; x < MAX_ENTITY_LIMIT; x++)
+		{
+			g_bIsInZone[i][x] = false;
+		}
+	}
+	
+	ClearArray(g_hZoneEntities);
+	ClearArray(g_hArray_EffectsList);
+	ClearArray(g_hArray_Colors);
+	
+	ClearTrie(g_hTrie_EffectCalls);
+	ClearTrie(g_hTrie_EffectKeys);
+	ClearTrie(g_hTrie_ColorsData);
 }
 
 void ReparseMapZonesConfig(bool delete_config = false)
@@ -3890,11 +3910,17 @@ public int Native_Create_Zone(Handle plugin, int numParams)
 	ArrayList points = view_as<ArrayList>(GetNativeCell(7));
 	float points_height = view_as<float>(GetNativeCell(8));
 	StringMap effects = view_as<StringMap>(GetNativeCell(9));
-	bool save = GetNativeCell(10);
+	bool save = view_as<bool>(GetNativeCell(10));
 	
 	int zone = CreateZone(sName, type, start, end, radius, color, points, points_height, effects);
 	
+	if(!IsValidEntity(zone)) {
+		return -1;
+	}
+	
 	if (save) {
+		// Wont actually do anything atm.
+		// TODO: Intitialize KeyValues before saving.
 		SaveMapConfig();
 	}
 	
