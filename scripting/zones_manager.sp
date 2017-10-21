@@ -338,6 +338,8 @@ public void OnClientDisconnect(int client)
 	{
 		g_bIsInZone[client][i] = false;
 	}
+	
+	ResetCreateZoneVariables(client);
 }
 
 public void OnRoundStart(Event event, const char[] name, bool dontBroadcast)
@@ -1056,10 +1058,7 @@ public int MenuHandle_ManageZonesMenu(Menu menu, MenuAction action, int param1, 
 
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_ExitBack)
-			{
-				OpenZonesMenu(param1);
-			}
+			OpenZonesMenu(param1);
 		}
 
 		case MenuAction_End:
@@ -1134,10 +1133,7 @@ public int MenuHandle_ManageEditMenu(Menu menu, MenuAction action, int param1, i
 
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_ExitBack)
-			{
-				OpenManageZonesMenu(param1);
-			}
+			OpenManageZonesMenu(param1);
 		}
 
 		case MenuAction_End:
@@ -1383,10 +1379,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_ExitBack)
-			{
-				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
-			}
+			OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
 		}
 
 		case MenuAction_End:
@@ -1567,10 +1560,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_ExitBack)
-			{
-				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
-			}
+			OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
 		}
 
 		case MenuAction_End:
@@ -1758,10 +1748,7 @@ public int MenuHandler_EditZoneTypeMenu(Menu menu, MenuAction action, int param1
 
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_ExitBack)
-			{
-				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
-			}
+			OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
 		}
 
 		case MenuAction_End:
@@ -1824,10 +1811,7 @@ public int MenuHandler_EditZoneColorMenu(Menu menu, MenuAction action, int param
 
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_ExitBack)
-			{
-				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
-			}
+			OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
 		}
 
 		case MenuAction_End:
@@ -1882,10 +1866,7 @@ public int MenuHandle_ManageConfirmDeleteZoneMenu(Menu menu, MenuAction action, 
 
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_ExitBack)
-			{
-				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
-			}
+			OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
 		}
 
 		case MenuAction_End:
@@ -2052,12 +2033,10 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_ExitBack)
-			{
-				OpenZonesMenu(param1);
-			}
+			ResetCreateZoneVariables(param1);
+			OpenZonesMenu(param1);
 		}
-
+		
 		case MenuAction_End:
 		{
 			CloseHandle(menu);
@@ -2119,10 +2098,7 @@ public int MenuHandler_AddZoneEffect(Menu menu, MenuAction action, int param1, i
 
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_ExitBack)
-			{
-				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
-			}
+			OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
 		}
 
 		case MenuAction_End:
@@ -2180,10 +2156,7 @@ public int MenuHandler_EditZoneEffect(Menu menu, MenuAction action, int param1, 
 
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_ExitBack)
-			{
-				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
-			}
+			OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
 		}
 
 		case MenuAction_End:
@@ -2314,10 +2287,7 @@ public int MenuHandler_RemoveZoneEffect(Menu menu, MenuAction action, int param1
 
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_ExitBack)
-			{
-				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
-			}
+			OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
 		}
 
 		case MenuAction_End:
@@ -2397,10 +2367,7 @@ public int MenuHandler_ZoneTypeMenu(Menu menu, MenuAction action, int param1, in
 
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_ExitBack)
-			{
-				OpenCreateZonesMenu(param1);
-			}
+			OpenCreateZonesMenu(param1);
 		}
 
 		case MenuAction_End:
@@ -2484,7 +2451,8 @@ void CreateNewZone(int client)
 
 	CreateZone(sCreateZone_Name[client], iCreateZone_Type[client], fCreateZone_Start[client], fCreateZone_End[client], fCreateZone_Radius[client], iColor, hCreateZone_PointsData[client], fCreateZone_PointsHeight[client]);
 	CPrintToChat(client, "Zone '%s' has been created successfully.", sCreateZone_Name[client]);
-	bIsViewingZone[client] = false;
+	
+	ResetCreateZoneVariables(client);
 }
 
 void ResetCreateZoneVariables(int client)
