@@ -62,39 +62,127 @@ native void ZonesManager_RequestQueueEffects();
 native void ZonesManager_SaveZones();
 
 /**
- * Checks is a client is currently inside a zone.
- *
- * @param client		Client index.
- * @param zone			Index of the zone.
- * @return				True if the client is inside the zone, false otherwise.
+ * Clears all zone entites from the map.
  */
-native bool ZonesManager_IsClientInZone(int client, int zone);
+native void ZonesManager_ClearAllZones();
 
 /**
- * Gets a zone index by its name.
+ * Checks is an entity is currently inside a zone.
  *
- * @param name			Name of the zone.
- * @return				Zone index, -1 on failure.
+ * @param client		Entity index.
+ * @param zone			Zone Entity Index.
+ * @return				True if the Entity is inside the zone, false otherwise.
  */
-native int ZonesManager_GetZoneIndexByName(const char[] name);
+native bool ZonesManager_IsEntityInZone(int entity, int zone);
 
 /**
  * Teleports a client inside a zone.
  *
- * @param client		Client index.
- * @param zone			Index of the zone.
+ * @param client		Client Index.
+ * @param zone			Zone Entity Index.
  * @return				True if successful, false otherwise.
  */
 native bool ZonesManager_TeleportClientToZone(int client, int zone);
 
+
 /**
  * Gets a clients current look point.
  *
- * @param client		Client index.
- * @param point			Buffer to store the vector points.
+ * @param client		Client Index.
+ * @param buffer		Buffer to store vector points.
  * @return				True if successful, false otherwise.
  */
-native bool ZonesManager_GetClientLookPoint(int client, float point[3]);
+native bool ZonesManager_GetClientLookPoint(int client, float buffer[3]);
+
+/**
+ * Gets a Zone Entity Index by its name.
+ *
+ * @param name			Name of the zone.
+ * @return				Zone Entity Index, -1 on failure.
+ */
+native int ZonesManager_GetZoneByName(const char[] name);
+
+/**
+ * Gets a zone name.
+ *
+ * @param zone			Zone Entity Index.
+ * @param buffer		Buffer to store name.
+ * @param maxlength		Buffer size.
+ * @return				True if successful, false otherwise.
+ */
+native bool ZonesManager_GetZoneName(int zone, char[] buffer, int maxlength);
+
+/**
+ * Gets a zone start vector.
+ *
+ * @param zone			Zone Entity Index.
+ * @param buffer		Buffer to store vector points.
+ * @return				True if successful, false otherwise.
+ */
+native bool ZonesManager_GetZoneStart(int zone, float buffer[3]);
+
+/**
+ * Gets a zone end vector
+ * This is currently only applicable to box zones.
+ *
+ * @param zone			Zone Entity Index.
+ * @param buffer		Buffer to store vector points.
+ * @return				True if successful, false otherwise.
+ */
+native bool ZonesManager_GetZoneEnd(int zone, float buffer[3]);
+
+/**
+ * Gets a zone circle radius.
+ * This is currently only applicable to circle zones.
+ *
+ * @param zone			Zone Entity Index.
+ * @return				Radius, -1.0 on failure.
+ */
+native float ZonesManager_GetZoneRadius(int zone);
+
+/**
+ * Gets a zone color values.
+ *
+ * @param zone			Zone Entity Index.
+ * @param buffer		Buffer to store color values.
+ * @return				True if successful, false otherwise.
+ */
+native bool ZonesManager_GetZoneColor(int zone, int buffer[4]);
+
+/**
+ * Retrieves a zone which has been assigned to client.
+ * 
+ * @param client		Client Index.
+ * @return				Zone Entity Index, -1 on failure.
+ */
+native int ZonesManager_GetAssignedZone(int client);
+
+/**
+ * Gets the number of points in a zone.
+ * This is currently only applicable to polygon zones.
+ *
+ * @param zone			Zone Entity Index.
+ * @return				Number of points.
+ */
+native int ZonesManager_GetZonePointsCount(int zone);
+
+/**
+ * Gets the zone points as an ArrayList.
+ * This is currently only applicable to polygon zones.
+ *
+ * @param zone			Zone Entity Index.
+ * @return				Arraylist of points, null on failure.
+ */
+native ArrayList ZonesManager_GetZonePoints(int zone);
+
+/**
+ * Gets the point heights of a zone.
+ * This is currently only applicable to polygon zones.
+ *
+ * @param zone			Zone Entity Index.
+ * @return				Point height.
+ */
+native float ZonesManager_GetZonePointHeight(int zone);
 
 /**
  * Starts a zone creation.
@@ -106,9 +194,26 @@ native bool ZonesManager_GetClientLookPoint(int client, float point[3]);
 native int ZonesManager_StartZone(int type, const char[] name);
 
 /**
+ * Assigns zone creation to a client.
+ * 
+ * @param client		Client Index.
+ * @param zone			Zone Entity Index.
+ * @return				True if successful, false otherwise.
+ */
+native bool ZonesManager_AssignZone(int client, int zone);
+
+/**
+ * Unassigns zone creation from a client.
+ * 
+ * @param client		Client Index.
+ * @return				True if successful, false otherwise.
+ */
+native bool ZonesManager_UnAssignZone(int client);
+
+/**
  * Sets a zones name.
  *
- * @param zone			Index of the zone.
+ * @param zone			Zone Entity Index.
  * @param name			Zone name.
  * @return				True if successful, false otherwise.
  */
@@ -117,17 +222,17 @@ native bool ZonesManager_SetZoneName(int zone, const char[] name);
 /**
  * Sets a zones start point.
  *
- * @param zone			Index of the zone.
+ * @param zone			Zone Entity Index.
  * @param start			Start vector.
  * @return				True if successful, false otherwise.
  */
-native bool ZonesManager_SetZoneStart(int zone, float start[3]);
+native bool ZonesManager_SetZoneStart(int zone, float buffer[3]);
 
 /**
  * Sets a zones end point.
- * This is currently only required for box zones.
+ * This is currently only applicable to box zones.
  *
- * @param zone			Index of the zone.
+ * @param zone			Zone Entity Index.
  * @param end			End vector.
  * @return				True if successful, false otherwise.
  */
@@ -135,9 +240,9 @@ native bool ZonesManager_SetZoneEnd(int zone, float end[3]);
 
 /**
  * Sets a zones end point.
- * This is currently only required for circle zones.
+ * This is currently only applicable to circle zones.
  *
- * @param zone			Index of the zone.
+ * @param zone			Zone Entity Index.
  * @param radius		Radius of the circle.
  * @return				True if successful, false otherwise.
  */
@@ -147,7 +252,7 @@ native bool ZonesManager_SetZoneRadius(int zone, float radius);
  * Sets a zones color.
  * This uses decimal RGB color codes where 0 is R, 1 is G, 2 is B and 3 is alpha.
  *
- * @param zone			Index of the zone.
+ * @param zone			Zone Entity Index.
  * @param color			Array of decimal RGB colors.
  * @return				True if successful, false otherwise.
  */
@@ -155,9 +260,9 @@ native bool ZonesManager_SetZoneColor(int zone, int color[4]);
 
 /**
  * Sets a zones points height.
- * This is currently only required for polygon zones.
+ * This is currently only applicable to polygon zones.
  *
- * @param zone			Index of the zone.
+ * @param zone			Zone Entity Index.
  * @param height		Height of the zone points.
  * @return				True if successful, false otherwise.
  */
@@ -165,9 +270,9 @@ native bool ZonesManager_SetPointsHeight(int zone, float height);
 
 /**
  * Adds a point to a zone.
- * This is currently only required for polygon zones.
+ * This is currently only applicable to polygon zones.
  *
- * @param zone			Index of the zone.
+ * @param zone			Zone Entity Index.
  * @param point			Point vector to add.
  * @return				True if successful, false otherwise.
  */
@@ -175,9 +280,9 @@ native bool ZonesManager_AddZonePoint(int zone, float point[3]);
 
 /**
  * Adds a list of point to a zone.
- * This is currently only required for polygon zones.
+ * This is currently only applicable to polygon zones.
  *
- * @param zone			Index of the zone.
+ * @param zone			Zone Entity Index.
  * @param points		ArrayList of points to add.
  * @return				True if successful, false otherwise.
  */
@@ -185,19 +290,28 @@ native bool ZonesManager_AddMultipleZonePoints(int zone, ArrayList points);
 
 /**
  * Removes a point from a zone.
- * This is currently only required for polygon zones.
+ * This is currently only applicable to polygon zones.
  *
- * @param zone			Index of the zone.
+ * @param zone			Zone Entity Index.
  * @param points		Point vector to remove.
  * @return				True if successful, false otherwise.
  */
 native bool ZonesManager_RemoveZonePoint(int zone, float point[3]);
 
 /**
- * Remove a list of point from a zone.
- * This is currently only required for polygon zones.
+ * Removes the last point added to a zone.
+ * This is currently only applicable to polygon zones.
  *
- * @param zone			Index of the zone.
+ * @param zone			Zone Entity Index.
+ * @return				True if successful, false otherwise.
+ */
+native bool ZonesManager_RemoveLastZonePoint(int zone);
+
+/**
+ * Remove a list of point from a zone.
+ * This is currently only applicable to polygon zones.
+ *
+ * @param zone			Zone Entity Index.
  * @param points		ArrayList of points to remove.
  * @return				True if successful, false otherwise.
  */
@@ -205,21 +319,40 @@ native bool ZonesManager_RemoveMultipleZonePoints(int zone, ArrayList points);
 
 /**
  * Remove all points from a zone.
- * This is currently only required for polygon zones.
+ * This is currently only applicable to polygon zones.
  *
- * @param zone			Index of the zone.
+ * @param zone			Zone Entity Index.
  * @return				True if successful, false otherwise.
  */
 native bool ZonesManager_RemoveAllZonePoints(int zone);
 
 /**
  * Finishes a zone creation and spawns it into the world.
- * This should be called last after initializing the zone with the other natives.
+ * This should be called after initializing the zone with the other natives.
  *
- * @param zone			Index of the zone.
- * @return				Index to the zone, -1 on failure.
+ * @param zone			Zone Entity Index.
+ * @return				Entity index of the zone, -1 on failure.
  */
 native int ZonesManager_FinishZone(int zone);
+
+/**
+ * Gets a KeyValues object with zone data.
+ * This should be called after initializing the zone with the other natives.
+ * You must delete the KV Object when you are finished with it.
+ *
+ * @param zone			Zone Entity Index.
+ * @return				KeyValues with zone info, null on failure.
+ */
+native KeyValues ZonesManager_GetZoneKeyValues(int zone);
+
+/**
+ * Gets a KeyValues string with zone data.
+ * This should be called after initializing the zone with the other natives.
+ *
+ * @param zone			Zone Entity Index.
+ * @return				KeyValues with zone info, null on failure.
+ */
+native KeyValues ZonesManager_GetZoneKeyValuesAsString(int zone, char[] buffer);
 
 /**
  * Creates a zone (Advanced).
@@ -229,20 +362,28 @@ native int ZonesManager_FinishZone(int zone);
  * @param type			Type of the zone.
  * @param name			Zone name.
  * @param start			Start vector.
- * @param end			End vector (Currently only required for box zones).
- * @param radius		Zone radius (Currently only required for circle zones).
+ * @param end			End vector (Currently only applicable to box zones).
+ * @param radius		Zone radius (Currently only applicable to circle zones).
  * @param color			Zone color (This uses decimal RGB color codes where 0 is R, 1 is G, 2 is B and 3 is alpha).
- * @param points		ArrayList of zone points (Currently only required for polygon zones).
- * @param height		Height of zone points (Currently only required for polygon zones).
+ * @param points		ArrayList of zone points (Currently only applicable to polygon zones).
+ * @param height		Height of zone points (Currently only applicable to polygon zones).
  * @param height		ArrayList of effects for the zone.
- * @return				Index to the zone, -1 on failure.
+ * @return				Entity index of the zone, -1 on failure.
  */
 native int ZonesManager_CreateZoneAdvanced(int type, const char[] name, float start[3], float end[3] =  { -1.0, -1.0, -1.0 }, float radius = -1.0, int color[4] =  { 255, 255, 0, 255 }, ArrayList points = null, float height = 256.0, StringMap effects = null);
 
 /**
+ * Loads a zone from KeyValues string..
+ *
+ * @param buffer		Buffer to KeyValues string.
+ * @return				Entity index of the zone, -1 on failure.
+ */
+native int ZonesManager_CreateZoneFromKeyValuesString(const char[] buffer);
+
+/**
  * Adds an effect to the zone.
  *
- * @param zone			Index of the zone.
+ * @param zone			Zone Entity Index.
  * @param effect		Name of effect to add.
  * @return				True if successful, false otherwise.
  */
@@ -251,7 +392,7 @@ native bool ZonesManager_AddZoneEffect(int zone, const char[] name);
 /**
  * Removes an effect from the zone.
  *
- * @param zone			Index of the zone.
+ * @param zone			Zone Entity Index.
  * @param effect		Name of effect to remove.
  * @return				True if successful, false otherwise.
  */
@@ -267,80 +408,93 @@ native bool ZonesManager_RemoveZoneEffect(int zone, const char[] name);
 forward void ZonesManager_OnQueueEffects_Post();
 
 /**
- * Called right before a player enters the zone.
+ * Called right before an entity enters the zone.
  *
- * @param client		  	Client index.
- * @param entity         	Entity index for this zone.
+ * @param entity			Entity Index.
+ * @param zone          	Entity index for this zone.
  * @param zone_name			Name of the zone.
  * @param type            	Type of zone.
  * @return                	Plugin_Handled or Plugin_Stop = stops post forward counterpart from firing.
 **/
-forward Action ZonesManager_OnStartTouchZone(int client, int entity, const char[] zone_name, int type);
+forward Action ZonesManager_OnStartTouchZone(int entity, int zone, const char[] zone_name, int type);
 
 /**
- * Called right before each tick while a player is in a zone.
+ * Called right before each tick while an entity is in a zone.
  *
- * @param client		    Client index.
- * @param entity       		Entity index for this zone.
+ * @param entity			Entity Index.
+ * @param zone          	Entity index for this zone.
  * @param zone_name			Name of the zone.
- * @param type          	Type of zone.
+ * @param type            	Type of zone.
  * @return              	Plugin_Handled or Plugin_Stop = stops post forward counterpart from firing.
 **/
-forward Action ZonesManager_OnTouchZone(int client, int entity, const char[] zone_name, int type);
+forward Action ZonesManager_OnTouchZone(int entity, int zone, const char[] zone_name, int type);
 
 /**
- * Called right before once a player leaves the zone.
+ * Called right before once an entity leaves the zone.
  *
- * @param client			Client index.
- * @param entity          	Entity index for this zone.
+ * @param entity			Entity Index.
+ * @param zone          	Entity index for this zone.
  * @param zone_name			Name of the zone.
  * @param type            	Type of zone.
  * @return                	Plugin_Handled or Plugin_Stop = stops post forward counterpart from firing.
 **/
-forward Action ZonesManager_OnEndTouchZone(int client, int entity, const char[] zone_name, int type);
+forward Action ZonesManager_OnEndTouchZone(int entity, int zone, const char[] zone_name, int type);
 
 /**
- * Called right after a player enters the zone.
+ * Called right after an entity enters the zone.
  *
- * @param client			Client index.
- * @param entity          	Entity index for this zone.
+ * @param entity			Entity Index.
+ * @param zone          	Entity index for this zone.
  * @param zone_name			Name of the zone.
  * @param type            	Type of zone.
 **/
-forward void ZonesManager_OnStartTouchZone_Post(int client, int entity, const char[] zone_name, int type);
+forward void ZonesManager_OnStartTouchZone_Post(int entity, int zone, const char[] zone_name, int type);
 
 /**
- * Called right after each tick while a player is in a zone.
+ * Called right after each tick while an entity is in a zone.
  *
- * @param client			Client index.
- * @param entity          	Entity index for this zone.
+ * @param entity			Entity Index.
+ * @param zone          	Entity index for this zone.
  * @param zone_name			Name of the zone.
  * @param type            	Type of zone.
 **/
-forward void ZonesManager_OnTouchZone_Post(int client, int entity, const char[] zone_name, int type);
+forward void ZonesManager_OnTouchZone_Post(int entity, int zone, const char[] zone_name, int type);
 
 /**
- * Called right after once a player leaves the zone.
+ * Called right after once an entity leaves the zone.
  *
- * @param client			Client index.
- * @param entity          	Entity index for this zone.
+ * @param entity			Entity Index.
+ * @param zone          	Entity index for this zone.
  * @param zone_name			Name of the zone.
  * @param type            	Type of zone.
 **/
-forward void ZonesManager_OnEndTouchZone_Post(int client, int entity, const char[] zone_name, int type);
+forward void ZonesManager_OnEndTouchZone_Post(int entity, int zone, const char[] zone_name, int type);
 
 #if !defined REQUIRE_PLUGIN
 public void __pl_zones_manager_SetNTVOptional()
 {
 	MarkNativeAsOptional("ZonesManager_RequestQueueEffects");
 	MarkNativeAsOptional("ZonesManager_SaveZones");
-	MarkNativeAsOptional("ZonesManager_IsClientInZone");
-	MarkNativeAsOptional("ZonesManager_GetZoneIndexByName");
+	MarkNativeAsOptional("ZonesManager_ClearAllZones");
+	MarkNativeAsOptional("ZonesManager_IsEntityInZone");
+	MarkNativeAsOptional("ZonesManager_AssignZone");
+	MarkNativeAsOptional("ZonesManager_UnAssignZone");
+	MarkNativeAsOptional("ZonesManager_GetAssignedZone");
+	MarkNativeAsOptional("ZonesManager_GetZonePointsCount");
+	MarkNativeAsOptional("ZonesManager_GetZonePoints");
+	MarkNativeAsOptional("ZonesManager_GetZonePointHeight");
+	MarkNativeAsOptional("ZonesManager_GetZoneByName");
+	MarkNativeAsOptional("ZonesManager_GetZoneName");
+	MarkNativeAsOptional("ZonesManager_GetZoneStart");
+	MarkNativeAsOptional("ZonesManager_GetZoneEnd");
+	MarkNativeAsOptional("ZonesManager_GetZoneRadius");
+	MarkNativeAsOptional("ZonesManager_GetZoneColor");
 	MarkNativeAsOptional("ZonesManager_TeleportClientToZone");
 	MarkNativeAsOptional("ZonesManager_GetClientLookPoint");
 	MarkNativeAsOptional("ZonesManager_RegisterEffect");
 	MarkNativeAsOptional("ZonesManager_RegisterEffectKey");
 	MarkNativeAsOptional("ZonesManager_CreateZoneAdvanced");
+	MarkNativeAsOptional("ZonesManager_CreateZoneFromKeyValuesString");
 	MarkNativeAsOptional("ZonesManager_StartZone");
 	MarkNativeAsOptional("ZonesManager_SetZoneName");
 	MarkNativeAsOptional("ZonesManager_SetZoneStart");
@@ -351,11 +505,14 @@ public void __pl_zones_manager_SetNTVOptional()
 	MarkNativeAsOptional("ZonesManager_AddZonePoint");
 	MarkNativeAsOptional("ZonesManager_AddMultipleZonePoints");
 	MarkNativeAsOptional("ZonesManager_RemoveZonePoint");
+	MarkNativeAsOptional("ZonesManager_RemoveLastZonePoint");
 	MarkNativeAsOptional("ZonesManager_RemoveMultipleZonePoints");
 	MarkNativeAsOptional("ZonesManager_RemoveAllZonePoints");
 	MarkNativeAsOptional("ZonesManager_AddZoneEffect");
 	MarkNativeAsOptional("ZonesManager_RemoveZoneEffect");
 	MarkNativeAsOptional("ZonesManager_FinishZone");
+	MarkNativeAsOptional("ZonesManager_GetZoneKeyValues");
+	MarkNativeAsOptional("ZonesManager_GetZoneKeyValuesAsString");
 }
 #endif
 
