@@ -120,6 +120,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("ZonesManager_GetZoneEnd", Native_GetZoneEnd);
 	CreateNative("ZonesManager_GetZoneRadius", Native_GetZoneRadius);
 	CreateNative("ZonesManager_GetZoneColor", Native_GetZoneColor);
+	CreateNative("ZonesManager_GetZoneType", Native_GetZoneType);
 	CreateNative("ZonesManager_TeleportClientToZone", Native_TeleportClientToZone);
 	CreateNative("ZonesManager_GetClientLookPoint", Native_GetClientLookPoint);
 	CreateNative("ZonesManager_RegisterEffect", Native_RegisterEffect);
@@ -4602,6 +4603,19 @@ public int Native_GetZoneColor(Handle plugin, int numParams)
 	}
 	
 	return SetNativeArray(2, g_iZoneColor[zone], 3) == SP_ERROR_NONE;
+}
+
+public int Native_GetZoneType(Handle plugin, int numParams)
+{
+	int zone = GetNativeCell(1);
+	
+	if (!IsValidZone(zone))
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "Entity %d is not a valid zone", zone);
+		return false;
+	}
+	
+	return GetZoneType(zone);
 }
 
 public int Native_CreateZoneAdvanced(Handle plugin, int numParams)

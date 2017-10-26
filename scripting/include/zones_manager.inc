@@ -150,6 +150,14 @@ native float ZonesManager_GetZoneRadius(int zone);
 native bool ZonesManager_GetZoneColor(int zone, int buffer[4]);
 
 /**
+ * Gets a zone type.
+ *
+ * @param zone			Zone Entity Index.
+ * @return				Zone type, -1 on failure.
+ */
+native int ZonesManager_GetZoneType(int zone);
+
+/**
  * Retrieves a zone which has been assigned to client.
  * 
  * @param client		Client Index.
@@ -507,6 +515,7 @@ public void __pl_zones_manager_SetNTVOptional()
 	MarkNativeAsOptional("ZonesManager_GetZoneEnd");
 	MarkNativeAsOptional("ZonesManager_GetZoneRadius");
 	MarkNativeAsOptional("ZonesManager_GetZoneColor");
+	MarkNativeAsOptional("ZonesManager_GetZoneType");
 	MarkNativeAsOptional("ZonesManager_TeleportClientToZone");
 	MarkNativeAsOptional("ZonesManager_GetClientLookPoint");
 	MarkNativeAsOptional("ZonesManager_RegisterEffect");
