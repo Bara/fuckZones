@@ -86,6 +86,7 @@ bool bIsViewingZone[MAXPLAYERS + 1];
 bool bSettingName[MAXPLAYERS + 1];
 int iEditingName[MAXPLAYERS + 1] =  { INVALID_ENT_REFERENCE, ... };
 int g_iZone[MAXPLAYERS + 1];
+bool g_bHideZoneRender[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 
 //Plugin Information
 public Plugin myinfo = 
@@ -107,6 +108,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("ZonesManager_IsEntityInZone", Native_IsEntityInZone);
 	CreateNative("ZonesManager_AssignZone", Native_AssignZone);
 	CreateNative("ZonesManager_UnAssignZone", Native_UnAssignZone);
+	CreateNative("ZonesManager_HideZoneFromClient", Native_HideZoneFromClient);
+	CreateNative("ZonesManager_UnHideZoneFromClient", Native_UnHideZoneFromClient);
 	CreateNative("ZonesManager_GetAssignedZone", Native_GetAssignedZone);
 	CreateNative("ZonesManager_GetZonePointsCount", Native_GetZonePointsCount);
 	CreateNative("ZonesManager_GetZonePoints", Native_GetZonePoints);
@@ -374,6 +377,7 @@ public void OnClientDisconnect(int client)
 	{
 		g_bIsInsideZone[client][i] = false;
 		g_bIsInsideZone_Post[client][i] = false;
+		g_bHideZoneRender[client][i] = false;
 	}
 	
 	ResetCreateZoneVariables(client);
@@ -2658,6 +2662,8 @@ void ResetZoneVariables(int zone)
 	
 	for (int i = 1; i <= MaxClients; i++)
 	{
+		g_bHideZoneRender[i][zone] = false;
+		
 		if (zone == g_iZone[i])
 		{
 			ResetCreateZoneVariables(i);
@@ -2791,7 +2797,7 @@ stock void ShowZones(int client, float fTime = 0.1)
 		{
 			case ZONE_TYPE_BOX:
 			{
-				Effect_DrawBeamBoxToClient(client, fCreateZone_Start[client], fCreateZone_End[client], iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 5.0, 5.0, 2, 1.0, color, 0);
+				Effect_DrawBeamBoxToClient(client, fCreateZone_Start[client], fCreateZone_End[client], iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.7, 2, 0.0, color, 0);
 			}
 			
 			case ZONE_TYPE_CIRCLE:
@@ -2858,7 +2864,8 @@ stock void ShowZones(int client, float fTime = 0.1)
 				}
 			}
 		}
-	} else if (bShowAllZones[client])
+	} 
+	else if (bShowAllZones[client])
 	{
 		int color[4] =  { 255, 0, 0, 255 };
 		
@@ -2869,6 +2876,10 @@ stock void ShowZones(int client, float fTime = 0.1)
 		for (int x = 0; x < GetArraySize(g_hZoneEntities); x++)
 		{
 			int zone = EntRefToEntIndex(GetArrayCell(g_hZoneEntities, x));
+			
+			if(g_bHideZoneRender[client][zone]) {
+				continue;
+			}
 			
 			if (IsValidZone(zone))
 			{
@@ -2887,12 +2898,12 @@ stock void ShowZones(int client, float fTime = 0.1)
 					case ZONE_TYPE_BOX:
 					{
 						GetAbsBoundingBox(zone, vecStart, vecEnd);
-						Effect_DrawBeamBoxToClient(client, vecStart, vecEnd, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 5.0, 5.0, 2, 1.0, color, 0);
+						Effect_DrawBeamBoxToClient(client, vecStart, vecEnd, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.7, 2, 0.0, color, 0);
 					}
 					
 					case ZONE_TYPE_CIRCLE:
 					{
-						TE_SetupBeamRingPoint(vecOrigin, g_fZoneRadius[zone], g_fZoneRadius[zone] + 4.0, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 5.0, 0.0, color, 0, 0);
+						TE_SetupBeamRingPoint(vecOrigin, g_fZoneRadius[zone], g_fZoneRadius[zone] + 4.0, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.0, color, 0, 0);
 						TE_SendToClient(client, 0.0);
 					}
 					
@@ -2900,9 +2911,6 @@ stock void ShowZones(int client, float fTime = 0.1)
 					{
 						float coordinates[3];
 						float nextpoint[3];
-						
-						float coordinates_expanded[3];
-						float nextpoint_expanded[3];
 						
 						int size = GetArraySize(g_hZonePointsData[zone]);
 						
@@ -2928,16 +2936,7 @@ stock void ShowZones(int client, float fTime = 0.1)
 							
 							GetArrayArray(g_hZonePointsData[zone], index, nextpoint, sizeof(nextpoint));
 							
-							CopyArrayToArray(coordinates, coordinates_expanded, 3);
-							coordinates_expanded[2] += g_fZonePointsHeight[zone];
-							
-							CopyArrayToArray(nextpoint, nextpoint_expanded, 3);
-							nextpoint_expanded[2] += g_fZonePointsHeight[zone];
-							
-							TE_SetupBeamPoints(coordinates, nextpoint, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 3.0, 3.0, 0, 0.0, color, 10);
-							TE_SendToClient(client);
-							
-							TE_SetupBeamPoints(coordinates_expanded, nextpoint_expanded, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 3.0, 3.0, 0, 0.0, color, 10);
+							TE_SetupBeamPoints(coordinates, nextpoint, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.7, 2, 0.0, color, 10);
 							TE_SendToClient(client);
 						}
 					}
@@ -3362,6 +3361,11 @@ public void Zones_EndTouchPost(int zone, int entity)
 
 void CallEffectCallback(int zone, int entity, int callback)
 {
+	if(g_hArray_EffectsList == null) {
+		g_hArray_EffectsList = CreateArray(ByteCountToCells(MAX_EFFECT_NAME_LENGTH));
+		return;
+	}
+	
 	for (int i = 0; i < GetArraySize(g_hArray_EffectsList); i++)
 	{
 		char sEffect[MAX_EFFECT_NAME_LENGTH];
@@ -5147,3 +5151,45 @@ public int Native_FinishZone(Handle plugin, int numParams)
 	
 	return CreateZone(g_sZone_Name[zone], g_iZone_Type[zone], g_fZone_Start[zone], g_fZone_End[zone], g_fZoneRadius[zone], g_iZoneColor[zone], g_hZonePointsData[zone], g_fZonePointsHeight[zone], g_hZoneEffects[zone], zone);
 } 
+
+public int Native_HideZoneFromClient(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	int zone = GetNativeCell(2);
+	
+	if (!IsValidZone(zone))
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "Entity %d is not a valid zone", zone);
+		return false;
+	}
+	
+	if (!IsPlayerIndex(client))
+	{
+		return false;
+	}
+	
+	g_bHideZoneRender[client][zone] = true;
+	
+	return true;
+}
+
+public int Native_UnHideZoneFromClient(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	int zone = GetNativeCell(2);
+	
+	if (!IsValidZone(zone))
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "Entity %d is not a valid zone", zone);
+		return false;
+	}
+	
+	if (!IsPlayerIndex(client))
+	{
+		return false;
+	}
+	
+	g_bHideZoneRender[client][zone] = false;
+	
+	return true;
+}

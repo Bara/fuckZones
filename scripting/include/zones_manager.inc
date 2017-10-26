@@ -398,6 +398,24 @@ native bool ZonesManager_AddZoneEffect(int zone, const char[] name);
  */
 native bool ZonesManager_RemoveZoneEffect(int zone, const char[] name);
 
+/**
+ * Hides a zone Beam from a client.
+ * @param client		Client Index.
+ * @param zone			Zone Entity Index.
+ *
+ * @return				True if successful, false otherwise.
+ */
+native bool ZonesManager_HideZoneFromClient(int client, int zone);
+
+/**
+ * Shows a zone Beam to everyone.
+ * @param client		Client Index.
+ * @param zone			Zone Entity Index.
+ *
+ * @return				True if successful, false otherwise.
+ */
+native bool ZonesManager_UnHideZoneFromClient(int client, int zone);
+
 /**----------------------------------------------------------*/
 //Forwards
 
@@ -513,6 +531,8 @@ public void __pl_zones_manager_SetNTVOptional()
 	MarkNativeAsOptional("ZonesManager_FinishZone");
 	MarkNativeAsOptional("ZonesManager_GetZoneKeyValues");
 	MarkNativeAsOptional("ZonesManager_GetZoneKeyValuesAsString");
+	MarkNativeAsOptional("ZonesManager_HideZoneFromClient");
+	MarkNativeAsOptional("ZonesManager_UnHideZoneFromClient");
 }
 #endif
 
