@@ -2878,12 +2878,12 @@ stock void ShowZones(int client, float fTime = 0.1)
 		{
 			int zone = EntRefToEntIndex(GetArrayCell(g_hZoneEntities, x));
 			
-			if(g_bHideZoneRender[client][zone]) {
-				continue;
-			}
-			
 			if (IsValidZone(zone))
 			{
+				if(g_bHideZoneRender[client][zone]) {
+					continue;
+				}
+				
 				if (g_bZoneSpawned[zone])
 				{
 					color[0] = g_iZoneColor[zone][0];
@@ -2942,6 +2942,8 @@ stock void ShowZones(int client, float fTime = 0.1)
 						}
 					}
 				}
+			} else {
+				RemoveFromArray(g_hZoneEntities, x);
 			}
 		}
 	}
@@ -2985,6 +2987,11 @@ int InitZone(int type, int & arraycell)
 
 bool IsValidZone(int zone)
 {
+	if(zone <= 0) 
+	{
+		return false;
+	}
+	
 	if (!IsValidEntity(zone))
 	{
 		return false;
@@ -3902,7 +3909,8 @@ bool GetZoneKeyValuesAsString(int zone, char[] sBuffer, int size)
 	}
 	
 	char sPath[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, sPath, sizeof(sPath), "data/zones/%d.temp", GetTime());
+	
+	BuildPath(Path_SM, sPath, sizeof(sPath), "data/zones/%d.temp", GetSomeWhatDecentRandom());
 	
 	if (!KeyValuesToFile(kv, sPath))
 	{
@@ -4401,12 +4409,6 @@ public int Native_UnAssignZone(Handle plugin, int numParams)
 	{
 		AcceptEntityInput(zone, "Kill");
 	}
-	
-	iCreateZone_Type[client] = INVALID_ENT_INDEX;
-	
-	Array_Fill(fCreateZone_Start[client], 3, -1.0);
-	Array_Fill(g_fZone_End[zone], 3, -1.0);
-	fCreateZone_Radius[client] = -1.0;
 	
 	bIsViewingZone[client] = false;
 	
@@ -5206,4 +5208,15 @@ public int Native_UnHideZoneFromClient(Handle plugin, int numParams)
 	g_bHideZoneRender[client][zone] = false;
 	
 	return true;
+}
+
+stock int GetSomeWhatDecentRandom()
+{
+	int iWaiter = 0;
+	
+	while(iWaiter < 10) {
+		iWaiter++;
+	}
+	
+	return RoundToNearest(GetGameTime() + GetURandomFloat() + GetRandomFloat(1.0, 638490753.0));
 }
