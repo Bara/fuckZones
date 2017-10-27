@@ -121,6 +121,9 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("ZonesManager_GetZoneRadius", Native_GetZoneRadius);
 	CreateNative("ZonesManager_GetZoneColor", Native_GetZoneColor);
 	CreateNative("ZonesManager_GetZoneType", Native_GetZoneType);
+	CreateNative("ZonesManager_GetZoneLowestCorner", Native_GetZoneLowestCorner);
+	CreateNative("ZonesManager_GetZoneHighestCorner", Native_GetZoneHighestCorner);
+	CreateNative("ZonesManager_IsVectorInsideZone", Native_IsVectorInsideZone);
 	CreateNative("ZonesManager_TeleportClientToZone", Native_TeleportClientToZone);
 	CreateNative("ZonesManager_GetClientLookPoint", Native_GetClientLookPoint);
 	CreateNative("ZonesManager_RegisterEffect", Native_RegisterEffect);
@@ -714,18 +717,11 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 
 public void OnGameFrame()
 {
-	float vecPosition[3];
-	float vecOrigin[3];
-	float origin[3];
-	float entitypoints[4][3];
-	
-	static float offset = 16.5;
-	
 	int zone;
-	float distance;
+	float vecOrigin[3];
 	Action action;
 	
-	bool IsInZone;
+	int zonetype;
 	
 	for (int entity = 1; entity < MAX_ENTITY_LIMIT; entity++)
 	{
@@ -746,102 +742,48 @@ public void OnGameFrame()
 				continue;
 			}
 			
-			GetClientAbsOrigin(entity, vecPosition);
+			GetClientAbsOrigin(entity, vecOrigin);
 		}
 		
 		else
 		{
-			GetEntPropVector(entity, Prop_Data, "m_vecOrigin", vecPosition);
+			GetEntPropVector(entity, Prop_Data, "m_vecOrigin", vecOrigin);
 		}
 		
 		for (int i = 0; i < GetArraySize(g_hZoneEntities); i++)
 		{
 			zone = EntRefToEntIndex(GetArrayCell(g_hZoneEntities, i));
 			
-			if (!IsValidZone(zone) || zone == entity)
+			if (!IsValidZone(zone))
+			{
+				RemoveFromArray(g_hZoneEntities, i);
+				continue;
+			}
+			
+			if (zone == entity)
 			{
 				continue;
 			}
 			
-			switch (GetZoneType(zone))
+			zonetype = GetZoneType(zone);
+			
+			if (!IsVectorInsideZone(zone, vecOrigin))
 			{
-				case ZONE_TYPE_CIRCLE:
+				action = IsNotNearExternalZone(entity, zone, zonetype);
+				
+				if (action <= Plugin_Changed)
 				{
-					GetEntPropVector(zone, Prop_Data, "m_vecOrigin", vecOrigin);
-					distance = GetVectorDistance(vecOrigin, vecPosition);
-					
-					if (distance <= (g_fZoneRadius[zone] / 2.0))
-					{
-						action = IsNearExternalZone(entity, zone, ZONE_TYPE_CIRCLE);
-						
-						if (action <= Plugin_Changed)
-						{
-							IsNearExternalZone_Post(entity, zone, ZONE_TYPE_CIRCLE);
-						}
-					}
-					else
-					{
-						action = IsNotNearExternalZone(entity, zone, ZONE_TYPE_CIRCLE);
-						
-						if (action <= Plugin_Changed)
-						{
-							IsNotNearExternalZone_Post(entity, zone, ZONE_TYPE_CIRCLE);
-						}
-					}
+					IsNotNearExternalZone_Post(entity, zone, zonetype);
 				}
 				
-				case ZONE_TYPE_POLY:
-				{
-					origin[0] = vecPosition[0];
-					origin[1] = vecPosition[1];
-					origin[2] = vecPosition[2];
-					
-					origin[2] += 42.5;
-					
-					entitypoints[0] = origin;
-					entitypoints[0][0] -= offset;
-					entitypoints[0][1] -= offset;
-					
-					entitypoints[1] = origin;
-					entitypoints[1][0] += offset;
-					entitypoints[1][1] -= offset;
-					
-					entitypoints[2] = origin;
-					entitypoints[2][0] -= offset;
-					entitypoints[2][1] += offset;
-					
-					entitypoints[3] = origin;
-					entitypoints[3][0] += offset;
-					entitypoints[3][1] += offset;
-					
-					for (int x = 0; x < 4; x++)
-					{
-						if (IsPointInZone(entitypoints[x], zone))
-						{
-							IsInZone = true;
-							break;
-						}
-					}
-					
-					if (IsInZone)
-					{
-						action = IsNearExternalZone(entity, zone, ZONE_TYPE_POLY);
-						
-						if (action <= Plugin_Changed)
-						{
-							IsNearExternalZone_Post(entity, zone, ZONE_TYPE_POLY);
-						}
-					}
-					else
-					{
-						action = IsNotNearExternalZone(entity, zone, ZONE_TYPE_POLY);
-						
-						if (action <= Plugin_Changed)
-						{
-							IsNotNearExternalZone_Post(entity, zone, ZONE_TYPE_POLY);
-						}
-					}
-				}
+				continue;
+			}
+			
+			action = IsNearExternalZone(entity, zone, zonetype);
+			
+			if (action <= Plugin_Changed)
+			{
+				IsNearExternalZone_Post(entity, zone, zonetype);
 			}
 		}
 	}
@@ -2865,7 +2807,7 @@ stock void ShowZones(int client, float fTime = 0.1)
 				}
 			}
 		}
-	} 
+	}
 	else if (bShowAllZones[client])
 	{
 		int color[4] =  { 255, 0, 0, 255 };
@@ -2880,7 +2822,8 @@ stock void ShowZones(int client, float fTime = 0.1)
 			
 			if (IsValidZone(zone))
 			{
-				if(g_bHideZoneRender[client][zone]) {
+				if (g_bHideZoneRender[client][zone])
+				{
 					continue;
 				}
 				
@@ -2942,8 +2885,6 @@ stock void ShowZones(int client, float fTime = 0.1)
 						}
 					}
 				}
-			} else {
-				RemoveFromArray(g_hZoneEntities, x);
 			}
 		}
 	}
@@ -2969,10 +2910,18 @@ void GetAbsBoundingBox(int ent, float mins[3], float maxs[3])
 int InitZone(int type, int & arraycell)
 {
 	int zone = CreateEntityByName(type == ZONE_TYPE_BOX ? "trigger_multiple" : "info_target");
+	g_bIsZone[zone] = true;
 	
 	if (!IsValidEntity(zone))
 	{
 		return INVALID_ENT_INDEX;
+	}
+	
+	int pos = FindValueInArray(g_hZoneEntities, EntIndexToEntRef(zone));
+	
+	if (pos != -1)
+	{
+		return zone;
 	}
 	
 	g_bZoneSpawned[zone] = false;
@@ -2980,14 +2929,12 @@ int InitZone(int type, int & arraycell)
 	
 	arraycell = PushArrayCell(g_hZoneEntities, EntIndexToEntRef(zone));
 	
-	g_bIsZone[zone] = true;
-	
 	return zone;
 }
 
 bool IsValidZone(int zone)
 {
-	if(zone <= 0) 
+	if (zone <= 0)
 	{
 		return false;
 	}
@@ -3165,14 +3112,14 @@ Action IsNearExternalZone(int entity, int zone, int type)
 	
 	if (!g_bIsInsideZone[entity][zone])
 	{
+		g_bIsInsideZone[entity][zone] = true;
+		
 		Call_StartForward(g_Forward_StartTouchZone);
 		Call_PushCell(entity);
 		Call_PushCell(zone);
 		Call_PushString(sName);
 		Call_PushCell(type);
 		Call_Finish(result);
-		
-		g_bIsInsideZone[entity][zone] = true;
 	}
 	else
 	{
@@ -3196,14 +3143,14 @@ Action IsNotNearExternalZone(int entity, int zone, int type)
 	
 	if (g_bIsInsideZone[entity][zone])
 	{
+		g_bIsInsideZone[entity][zone] = false;
+		
 		Call_StartForward(g_Forward_EndTouchZone);
 		Call_PushCell(entity);
 		Call_PushCell(zone);
 		Call_PushString(sName);
 		Call_PushCell(type);
 		Call_Finish(result);
-		
-		g_bIsInsideZone[entity][zone] = false;
 	}
 	
 	return result;
@@ -3216,6 +3163,9 @@ void IsNearExternalZone_Post(int entity, int zone, int type)
 	
 	if (!g_bIsInsideZone_Post[entity][zone])
 	{
+		g_bIsInsideZone_Post[entity][zone] = true;
+		g_bIsInsideZone[entity][zone] = true;
+		
 		CallEffectCallback(zone, entity, EFFECT_CALLBACK_ONENTERZONE);
 		
 		Call_StartForward(g_Forward_StartTouchZone_Post);
@@ -3224,9 +3174,6 @@ void IsNearExternalZone_Post(int entity, int zone, int type)
 		Call_PushString(sName);
 		Call_PushCell(type);
 		Call_Finish();
-		
-		g_bIsInsideZone_Post[entity][zone] = true;
-		g_bIsInsideZone[entity][zone] = true;
 	}
 	else
 	{
@@ -3248,6 +3195,9 @@ void IsNotNearExternalZone_Post(int entity, int zone, int type)
 	
 	if (g_bIsInsideZone_Post[entity][zone])
 	{
+		g_bIsInsideZone_Post[entity][zone] = false;
+		g_bIsInsideZone[entity][zone] = false;
+		
 		CallEffectCallback(zone, entity, EFFECT_CALLBACK_ONLEAVEZONE);
 		
 		Call_StartForward(g_Forward_EndTouchZone_Post);
@@ -3256,9 +3206,6 @@ void IsNotNearExternalZone_Post(int entity, int zone, int type)
 		Call_PushString(sName);
 		Call_PushCell(type);
 		Call_Finish();
-		
-		g_bIsInsideZone_Post[entity][zone] = false;
-		g_bIsInsideZone[entity][zone] = false;
 	}
 }
 
@@ -3369,7 +3316,8 @@ public void Zones_EndTouchPost(int zone, int entity)
 
 void CallEffectCallback(int zone, int entity, int callback)
 {
-	if(g_hArray_EffectsList == null) {
+	if (g_hArray_EffectsList == null)
+	{
 		g_hArray_EffectsList = CreateArray(ByteCountToCells(MAX_EFFECT_NAME_LENGTH));
 		return;
 	}
@@ -3943,6 +3891,199 @@ bool GetZoneKeyValuesAsString(int zone, char[] sBuffer, int size)
 	DeleteFile(sPath);
 	
 	return true;
+}
+
+stock int GetSomeWhatDecentRandom()
+{
+	int iWaiter = 0;
+	
+	while (iWaiter < 10)
+	{
+		iWaiter++;
+	}
+	
+	return RoundToNearest(GetGameTime() + GetURandomFloat() + GetRandomFloat(1.0, 638490753.0));
+}
+
+stock float GetLowestCorner(int zone)
+{
+	if (!IsValidZone(zone))
+	{
+		return -1.0;
+	}
+	
+	float fLowest = -1.0;
+	
+	switch (GetZoneType(zone))
+	{
+		case ZONE_TYPE_BOX:
+		{
+			fLowest = g_fZone_Start[zone][2] > g_fZone_End[zone][2] ? g_fZone_End[zone][2] : g_fZone_Start[zone][2];
+		}
+		
+		case ZONE_TYPE_CIRCLE:
+		{
+			fLowest = g_fZone_Start[zone][2];
+		}
+		
+		case ZONE_TYPE_POLY:
+		{
+			float vPoint[3];
+			
+			for (int i = 0; i < GetArraySize(g_hZonePointsData[zone]); i++)
+			{
+				GetArrayArray(g_hZonePointsData[zone], i, vPoint);
+				
+				if (vPoint[2] < fLowest || fLowest == -1.0)
+				{
+					fLowest = vPoint[2];
+				}
+			}
+		}
+	}
+	
+	return fLowest;
+}
+
+stock float GetHighestCorner(int zone)
+{
+	if (!IsValidZone(zone))
+	{
+		return -1.0;
+	}
+	
+	float fHighest = -1.0;
+	
+	switch (GetZoneType(zone))
+	{
+		case ZONE_TYPE_BOX:
+		{
+			fHighest = g_fZone_Start[zone][2] < g_fZone_End[zone][2] ? g_fZone_End[zone][2] : g_fZone_Start[zone][2];
+		}
+		
+		case ZONE_TYPE_CIRCLE:
+		{
+			fHighest = g_fZone_Start[zone][2] + g_fZoneRadius[zone]; // Is this even right? fuck circles..
+		}
+		
+		case ZONE_TYPE_POLY:
+		{
+			float vPoint[3];
+			
+			for (int i = 0; i < GetArraySize(g_hZonePointsData[zone]); i++)
+			{
+				GetArrayArray(g_hZonePointsData[zone], i, vPoint);
+				
+				if (vPoint[2] > fHighest)
+				{
+					fHighest = vPoint[2];
+				}
+			}
+		}
+	}
+	
+	return fHighest;
+}
+
+bool IsVectorInsideZone(int zone, float origin[3])
+{
+	if (!IsValidZone(zone))
+	{
+		return false;
+	}
+	
+	float zoneOrigin[3];
+	
+	switch (GetZoneType(zone))
+	{
+		case ZONE_TYPE_BOX:
+		{
+			// Count zone corners
+			// https://forums.alliedmods.net/showpost.php?p=2006539&postcount=8
+			float fCorners[8][3];
+			
+			for (int i = 0; i < 3; i++)
+			{
+				fCorners[0][i] = g_fZone_Start[zone][i];
+				fCorners[7][i] = g_fZone_End[zone][i];
+			}
+			
+			for (int i = 1; i < 7; i++)
+			{
+				for (int j = 0; j < 3; j++)
+				{
+					fCorners[i][j] = fCorners[((i >> (2 - j)) & 1) * 7][j];
+				}
+			}
+			
+			int iCheck = 0;
+			
+			float tmpOrigin[3]; CopyArrayToArray(origin, tmpOrigin, 3); tmpOrigin[2] += 5.0;
+			
+			for (int i = 0; i < 3; i++)
+			{
+				if ((fCorners[7][i] >= fCorners[0][i] && (tmpOrigin[i] <= (fCorners[7][i]) && tmpOrigin[i] >= (fCorners[0][i]))) || 
+					(fCorners[0][i] >= fCorners[7][i] && (tmpOrigin[i] <= (fCorners[0][i]) && tmpOrigin[i] >= (fCorners[7][i]))))
+				{
+					iCheck++;
+				}
+				
+				if (iCheck == 3)
+				{
+					return true;
+				}
+			}
+			
+			return false;
+		}
+		
+		case ZONE_TYPE_CIRCLE:
+		{
+			GetEntPropVector(zone, Prop_Data, "m_vecOrigin", zoneOrigin);
+			return GetVectorDistance(origin, zoneOrigin) <= (g_fZoneRadius[zone] / 2.0);
+		}
+		
+		case ZONE_TYPE_POLY:
+		{
+			float newOrigin[3];
+			float entityPoints[4][3];
+			static float offset = 16.5;
+			
+			newOrigin[0] = origin[0];
+			newOrigin[1] = origin[1];
+			newOrigin[2] = origin[2];
+			
+			newOrigin[2] += 42.5;
+			
+			entityPoints[0] = newOrigin;
+			entityPoints[0][0] -= offset;
+			entityPoints[0][1] -= offset;
+			
+			entityPoints[1] = newOrigin;
+			entityPoints[1][0] += offset;
+			entityPoints[1][1] -= offset;
+			
+			entityPoints[2] = newOrigin;
+			entityPoints[2][0] -= offset;
+			entityPoints[2][1] += offset;
+			
+			entityPoints[3] = newOrigin;
+			entityPoints[3][0] += offset;
+			entityPoints[3][1] += offset;
+			
+			for (int x = 0; x < 4; x++)
+			{
+				if (IsPointInZone(entityPoints[x], zone))
+				{
+					return true;
+				}
+			}
+			
+			return false;
+		}
+	}
+	
+	return false;
 }
 
 //Down to just above the natives, these functions are made by 'Deathknife' and repurposed by me for this plugin.
@@ -4620,6 +4761,46 @@ public int Native_GetZoneType(Handle plugin, int numParams)
 	return GetZoneType(zone);
 }
 
+public int Native_GetZoneLowestCorner(Handle plugin, int numParams)
+{
+	int zone = GetNativeCell(1);
+	
+	if (!IsValidZone(zone))
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "Entity %d is not a valid zone", zone);
+		return false;
+	}
+	
+	return view_as<int>(GetLowestCorner(zone));
+}
+
+public int Native_GetZoneHighestCorner(Handle plugin, int numParams)
+{
+	int zone = GetNativeCell(1);
+	
+	if (!IsValidZone(zone))
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "Entity %d is not a valid zone", zone);
+		return false;
+	}
+	
+	return view_as<int>(GetHighestCorner(zone));
+}
+
+public int Native_IsVectorInsideZone(Handle plugin, int numParams)
+{
+	int zone = GetNativeCell(1);
+	float origin[3]; GetNativeArray(2, origin, 3);
+	
+	if (!IsValidZone(zone))
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "Entity %d is not a valid zone", zone);
+		return false;
+	}
+	
+	return IsVectorInsideZone(zone, origin);
+}
+
 public int Native_CreateZoneAdvanced(Handle plugin, int numParams)
 {
 	int type = GetNativeCell(1);
@@ -4854,7 +5035,8 @@ public int Native_AddZonePoint(Handle plugin, int numParams)
 		return false;
 	}
 	
-	if (g_fZone_Start[zone][0] == -1.0 && g_fZone_Start[zone][1] == -1.0 && g_fZone_Start[zone][2] == -1.0) {
+	if (g_fZone_Start[zone][0] == -1.0 && g_fZone_Start[zone][1] == -1.0 && g_fZone_Start[zone][2] == -1.0) 
+	{
 		CopyArrayToArray(point, g_fZone_Start[zone], 3);
 	}
 	
@@ -5166,7 +5348,7 @@ public int Native_FinishZone(Handle plugin, int numParams)
 	}
 	
 	return CreateZone(g_sZone_Name[zone], g_iZone_Type[zone], g_fZone_Start[zone], g_fZone_End[zone], g_fZoneRadius[zone], g_iZoneColor[zone], g_hZonePointsData[zone], g_fZonePointsHeight[zone], g_hZoneEffects[zone], zone);
-} 
+}
 
 public int Native_HideZoneFromClient(Handle plugin, int numParams)
 {
@@ -5208,15 +5390,4 @@ public int Native_UnHideZoneFromClient(Handle plugin, int numParams)
 	g_bHideZoneRender[client][zone] = false;
 	
 	return true;
-}
-
-stock int GetSomeWhatDecentRandom()
-{
-	int iWaiter = 0;
-	
-	while(iWaiter < 10) {
-		iWaiter++;
-	}
-	
-	return RoundToNearest(GetGameTime() + GetURandomFloat() + GetRandomFloat(1.0, 638490753.0));
-}
+} 

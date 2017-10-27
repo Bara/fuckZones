@@ -193,6 +193,31 @@ native ArrayList ZonesManager_GetZonePoints(int zone);
 native float ZonesManager_GetZonePointHeight(int zone);
 
 /**
+ * Gets the lowest corner of a zone.
+ *
+ * @param zone			Zone Entity Index.
+ * @return				Lowest Corner, -1.0 on failure.
+ */
+native float ZonesManager_GetZoneLowestCorner(int zone);
+
+/**
+ * Gets the highest corner of a zone.
+ *
+ * @param zone			Zone Entity Index.
+ * @return				Highest Corner, -1.0 on failure.
+ */
+native float ZonesManager_GetZoneHighestCorner(int zone);
+
+/**
+ * Checks if a vector of points is inside zone.
+ *
+ * @param zone			Zone Entity Index.
+ * @param origin		Vector origin.
+ * @return				True / false.
+ */
+native float ZonesManager_IsVectorInsideZone(int zone, float origin[3]);
+
+/**
  * Starts a zone creation.
  *
  * @param type			Zone type.
@@ -516,6 +541,9 @@ public void __pl_zones_manager_SetNTVOptional()
 	MarkNativeAsOptional("ZonesManager_GetZoneRadius");
 	MarkNativeAsOptional("ZonesManager_GetZoneColor");
 	MarkNativeAsOptional("ZonesManager_GetZoneType");
+	MarkNativeAsOptional("ZonesManager_GetZoneLowestCorner");
+	MarkNativeAsOptional("ZonesManager_GetZoneHighestCorner");
+	MarkNativeAsOptional("ZonesManager_IsVectorInsideZone");
 	MarkNativeAsOptional("ZonesManager_TeleportClientToZone");
 	MarkNativeAsOptional("ZonesManager_GetClientLookPoint");
 	MarkNativeAsOptional("ZonesManager_RegisterEffect");
