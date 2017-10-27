@@ -575,8 +575,8 @@ public void __pl_zones_manager_SetNTVOptional()
 
 public SharedPlugin __pl_zones_manager = 
 {
-	name = "zones_manager", 
-	file = "zones_manager.smx", 
+	name = "zones_manager_core", 
+	file = "zones_manager_core.smx", 
 	#if defined REQUIRE_PLUGIN
 	required = 1, 
 	#else
