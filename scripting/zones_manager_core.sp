@@ -656,6 +656,7 @@ void ShowZones(int client, float fTime = 0.1)
 	float nextpoint_expanded[3];
 	
 	int index;
+	int entref = INVALID_ENT_REFERENCE;
 	int zone = INVALID_ENT_INDEX;
 	
 	int color[4] =  { 255, 0, 0, 255 };
@@ -666,15 +667,15 @@ void ShowZones(int client, float fTime = 0.1)
 	{
 		for (int i = 0; i < GetArraySize(g_hClientZones[client]); i++)
 		{
-			zone = GetArrayCell(g_hClientZones[client], i);
+			entref = GetArrayCell(g_hClientZones[client], i);
 			
-			if (zone == INVALID_ENT_REFERENCE)
+			if (entref == INVALID_ENT_REFERENCE)
 			{
 				g_hClientZones[client].Erase(i);
 				continue;
 			}
 			
-			zone = EntRefToEntIndex(zone);
+			zone = EntRefToEntIndex(entref);
 			
 			if (!IsValidZone(zone))
 			{
@@ -687,14 +688,6 @@ void ShowZones(int client, float fTime = 0.1)
 				continue;
 			}
 			
-			if (g_bZoneSpawned[zone])
-			{
-				color[0] = g_iZoneColor[zone][0];
-				color[1] = g_iZoneColor[zone][1];
-				color[2] = g_iZoneColor[zone][2];
-				color[3] = g_iZoneColor[zone][3];
-			}
-			
 			switch (GetZoneType(zone))
 			{
 				case ZONE_TYPE_BOX:
@@ -705,8 +698,8 @@ void ShowZones(int client, float fTime = 0.1)
 				
 				case ZONE_TYPE_CIRCLE:
 				{
-					TE_SetupBeamRingPoint(g_fZone_Start[zone], g_fZoneRadius[zone], g_fZoneRadius[zone] + 4.0, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.0, color, 0, 0);
-					TE_SendToClient(client, 0.0);
+					TE_SetupBeamRingPoint(g_fZone_Start[zone], g_fZoneRadius[zone], g_fZoneRadius[zone] + 0.1, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.0, color, 0, 0);
+					TE_SendToClient(client);
 				}
 				
 				case ZONE_TYPE_POLY:
@@ -758,23 +751,45 @@ void ShowZones(int client, float fTime = 0.1)
 		}
 	}
 	
-	if (looped <= 0 && bShowAllZones[client])
+	bool skip = false;
+	
+	if (bShowAllZones[client])
 	{
 		for (int x = 0; x < GetArraySize(g_hZoneEntities); x++)
 		{
-			zone = GetArrayCell(g_hZoneEntities, x);
+			entref = GetArrayCell(g_hZoneEntities, x);
 			
-			if (zone == INVALID_ENT_REFERENCE)
+			if (entref == INVALID_ENT_REFERENCE)
 			{
 				g_hZoneEntities.Erase(x);
 				continue;
 			}
 			
-			zone = EntRefToEntIndex(zone);
+			zone = EntRefToEntIndex(entref);
 			
 			if (!IsValidZone(zone))
 			{
 				g_hZoneEntities.Erase(x);
+				continue;
+			}
+			
+			skip = false;
+			
+			if (g_hClientZones[client] != null)
+			{
+				skip = false;
+				
+				for (int y = 0; y < GetArraySize(g_hClientZones[client]); y++)
+				{
+					if(entref == GetArrayCell(g_hClientZones[client], y)) {
+						skip = true;
+						break;
+					}
+				}
+			}
+			
+			if(skip) 
+			{
 				continue;
 			}
 			
@@ -801,8 +816,8 @@ void ShowZones(int client, float fTime = 0.1)
 				
 				case ZONE_TYPE_CIRCLE:
 				{
-					TE_SetupBeamRingPoint(g_fZone_Start[zone], g_fZoneRadius[zone], g_fZoneRadius[zone] + 4.0, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.0, color, 0, 0);
-					TE_SendToClient(client, 0.0);
+					TE_SetupBeamRingPoint(g_fZone_Start[zone], g_fZoneRadius[zone], g_fZoneRadius[zone] + 0.1, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.0, color, 0, 0);
+					TE_SendToClient(client);
 				}
 				
 				case ZONE_TYPE_POLY:
