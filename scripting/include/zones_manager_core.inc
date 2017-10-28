@@ -158,12 +158,12 @@ native bool ZonesManager_GetZoneColor(int zone, int buffer[4]);
 native int ZonesManager_GetZoneType(int zone);
 
 /**
- * Retrieves a zone which has been assigned to client.
+ * Retrieves an arraylist of zones which has been assigned to client.
  * 
  * @param client		Client Index.
- * @return				Zone Entity Index, -1 on failure.
+ * @return				ArrayList of zones, null of failure.
  */
-native int ZonesManager_GetAssignedZone(int client);
+native ArrayList ZonesManager_GetAssignedZones(int client);
 
 /**
  * Gets the number of points in a zone.
@@ -239,9 +239,10 @@ native bool ZonesManager_AssignZone(int client, int zone);
  * Unassigns zone creation from a client.
  * 
  * @param client		Client Index.
+ * @param zone			Zone Entity Index.
  * @return				True if successful, false otherwise.
  */
-native bool ZonesManager_UnAssignZone(int client);
+native bool ZonesManager_UnAssignZone(int client, int zone);
 
 /**
  * Sets a zones name.
@@ -530,7 +531,7 @@ public void __pl_zones_manager_SetNTVOptional()
 	MarkNativeAsOptional("ZonesManager_IsEntityInZone");
 	MarkNativeAsOptional("ZonesManager_AssignZone");
 	MarkNativeAsOptional("ZonesManager_UnAssignZone");
-	MarkNativeAsOptional("ZonesManager_GetAssignedZone");
+	MarkNativeAsOptional("ZonesManager_GetAssignedZones");
 	MarkNativeAsOptional("ZonesManager_GetZonePointsCount");
 	MarkNativeAsOptional("ZonesManager_GetZonePoints");
 	MarkNativeAsOptional("ZonesManager_GetZonePointHeight");
