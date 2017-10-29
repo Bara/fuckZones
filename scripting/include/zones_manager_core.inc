@@ -293,14 +293,14 @@ native bool ZonesManager_SetZoneRadius(int zone, float radius);
 native bool ZonesManager_SetZoneColor(int zone, int color[4]);
 
 /**
- * Sets a zones points height.
- * This is currently only applicable to polygon zones.
+ * Sets a zones height.
+ * This is currently only applicable to polygon and circle zones.
  *
  * @param zone			Zone Entity Index.
  * @param height		Height of the zone points.
  * @return				True if successful, false otherwise.
  */
-native bool ZonesManager_SetPointsHeight(int zone, float height);
+native bool ZonesManager_SetZoneHeight(int zone, float height);
 
 /**
  * Adds a point to a zone.
@@ -557,7 +557,7 @@ public void __pl_zones_manager_SetNTVOptional()
 	MarkNativeAsOptional("ZonesManager_SetZoneEnd");
 	MarkNativeAsOptional("ZonesManager_SetZoneRadius");
 	MarkNativeAsOptional("ZonesManager_SetZoneColor");
-	MarkNativeAsOptional("ZonesManager_SetPointsHeight");
+	MarkNativeAsOptional("ZonesManager_SetZoneHeight");
 	MarkNativeAsOptional("ZonesManager_AddZonePoint");
 	MarkNativeAsOptional("ZonesManager_AddMultipleZonePoints");
 	MarkNativeAsOptional("ZonesManager_RemoveZonePoint");

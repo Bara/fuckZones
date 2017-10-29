@@ -46,7 +46,7 @@ float g_fZoneRadius[MAX_ENTITY_LIMIT];
 int g_iZoneColor[MAX_ENTITY_LIMIT][4];
 StringMap g_hZoneEffects[MAX_ENTITY_LIMIT];
 ArrayList g_hZonePointsData[MAX_ENTITY_LIMIT];
-float g_fZonePointsHeight[MAX_ENTITY_LIMIT];
+float g_fZoneHeight[MAX_ENTITY_LIMIT];
 float g_fZonePointsDistance[MAX_ENTITY_LIMIT];
 float g_fZonePointsMin[MAX_ENTITY_LIMIT][3];
 float g_fZonePointsMax[MAX_ENTITY_LIMIT][3];
@@ -114,7 +114,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("ZonesManager_SetZoneEnd", Native_SetZoneEnd);
 	CreateNative("ZonesManager_SetZoneRadius", Native_SetZoneRadius);
 	CreateNative("ZonesManager_SetZoneColor", Native_SetZoneColor);
-	CreateNative("ZonesManager_SetPointsHeight", Native_SetPointsHeight);
+	CreateNative("ZonesManager_SetZoneHeight", Native_SetZoneHeight);
 	CreateNative("ZonesManager_AddZonePoint", Native_AddZonePoint);
 	CreateNative("ZonesManager_AddMultipleZonePoints", Native_AddMultipleZonePoints);
 	CreateNative("ZonesManager_RemoveZonePoint", Native_RemoveZonePoint);
@@ -349,7 +349,7 @@ int SpawnAZoneFromKeyValues(KeyValues kv)
 	int iColor[4] =  { 0, 255, 255, 255 };
 	KvGetColor(kv, "color", iColor[0], iColor[1], iColor[2], iColor[3]);
 	
-	float points_height = KvGetFloat(kv, "points_height", 256.0);
+	float height = KvGetFloat(kv, "height", 0.0);
 	
 	ArrayList points = CreateArray(3);
 	
@@ -406,7 +406,7 @@ int SpawnAZoneFromKeyValues(KeyValues kv)
 	
 	delete kv;
 	
-	return CreateZone(name, type, vStartPosition, vEndPosition, fRadius, iColor, points, points_height, effects);
+	return CreateZone(name, type, vStartPosition, vEndPosition, fRadius, iColor, points, height, effects);
 }
 
 public void OnGameFrame()
@@ -577,7 +577,7 @@ void ResetZoneVariables(int zone)
 		g_hZonePointsData[zone] = null;
 	}
 	
-	g_fZonePointsHeight[zone] = -1.0;
+	g_fZoneHeight[zone] = -1.0;
 	g_fZonePointsDistance[zone] = -1.0;
 	
 	Array_Fill(g_fZonePointsMin[zone], 3, -1.0);
@@ -700,6 +700,12 @@ void ShowZones(int client, float fTime = 0.1)
 				{
 					TE_SetupBeamRingPoint(g_fZone_Start[zone], g_fZoneRadius[zone], g_fZoneRadius[zone] + 0.1, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.0, color, 0, 0);
 					TE_SendToClient(client);
+					
+					CopyArrayToArray(g_fZone_Start[zone], coordinates_expanded, 3);
+					coordinates_expanded[2] += g_fZoneHeight[zone];
+					
+					TE_SetupBeamRingPoint(coordinates_expanded, g_fZoneRadius[zone], g_fZoneRadius[zone] + 0.1, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.0, color, 0, 0);
+					TE_SendToClient(client);
 				}
 				
 				case ZONE_TYPE_POLY:
@@ -726,10 +732,10 @@ void ShowZones(int client, float fTime = 0.1)
 						GetArrayArray(g_hZonePointsData[zone], index, nextpoint, sizeof(nextpoint));
 						
 						CopyArrayToArray(coordinates, coordinates_expanded, 3);
-						coordinates_expanded[2] += g_fZonePointsHeight[zone];
+						coordinates_expanded[2] += g_fZoneHeight[zone];
 						
 						CopyArrayToArray(nextpoint, nextpoint_expanded, 3);
-						nextpoint_expanded[2] += g_fZonePointsHeight[zone];
+						nextpoint_expanded[2] += g_fZoneHeight[zone];
 						
 						TE_SetupBeamPoints(coordinates, nextpoint, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.7, 2, 0.0, color, 0);
 						TE_SendToClient(client);
@@ -908,7 +914,7 @@ bool IsValidZone(int zone)
 	return g_bIsZone[zone];
 }
 
-int CreateZone(const char[] sName, int type, float start[3], float end[3], float radius, int color[4], ArrayList points = null, float points_height = 256.0, StringMap effects = null, int entity = -1)
+int CreateZone(const char[] sName, int type, float start[3], float end[3], float radius, int color[4], ArrayList points = null, float height = 0.0, StringMap effects = null, int entity = -1)
 {
 	char sType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneTypeName(type, sType, sizeof(sType));
@@ -1055,7 +1061,7 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 	CopyArrayToArray(end, g_fZone_End[entity], 3);
 	g_fZoneRadius[entity] = radius;
 	g_iZoneColor[entity] = color;
-	g_fZonePointsHeight[entity] = points_height;
+	g_fZoneHeight[entity] = height;
 	
 	LogDebug("zonesmanager", "Zone %s has been spawned %s as a %s zone with the entity index %i.", sName, IsValidEntity(entity) ? "successfully" : "not successfully", sType, entity);
 	
@@ -1646,9 +1652,9 @@ KeyValues CreateZoneKeyValues(int zone)
 		return null;
 	}
 	
-	if (g_fZonePointsHeight[zone] == -1.0 && g_iZone_Type[zone] == ZONE_TYPE_POLY)
+	if (g_fZoneHeight[zone] == -1.0 && (g_iZone_Type[zone] == ZONE_TYPE_POLY || g_iZone_Type[zone] == ZONE_TYPE_CIRCLE))
 	{
-		ThrowError("Points height for zone %d is undefined", zone);
+		ThrowError("Height for zone %d is undefined", zone);
 		return null;
 	}
 	
@@ -1676,12 +1682,13 @@ KeyValues CreateZoneKeyValues(int zone)
 		{
 			KvSetVector(kv, "start", g_fZone_Start[zone]);
 			KvSetFloat(kv, "radius", g_fZoneRadius[zone]);
+			KvSetFloat(kv, "height", g_fZoneHeight[zone]);
 		}
 		
 		case ZONE_TYPE_POLY:
 		{
 			KvSetVector(kv, "start", g_fZone_Start[zone]);
-			KvSetFloat(kv, "points_height", g_fZonePointsHeight[zone]);
+			KvSetFloat(kv, "height", g_fZoneHeight[zone]);
 			
 			if (KvJumpToKey(kv, "points", true))
 			{
@@ -1846,7 +1853,8 @@ bool IsVectorInsideZone(int zone, float origin[3])
 		return false;
 	}
 	
-	float zoneOrigin[3];
+	float zoneOrigin[3]; float zoneOrigin2[3];
+	float origin2[3];
 	
 	switch (GetZoneType(zone))
 	{
@@ -1894,7 +1902,19 @@ bool IsVectorInsideZone(int zone, float origin[3])
 		case ZONE_TYPE_CIRCLE:
 		{
 			GetEntPropVector(zone, Prop_Data, "m_vecOrigin", zoneOrigin);
-			return GetVectorDistance(origin, zoneOrigin) <= (g_fZoneRadius[zone] / 2.0);
+			
+			if(FloatAbs(zoneOrigin[2] - origin[2]) > g_fZoneHeight[zone]) 
+			{
+				return false;
+			}
+			
+			CopyArrayToArray(zoneOrigin, zoneOrigin2, 3);
+			CopyArrayToArray(origin, origin2, 3);
+			
+			zoneOrigin2[2] = 0.0;
+			origin2[2] = 0.0;
+			
+			return GetVectorDistance(origin2, zoneOrigin2) <= (g_fZoneRadius[zone] / 2.0);
 		}
 		
 		case ZONE_TYPE_POLY:
@@ -2030,7 +2050,7 @@ bool IsPointInZone(float point[3], int zone)
 		bool baseInter = get_line_intersection(ray[1], ray[2], point[1], point[2], currentpoint[1], currentpoint[2], nextpoint[1], nextpoint[2], baseY, baseZ);
 		
 		//Get intersections of the top
-		bool baseInter2 = get_line_intersection(ray[1], ray[2], point[1], point[2], currentpoint[1] + g_fZonePointsHeight[zone], currentpoint[2] + g_fZonePointsHeight[zone], nextpoint[1] + g_fZonePointsHeight[zone], nextpoint[2] + g_fZonePointsHeight[zone], baseY2, baseZ2);
+		bool baseInter2 = get_line_intersection(ray[1], ray[2], point[1], point[2], currentpoint[1] + g_fZoneHeight[zone], currentpoint[2] + g_fZoneHeight[zone], nextpoint[1] + g_fZoneHeight[zone], nextpoint[2] + g_fZoneHeight[zone], baseY2, baseZ2);
 		
 		//If base intersected, store the line for later
 		if (baseInter && lIntNum < sizeof(fIntersect))
@@ -2066,7 +2086,7 @@ bool IsPointInZone(float point[3], int zone)
 			//Get slope of ray
 			float y = (lSlope * xint) + lEq;
 			
-			if (y > y2 && y < y2 + 128.0 + g_fZonePointsHeight[zone])
+			if (y > y2 && y < y2 + 128.0 + g_fZoneHeight[zone])
 			{
 				//The ray intersected the line and is within the height
 				intersections++;
@@ -2208,7 +2228,7 @@ bool IsPointInZone(float point[3], int zone)
 
 bool IsOriginInBox(float origin[3], int zone)
 {
-	if (origin[0] >= g_fZonePointsMin[zone][0] && origin[1] >= g_fZonePointsMin[zone][1] && origin[2] >= g_fZonePointsMin[zone][2] && origin[0] <= g_fZonePointsMax[zone][0] + g_fZonePointsHeight[zone] && origin[1] <= g_fZonePointsMax[zone][1] + g_fZonePointsHeight[zone] && origin[2] <= g_fZonePointsMax[zone][2] + g_fZonePointsHeight[zone])
+	if (origin[0] >= g_fZonePointsMin[zone][0] && origin[1] >= g_fZonePointsMin[zone][1] && origin[2] >= g_fZonePointsMin[zone][2] && origin[0] <= g_fZonePointsMax[zone][0] + g_fZoneHeight[zone] && origin[1] <= g_fZonePointsMax[zone][1] + g_fZoneHeight[zone] && origin[2] <= g_fZonePointsMax[zone][2] + g_fZoneHeight[zone])
 	{
 		return true;
 	}
@@ -2480,13 +2500,15 @@ public int Native_GetZonePointHeight(Handle plugin, int numParams)
 		return view_as<int>(-1.0);
 	}
 	
-	if (GetZoneType(zone) != ZONE_TYPE_POLY)
+	int type = GetZoneType(zone);
+	
+	if (type != ZONE_TYPE_POLY && type != ZONE_TYPE_CIRCLE)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "Zone %d is not a polygon", zone);
 		return view_as<int>(-1.0);
 	}
 	
-	return view_as<int>(g_fZonePointsHeight[zone]);
+	return view_as<int>(g_fZoneHeight[zone]);
 }
 
 public int Native_TeleportClientToZone(Handle plugin, int numParams)
@@ -2669,10 +2691,10 @@ public int Native_CreateZoneAdvanced(Handle plugin, int numParams)
 	float radius = view_as<float>(GetNativeCell(5));
 	int color[4]; GetNativeArray(6, color, 4);
 	ArrayList points = view_as<ArrayList>(GetNativeCell(7));
-	float points_height = view_as<float>(GetNativeCell(8));
+	float height = view_as<float>(GetNativeCell(8));
 	StringMap effects = view_as<StringMap>(GetNativeCell(9));
 	
-	int zone = CreateZone(sName, type, start, end, radius, color, points, points_height, effects);
+	int zone = CreateZone(sName, type, start, end, radius, color, points, height, effects);
 	
 	if (!IsValidZone(zone))
 	{
@@ -2854,7 +2876,7 @@ public int Native_SetZoneColor(Handle plugin, int numParams)
 	return true;
 }
 
-public int Native_SetPointsHeight(Handle plugin, int numParams)
+public int Native_SetZoneHeight(Handle plugin, int numParams)
 {
 	int zone = GetNativeCell(1);
 	float height = view_as<float>(GetNativeCell(2));
@@ -2865,13 +2887,15 @@ public int Native_SetPointsHeight(Handle plugin, int numParams)
 		return false;
 	}
 	
-	if (GetZoneType(zone) != ZONE_TYPE_POLY)
+	int type = GetZoneType(zone);
+	
+	if (type != ZONE_TYPE_POLY && type != ZONE_TYPE_CIRCLE)
 	{
-		ThrowNativeError(SP_ERROR_NATIVE, "Zone %d is not a polygon", zone);
+		ThrowNativeError(SP_ERROR_NATIVE, "Zone %d is not a polygon or circle", zone);
 		return INVALID_ENT_INDEX;
 	}
 	
-	g_fZonePointsHeight[zone] = height;
+	g_fZoneHeight[zone] = height;
 	
 	return true;
 }
@@ -3199,13 +3223,13 @@ public int Native_FinishZone(Handle plugin, int numParams)
 		return INVALID_ENT_INDEX;
 	}
 	
-	if (g_fZonePointsHeight[zone] == -1.0 && g_iZone_Type[zone] == ZONE_TYPE_POLY)
+	if (g_fZoneHeight[zone] == -1.0 && (g_iZone_Type[zone] == ZONE_TYPE_POLY || g_iZone_Type[zone] == ZONE_TYPE_CIRCLE))
 	{
-		ThrowNativeError(SP_ERROR_NATIVE, "Points height for zone %d is undefined", zone);
+		ThrowNativeError(SP_ERROR_NATIVE, "Height for zone %d is undefined", zone);
 		return INVALID_ENT_INDEX;
 	}
 	
-	return CreateZone(g_sZone_Name[zone], g_iZone_Type[zone], g_fZone_Start[zone], g_fZone_End[zone], g_fZoneRadius[zone], g_iZoneColor[zone], g_hZonePointsData[zone], g_fZonePointsHeight[zone], g_hZoneEffects[zone], zone);
+	return CreateZone(g_sZone_Name[zone], g_iZone_Type[zone], g_fZone_Start[zone], g_fZone_End[zone], g_fZoneRadius[zone], g_iZoneColor[zone], g_hZonePointsData[zone], g_fZoneHeight[zone], g_hZoneEffects[zone], zone);
 }
 
 public int Native_HideZoneFromClient(Handle plugin, int numParams)
