@@ -55,11 +55,13 @@ native void ZonesManager_RegisterEffectKey(const char[] name, const char[] effec
  * Registers a new zone effect key.
  */
 native void ZonesManager_RequestQueueEffects();
-
 /**
- * Saves current map zones to config (Currently does not work with zones created by natives).
+ * Checks if an enttiy is a valid zone.
+ *
+ * @param entity		Zone Entity Index.
+ * @return				True if a valid zone, false otherwise.
  */
-native void ZonesManager_SaveZones();
+native bool ZonesManager_IsValidZone(int zone);
 
 /**
  * Clears all zone entites from the map.
@@ -83,7 +85,6 @@ native bool ZonesManager_IsEntityInZone(int entity, int zone);
  * @return				True if successful, false otherwise.
  */
 native bool ZonesManager_TeleportClientToZone(int client, int zone);
-
 
 /**
  * Gets a clients current look point.
@@ -527,6 +528,7 @@ public void __pl_zones_manager_SetNTVOptional()
 {
 	MarkNativeAsOptional("ZonesManager_RequestQueueEffects");
 	MarkNativeAsOptional("ZonesManager_SaveZones");
+	MarkNativeAsOptional("ZonesManager_IsValidZone");
 	MarkNativeAsOptional("ZonesManager_ClearAllZones");
 	MarkNativeAsOptional("ZonesManager_IsEntityInZone");
 	MarkNativeAsOptional("ZonesManager_AssignZone");

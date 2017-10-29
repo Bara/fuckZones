@@ -83,6 +83,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	
 	CreateNative("ZonesManager_RequestQueueEffects", Native_RequestQueueEffects);
 	CreateNative("ZonesManager_ClearAllZones", Native_ClearAllZones);
+	CreateNative("ZonesManager_IsValidZone", Native_IsValidZone);
 	CreateNative("ZonesManager_IsEntityInZone", Native_IsEntityInZone);
 	CreateNative("ZonesManager_AssignZone", Native_AssignZone);
 	CreateNative("ZonesManager_UnAssignZone", Native_UnAssignZone);
@@ -2338,6 +2339,13 @@ public int Native_RequestQueueEffects(Handle plugin, int numParams)
 public int Native_ClearAllZones(Handle plugin, int numParams)
 {
 	ClearAllZones();
+}
+
+public int Native_IsValidZone(Handle plugin, int numParams)
+{
+	int zone = GetNativeCell(1);
+	
+	return IsValidZone(zone);
 }
 
 public int Native_IsEntityInZone(Handle plugin, int numParams)
