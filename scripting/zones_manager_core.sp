@@ -1827,7 +1827,7 @@ float GetHighestCorner(int zone)
 		
 		case ZONE_TYPE_CIRCLE:
 		{
-			fHighest = g_fZone_Start[zone][2] + g_fZoneRadius[zone]; // Is this even right? fuck circles..
+			fHighest = g_fZone_Start[zone][2] + g_fZoneHeight[zone]; // Is this even right? fuck circles..
 		}
 		
 		case ZONE_TYPE_POLY:
