@@ -210,6 +210,15 @@ native float ZonesManager_GetZoneLowestCorner(int zone);
 native float ZonesManager_GetZoneHighestCorner(int zone);
 
 /**
+ * Gets the Teleport location of a zone.
+ *
+ * @param zone			Zone Entity Index.
+ * @param location		Buffer to store location.
+ * @return				True if successful, false otherwise.
+ */
+native bool ZonesManager_GetTeleportLocation(int zone, float location[3]);
+
+/**
  * Checks if a vector of points is inside zone.
  *
  * @param zone			Zone Entity Index.
@@ -546,6 +555,7 @@ public void __pl_zones_manager_SetNTVOptional()
 	MarkNativeAsOptional("ZonesManager_GetZoneType");
 	MarkNativeAsOptional("ZonesManager_GetZoneLowestCorner");
 	MarkNativeAsOptional("ZonesManager_GetZoneHighestCorner");
+	MarkNativeAsOptional("ZonesManager_GetTeleportLocation");
 	MarkNativeAsOptional("ZonesManager_IsVectorInsideZone");
 	MarkNativeAsOptional("ZonesManager_TeleportClientToZone");
 	MarkNativeAsOptional("ZonesManager_GetClientLookPoint");

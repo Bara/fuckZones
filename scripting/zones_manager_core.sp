@@ -102,6 +102,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("ZonesManager_GetZoneType", Native_GetZoneType);
 	CreateNative("ZonesManager_GetZoneLowestCorner", Native_GetZoneLowestCorner);
 	CreateNative("ZonesManager_GetZoneHighestCorner", Native_GetZoneHighestCorner);
+	CreateNative("ZonesManager_GetZoneTeleportLocation", Native_GetTeleportLocation);
 	CreateNative("ZonesManager_IsVectorInsideZone", Native_IsVectorInsideZone);
 	CreateNative("ZonesManager_TeleportClientToZone", Native_TeleportClientToZone);
 	CreateNative("ZonesManager_GetClientLookPoint", Native_GetClientLookPoint);
@@ -1499,12 +1500,27 @@ bool TeleportToZone(int client, int zone)
 		return false;
 	}
 	
+	float vLocation[3];
+	
+	if(!GetTeleportLocation(zone, vLocation)) 
+	{
+		return false;
+	}
+	
+	TeleportEntity(client, vLocation, NULL_VECTOR, NULL_VECTOR);
+	
+	return true;
+}
+
+bool GetTeleportLocation(int zone, float vLocation[3])
+{
 	if (!IsValidZone(zone))
 	{
 		return false;
 	}
 	
-	float fMiddle[3];
+	float vMiddle[3];
+	float fLowestCorner = GetLowestCorner(zone);
 	
 	switch (GetZoneType(zone))
 	{
@@ -1520,51 +1536,51 @@ bool TeleportToZone(int client, int zone)
 				return false;
 			}
 			
-			GetMiddleOfABox(g_fZone_Start[zone], g_fZone_End[zone], fMiddle);
+			GetMiddleOfABox(g_fZone_Start[zone], g_fZone_End[zone], vMiddle);
 		}
 		
 		case ZONE_TYPE_CIRCLE:
 		{
-			CopyArrayToArray(g_fZone_Start[zone], fMiddle, 3);
+			CopyArrayToArray(g_fZone_Start[zone], vMiddle, 3);
 			
-			if(g_fZoneHeight[zone] >= 32.0) 
+			if (g_fZoneHeight[zone] >= 32.0)
 			{
-				fMiddle[2] = (g_fZoneHeight[zone] / 2.0) + fMiddle[2];
-			}
-			
-			else 
-			{
-				fMiddle[2] += 16.0;
+				vMiddle[2] = (g_fZoneHeight[zone] / 2.0) + vMiddle[2];
 			}
 		}
 		
 		case ZONE_TYPE_POLY:
 		{
-			GetPolygonCenter(zone, fMiddle);
+			GetPolygonCenter(zone, vMiddle);
 			
-			if(g_fZoneHeight[zone] >= 32.0) 
+			if (g_fZoneHeight[zone] >= 32.0)
 			{
-				fMiddle[2] = (g_fZoneHeight[zone] / 2.0) + GetLowestCorner(zone);
-			} 
-			
-			else 
-			{
-				fMiddle[2] = GetLowestCorner(zone) + 16.0;
+				vMiddle[2] = (g_fZoneHeight[zone] / 2.0) + fLowestCorner;
 			}
 		}
 	}
 	
-	if(TR_PointOutsideWorld(fMiddle))
+	if (vMiddle[2] < fLowestCorner)
+	{
+		vMiddle[2] = (fLowestCorner + GetHighestCorner(zone)) / 2;
+		
+		if (vMiddle[2] < fLowestCorner)
+		{
+			vMiddle[2] = fLowestCorner + 16.0;
+		}
+	}
+	
+	if (TR_PointOutsideWorld(vMiddle))
 	{
 		return false;
 	}
 	
-	if(!IsVectorInsideZone(zone, fMiddle)) 
+	if (!IsVectorInsideZone(zone, vMiddle, vMiddle[2]))
 	{
 		return false;
 	}
 	
-	TeleportEntity(client, fMiddle, NULL_VECTOR, NULL_VECTOR);
+	CopyArrayToArray(vMiddle, vLocation, 3);
 	
 	return true;
 }
@@ -1887,7 +1903,7 @@ float GetHighestCorner(int zone)
 	return fHighest;
 }
 
-bool IsVectorInsideZone(int zone, float origin[3])
+stock bool IsVectorInsideZone(int zone, float origin[3], float skip = 2147483647.0)
 {
 	if (!IsValidZone(zone))
 	{
@@ -1896,6 +1912,7 @@ bool IsVectorInsideZone(int zone, float origin[3])
 	
 	float zoneOrigin[3]; float zoneOrigin2[3];
 	float origin2[3];
+	int iCount = 0;
 	
 	switch (GetZoneType(zone))
 	{
@@ -1919,19 +1936,17 @@ bool IsVectorInsideZone(int zone, float origin[3])
 				}
 			}
 			
-			int iCheck = 0;
-			
 			float tmpOrigin[3]; CopyArrayToArray(origin, tmpOrigin, 3); tmpOrigin[2] += 5.0;
 			
-			for (int i = 0; i < 3; i++)
+			for (int i = 0; i < 4; i++)
 			{
 				if ((fCorners[7][i] >= fCorners[0][i] && (tmpOrigin[i] <= (fCorners[7][i]) && tmpOrigin[i] >= (fCorners[0][i]))) || 
 					(fCorners[0][i] >= fCorners[7][i] && (tmpOrigin[i] <= (fCorners[0][i]) && tmpOrigin[i] >= (fCorners[7][i]))))
 				{
-					iCheck++;
+					iCount++;
 				}
 				
-				if (iCheck == 3)
+				if (iCount > 2 || (iCount == 2 && origin[0] == skip || origin[1] == skip || origin[2] == skip))
 				{
 					return true;
 				}
@@ -1944,7 +1959,7 @@ bool IsVectorInsideZone(int zone, float origin[3])
 		{
 			GetEntPropVector(zone, Prop_Data, "m_vecOrigin", zoneOrigin);
 			
-			if (FloatAbs(zoneOrigin[2] - origin[2]) > g_fZoneHeight[zone])
+			if (origin[2] != skip && FloatAbs(zoneOrigin[2] - origin[2]) > g_fZoneHeight[zone])
 			{
 				return false;
 			}
@@ -1954,6 +1969,18 @@ bool IsVectorInsideZone(int zone, float origin[3])
 			
 			zoneOrigin2[2] = 0.0;
 			origin2[2] = 0.0;
+			
+			if (origin[0] == skip)
+			{
+				zoneOrigin2[0] = 0.0;
+				origin2[0] = 0.0;
+			}
+			
+			else if (origin[1] == skip)
+			{
+				zoneOrigin2[1] = 0.0;
+				origin2[1] = 0.0;
+			}
 			
 			return GetVectorDistance(origin2, zoneOrigin2) <= (g_fZoneRadius[zone] / 2.0);
 		}
@@ -1990,11 +2017,16 @@ bool IsVectorInsideZone(int zone, float origin[3])
 			{
 				if (IsPointInZone(entityPoints[x], zone))
 				{
-					return true;
+					iCount++;
 				}
 			}
 			
-			return false;
+			if (iCount > 2 || (iCount == 2 && origin[0] == skip || origin[1] == skip || origin[2] == skip))
+			{
+				return true;
+			}
+			
+			return true;
 		}
 	}
 	
@@ -2752,6 +2784,26 @@ public int Native_GetZoneHighestCorner(Handle plugin, int numParams)
 	}
 	
 	return view_as<int>(GetHighestCorner(zone));
+}
+
+public int Native_GetTeleportLocation(Handle plugin, int numParams)
+{
+	int zone = GetNativeCell(1);
+	
+	if (!IsValidZone(zone))
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "Entity %d is not a valid zone", zone);
+		return false;
+	}
+	
+	float vLocation[3];
+	
+	if(!GetTeleportLocation(zone, vLocation)) 
+	{
+		return false;
+	}
+	
+	return SetNativeArray(2, vLocation, 3) == SP_ERROR_NONE;
 }
 
 public int Native_IsVectorInsideZone(Handle plugin, int numParams)
