@@ -501,12 +501,12 @@ void ResetCreateZoneVariables(int client)
 			
 			zone = EntRefToEntIndex(zone);
 			
-			if(!IsValidZone(zone)) 
+			if (!IsValidZone(zone))
 			{
 				continue;
 			}
 			
-			if(g_bZoneSpawned[zone]) 
+			if (g_bZoneSpawned[zone])
 			{
 				continue;
 			}
@@ -535,11 +535,11 @@ void ResetZoneVariables(int zone)
 	{
 		g_bHideZoneRender[i][zone] = false;
 		
-		if(g_hClientZones[i] != null) 
+		if (g_hClientZones[i] != null)
 		{
 			int arraycell = FindValueInArray(g_hClientZones[i], EntIndexToEntRef(zone));
 			
-			if(arraycell != -1)
+			if (arraycell != -1)
 			{
 				g_hClientZones[i].Erase(arraycell);
 			}
@@ -712,7 +712,7 @@ void ShowZones(int client, float fTime = 0.1)
 				case ZONE_TYPE_POLY:
 				{
 					
-					if(g_hZonePointsData[zone] == null) 
+					if (g_hZonePointsData[zone] == null)
 					{
 						continue;
 					}
@@ -721,7 +721,7 @@ void ShowZones(int client, float fTime = 0.1)
 					{
 						GetArrayArray(g_hZonePointsData[zone], y, coordinates, sizeof(coordinates));
 						
-						if(y + 1 >= GetArraySize(g_hZonePointsData[zone]))
+						if (y + 1 >= GetArraySize(g_hZonePointsData[zone]))
 						{
 							index = 0;
 						}
@@ -751,9 +751,9 @@ void ShowZones(int client, float fTime = 0.1)
 		}
 	}
 	
-	if(looped <= 0) 
+	if (looped <= 0)
 	{
-		if(g_hClientZones[client] != null) {
+		if (g_hClientZones[client] != null) {
 			delete g_hClientZones[client];
 		}
 	}
@@ -788,14 +788,14 @@ void ShowZones(int client, float fTime = 0.1)
 				
 				for (int y = 0; y < GetArraySize(g_hClientZones[client]); y++)
 				{
-					if(entref == GetArrayCell(g_hClientZones[client], y)) {
+					if (entref == GetArrayCell(g_hClientZones[client], y)) {
 						skip = true;
 						break;
 					}
 				}
 			}
 			
-			if(skip) 
+			if (skip)
 			{
 				continue;
 			}
@@ -829,7 +829,7 @@ void ShowZones(int client, float fTime = 0.1)
 				
 				case ZONE_TYPE_POLY:
 				{
-					if(g_hZonePointsData[zone] == null) 
+					if (g_hZonePointsData[zone] == null)
 					{
 						continue;
 					}
@@ -838,7 +838,7 @@ void ShowZones(int client, float fTime = 0.1)
 					{
 						GetArrayArray(g_hZonePointsData[zone], y, coordinates, sizeof(coordinates));
 						
-						if(y + 1 >= GetArraySize(g_hZonePointsData[zone]))
+						if (y + 1 >= GetArraySize(g_hZonePointsData[zone]))
 						{
 							index = 0;
 						}
@@ -1516,11 +1516,13 @@ bool TeleportToZone(int client, int zone)
 		case ZONE_TYPE_CIRCLE:
 		{
 			CopyArrayToArray(g_fZone_Start[zone], fMiddle, 3);
+			fMiddle[2] = (g_fZoneHeight[zone] / 2.0) + fMiddle[2];
 		}
 		
 		case ZONE_TYPE_POLY:
 		{
-			return false;
+			GetPolygonCenter(zone, fMiddle);
+			fMiddle[2] = (g_fZoneHeight[zone] / 2.0) + GetLowestCorner(zone);
 		}
 	}
 	
@@ -1904,7 +1906,7 @@ bool IsVectorInsideZone(int zone, float origin[3])
 		{
 			GetEntPropVector(zone, Prop_Data, "m_vecOrigin", zoneOrigin);
 			
-			if(FloatAbs(zoneOrigin[2] - origin[2]) > g_fZoneHeight[zone]) 
+			if (FloatAbs(zoneOrigin[2] - origin[2]) > g_fZoneHeight[zone])
 			{
 				return false;
 			}
@@ -1964,6 +1966,45 @@ bool IsVectorInsideZone(int zone, float origin[3])
 //Down to just above the natives, these functions are made by 'Deathknife' and repurposed by me for this plugin.
 //Fucker can maths
 //by Deathknife
+
+public void GetPolygonCenter(int zone, float pos[3])
+{
+	//needs to have atleast one point..
+	float first[3];
+	float last[3];
+	int size = GetArraySize(g_hZonePointsData[zone]);
+	GetArrayArray(g_hZonePointsData[zone], 0, first, sizeof(first));
+	GetArrayArray(g_hZonePointsData[zone], size - 1, last, sizeof(last));
+	
+	bool bpa = false;
+	if (first[0] != last[0] || first[1] != last[1])
+	{
+		PushArrayArray(g_hZonePointsData[zone], first);
+		size += 1;
+		bpa = true;
+	}
+	
+	float area = 0.0;
+	float x, y;
+	
+	float p1[3];
+	float p2[3];
+	float f;
+	
+	for (int i = 0, j = size - 1; i < size; j = i++) {
+		GetArrayArray(g_hZonePointsData[zone], i, p1, sizeof(p1));
+		GetArrayArray(g_hZonePointsData[zone], j, p2, sizeof(p2));
+		f = (p1[0] * p2[1]) - (p2[0] * p1[1]);
+		area += f;
+		x += (p1[0] + p2[0]) * f;
+		y += (p1[1] + p2[1]) * f;
+	}
+	f = area * 3;
+	pos[0] = x / f;
+	pos[1] = y / f;
+	if (bpa)ResizeArray(g_hZonePointsData[zone], size - 1);
+}
+
 bool IsPointInZone(float point[3], int zone)
 {
 	//Check if point is in the zone
@@ -2428,7 +2469,7 @@ public int Native_UnAssignZone(Handle plugin, int numParams)
 		return true;
 	}
 	
-	if(GetArraySize(g_hClientZones[client]) <= 0) 
+	if (GetArraySize(g_hClientZones[client]) <= 0)
 	{
 		delete g_hClientZones[client];
 		g_hClientZones[client] = null;
@@ -2446,12 +2487,12 @@ public int Native_GetAssignedZones(Handle plugin, int numParams)
 		return false;
 	}
 	
-	if(g_hClientZones[client] == null) 
+	if (g_hClientZones[client] == null)
 	{
 		return view_as<int>(INVALID_HANDLE);
 	}
 	
-	if(!GetArraySize(g_hClientZones[client])) 
+	if (!GetArraySize(g_hClientZones[client]))
 	{
 		delete g_hClientZones[client];
 		return view_as<int>(INVALID_HANDLE);
