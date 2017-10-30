@@ -1575,11 +1575,6 @@ bool GetTeleportLocation(int zone, float vLocation[3])
 		return false;
 	}
 	
-	if (!IsVectorInsideZone(zone, vMiddle, vMiddle[2]))
-	{
-		return false;
-	}
-	
 	CopyArrayToArray(vMiddle, vLocation, 3);
 	
 	return true;
@@ -1903,16 +1898,14 @@ float GetHighestCorner(int zone)
 	return fHighest;
 }
 
-stock bool IsVectorInsideZone(int zone, float origin[3], float skip = 2147483647.0)
+bool IsVectorInsideZone(int zone, float origin[3])
 {
 	if (!IsValidZone(zone))
 	{
 		return false;
 	}
 	
-	float zoneOrigin[3]; float zoneOrigin2[3];
-	float origin2[3];
-	int iCount = 0;
+	float zoneOrigin[3];
 	
 	switch (GetZoneType(zone))
 	{
@@ -1936,17 +1929,19 @@ stock bool IsVectorInsideZone(int zone, float origin[3], float skip = 2147483647
 				}
 			}
 			
+			int iCheck = 0;
+			
 			float tmpOrigin[3]; CopyArrayToArray(origin, tmpOrigin, 3); tmpOrigin[2] += 5.0;
 			
-			for (int i = 0; i < 4; i++)
+			for (int i = 0; i < 3; i++)
 			{
 				if ((fCorners[7][i] >= fCorners[0][i] && (tmpOrigin[i] <= (fCorners[7][i]) && tmpOrigin[i] >= (fCorners[0][i]))) || 
 					(fCorners[0][i] >= fCorners[7][i] && (tmpOrigin[i] <= (fCorners[0][i]) && tmpOrigin[i] >= (fCorners[7][i]))))
 				{
-					iCount++;
+					iCheck++;
 				}
 				
-				if (iCount > 2 || (iCount == 2 && origin[0] == skip || origin[1] == skip || origin[2] == skip))
+				if (iCheck == 3)
 				{
 					return true;
 				}
@@ -1958,31 +1953,7 @@ stock bool IsVectorInsideZone(int zone, float origin[3], float skip = 2147483647
 		case ZONE_TYPE_CIRCLE:
 		{
 			GetEntPropVector(zone, Prop_Data, "m_vecOrigin", zoneOrigin);
-			
-			if (origin[2] != skip && FloatAbs(zoneOrigin[2] - origin[2]) > g_fZoneHeight[zone])
-			{
-				return false;
-			}
-			
-			CopyArrayToArray(zoneOrigin, zoneOrigin2, 3);
-			CopyArrayToArray(origin, origin2, 3);
-			
-			zoneOrigin2[2] = 0.0;
-			origin2[2] = 0.0;
-			
-			if (origin[0] == skip)
-			{
-				zoneOrigin2[0] = 0.0;
-				origin2[0] = 0.0;
-			}
-			
-			else if (origin[1] == skip)
-			{
-				zoneOrigin2[1] = 0.0;
-				origin2[1] = 0.0;
-			}
-			
-			return GetVectorDistance(origin2, zoneOrigin2) <= (g_fZoneRadius[zone] / 2.0);
+			return GetVectorDistance(origin, zoneOrigin) <= (g_fZoneRadius[zone] / 2.0);
 		}
 		
 		case ZONE_TYPE_POLY:
@@ -2017,16 +1988,11 @@ stock bool IsVectorInsideZone(int zone, float origin[3], float skip = 2147483647
 			{
 				if (IsPointInZone(entityPoints[x], zone))
 				{
-					iCount++;
+					return true;
 				}
 			}
 			
-			if (iCount > 2 || (iCount == 2 && origin[0] == skip || origin[1] == skip || origin[2] == skip))
-			{
-				return true;
-			}
-			
-			return true;
+			return false;
 		}
 	}
 	
