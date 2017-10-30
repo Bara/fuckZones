@@ -1499,7 +1499,7 @@ bool TeleportToZone(int client, int zone)
 		return false;
 	}
 	
-	if (!IsValidZone(zone) || !g_bZoneSpawned[zone])
+	if (!IsValidZone(zone))
 	{
 		return false;
 	}
@@ -1510,20 +1510,58 @@ bool TeleportToZone(int client, int zone)
 	{
 		case ZONE_TYPE_BOX:
 		{
+			if (g_fZone_Start[zone][0] == -1.0 && g_fZone_Start[zone][1] == -1.0 && g_fZone_Start[zone][2] == -1.0)
+			{
+				return false;
+			}
+			
+			if (g_fZone_End[zone][0] == -1.0 && g_fZone_End[zone][1] == -1.0 && g_fZone_End[zone][2] == -1.0)
+			{
+				return false;
+			}
+			
 			GetMiddleOfABox(g_fZone_Start[zone], g_fZone_End[zone], fMiddle);
 		}
 		
 		case ZONE_TYPE_CIRCLE:
 		{
 			CopyArrayToArray(g_fZone_Start[zone], fMiddle, 3);
-			fMiddle[2] = (g_fZoneHeight[zone] / 2.0) + fMiddle[2];
+			
+			if(g_fZoneHeight[zone] >= 32.0) 
+			{
+				fMiddle[2] = (g_fZoneHeight[zone] / 2.0) + fMiddle[2];
+			}
+			
+			else 
+			{
+				fMiddle[2] += 16.0;
+			}
 		}
 		
 		case ZONE_TYPE_POLY:
 		{
 			GetPolygonCenter(zone, fMiddle);
-			fMiddle[2] = (g_fZoneHeight[zone] / 2.0) + GetLowestCorner(zone);
+			
+			if(g_fZoneHeight[zone] >= 32.0) 
+			{
+				fMiddle[2] = (g_fZoneHeight[zone] / 2.0) + GetLowestCorner(zone);
+			} 
+			
+			else 
+			{
+				fMiddle[2] = GetLowestCorner(zone) + 16.0;
+			}
 		}
+	}
+	
+	if(TR_PointOutsideWorld(fMiddle))
+	{
+		return false;
+	}
+	
+	if(!IsVectorInsideZone(zone, fMiddle)) 
+	{
+		return false;
 	}
 	
 	TeleportEntity(client, fMiddle, NULL_VECTOR, NULL_VECTOR);
