@@ -216,7 +216,7 @@ native float ZonesManager_GetZoneHighestCorner(int zone);
  * @param location		Buffer to store location.
  * @return				True if successful, false otherwise.
  */
-native bool ZonesManager_GetTeleportLocation(int zone, float location[3]);
+native bool ZonesManager_GetZoneTeleportLocation(int zone, float location[3]);
 
 /**
  * Checks if a vector of points is inside zone.

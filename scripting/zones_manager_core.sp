@@ -102,7 +102,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("ZonesManager_GetZoneType", Native_GetZoneType);
 	CreateNative("ZonesManager_GetZoneLowestCorner", Native_GetZoneLowestCorner);
 	CreateNative("ZonesManager_GetZoneHighestCorner", Native_GetZoneHighestCorner);
-	CreateNative("ZonesManager_GetZoneTeleportLocation", Native_GetTeleportLocation);
+	CreateNative("ZonesManager_GetZoneTeleportLocation", Native_GetZoneTeleportLocation);
 	CreateNative("ZonesManager_IsVectorInsideZone", Native_IsVectorInsideZone);
 	CreateNative("ZonesManager_TeleportClientToZone", Native_TeleportClientToZone);
 	CreateNative("ZonesManager_GetClientLookPoint", Native_GetClientLookPoint);
@@ -2752,7 +2752,7 @@ public int Native_GetZoneHighestCorner(Handle plugin, int numParams)
 	return view_as<int>(GetHighestCorner(zone));
 }
 
-public int Native_GetTeleportLocation(Handle plugin, int numParams)
+public int Native_GetZoneTeleportLocation(Handle plugin, int numParams)
 {
 	int zone = GetNativeCell(1);
 	
