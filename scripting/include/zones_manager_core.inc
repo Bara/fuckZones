@@ -555,7 +555,7 @@ public void __pl_zones_manager_SetNTVOptional()
 	MarkNativeAsOptional("ZonesManager_GetZoneType");
 	MarkNativeAsOptional("ZonesManager_GetZoneLowestCorner");
 	MarkNativeAsOptional("ZonesManager_GetZoneHighestCorner");
-	MarkNativeAsOptional("ZonesManager_GetTeleportLocation");
+	MarkNativeAsOptional("ZonesManager_GetZoneTeleportLocation");
 	MarkNativeAsOptional("ZonesManager_IsVectorInsideZone");
 	MarkNativeAsOptional("ZonesManager_TeleportClientToZone");
 	MarkNativeAsOptional("ZonesManager_GetClientLookPoint");
