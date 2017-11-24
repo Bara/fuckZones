@@ -2003,42 +2003,18 @@ bool IsVectorInsideZone(int zone, float origin[3])
 //Fucker can maths
 //by Deathknife
 
-public void GetPolygonCenter(int zone, float pos[3])
-{
-	//needs to have atleast one point..
-	float first[3];
-	float last[3];
-	int size = GetArraySize(g_hZonePointsData[zone]);
-	GetArrayArray(g_hZonePointsData[zone], 0, first, sizeof(first));
-	GetArrayArray(g_hZonePointsData[zone], size - 1, last, sizeof(last));
-	
-	bool bpa = false;
-	if (first[0] != last[0] || first[1] != last[1])
-	{
-		PushArrayArray(g_hZonePointsData[zone], first);
-		size += 1;
-		bpa = true;
-	}
-	
-	float area = 0.0;
-	float x, y;
-	
-	float p1[3];
-	float p2[3];
-	float f;
-	
-	for (int i = 0, j = size - 1; i < size; j = i++) {
-		GetArrayArray(g_hZonePointsData[zone], i, p1, sizeof(p1));
-		GetArrayArray(g_hZonePointsData[zone], j, p2, sizeof(p2));
-		f = (p1[0] * p2[1]) - (p2[0] * p1[1]);
-		area += f;
-		x += (p1[0] + p2[0]) * f;
-		y += (p1[1] + p2[1]) * f;
-	}
-	f = area * 3;
-	pos[0] = x / f;
-	pos[1] = y / f;
-	if (bpa)ResizeArray(g_hZonePointsData[zone], size - 1);
+public void GetPolygonCenter(int zone, float pos[3]) {
+    //needs to have atleast one point..
+    int size = GetArraySize(g_hZonePointsData[zone]);
+    
+    float p1[3];
+    for( int i = 0; i < size; i++ ) {
+        GetArrayArray(g_hZonePointsData[zone], i, p1, sizeof(p1));
+        pos[0] += p1[0];
+        pos[1] += p1[1];
+    }
+    pos[0] /= float(size);
+    pos[1] /= float(size);
 }
 
 bool IsPointInZone(float point[3], int zone)
