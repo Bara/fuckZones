@@ -695,18 +695,18 @@ void ShowZones(int client, float fTime = 0.1)
 				case ZONE_TYPE_BOX:
 				{
 					GetAbsBoundingBox(zone, vecStart, vecEnd);
-					Effect_DrawBeamBoxToClient(client, vecStart, vecEnd, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.7, 2, 0.0, color, 0);
+					Effect_DrawBeamBoxToClient(client, vecStart, vecEnd, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 1.0, 1.0, 0, 0.0, color, 0);
 				}
 				
 				case ZONE_TYPE_CIRCLE:
 				{
-					TE_SetupBeamRingPoint(g_fZone_Start[zone], g_fZoneRadius[zone], g_fZoneRadius[zone] + 0.1, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.0, color, 0, 0);
+					TE_SetupBeamRingPoint(g_fZone_Start[zone], g_fZoneRadius[zone], g_fZoneRadius[zone] + 0.1, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 1.0, 0.0, color, 0, 0);
 					TE_SendToClient(client);
 					
 					CopyArrayToArray(g_fZone_Start[zone], coordinates_expanded, 3);
 					coordinates_expanded[2] += g_fZoneHeight[zone];
 					
-					TE_SetupBeamRingPoint(coordinates_expanded, g_fZoneRadius[zone], g_fZoneRadius[zone] + 0.1, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.0, color, 0, 0);
+					TE_SetupBeamRingPoint(coordinates_expanded, g_fZoneRadius[zone], g_fZoneRadius[zone] + 0.1, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 1.0, 0.0, color, 0, 0);
 					TE_SendToClient(client);
 				}
 				
@@ -739,10 +739,10 @@ void ShowZones(int client, float fTime = 0.1)
 						CopyArrayToArray(nextpoint, nextpoint_expanded, 3);
 						nextpoint_expanded[2] += g_fZoneHeight[zone];
 						
-						TE_SetupBeamPoints(coordinates, nextpoint, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.7, 2, 0.0, color, 0);
+						TE_SetupBeamPoints(coordinates, nextpoint, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 1.0, 1.0, 0, 0.0, color, 0);
 						TE_SendToClient(client);
 						
-						TE_SetupBeamPoints(coordinates_expanded, nextpoint_expanded, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.7, 2, 0.0, color, 0);
+						TE_SetupBeamPoints(coordinates_expanded, nextpoint_expanded, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 1.0, 1.0, 0, 0.0, color, 0);
 						TE_SendToClient(client);
 					}
 				}
@@ -819,12 +819,12 @@ void ShowZones(int client, float fTime = 0.1)
 				case ZONE_TYPE_BOX:
 				{
 					GetAbsBoundingBox(zone, vecStart, vecEnd);
-					Effect_DrawBeamBoxToClient(client, vecStart, vecEnd, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.7, 2, 0.0, color, 0);
+					Effect_DrawBeamBoxToClient(client, vecStart, vecEnd, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 1.0, 1.0, 0, 0.0, color, 0);
 				}
 				
 				case ZONE_TYPE_CIRCLE:
 				{
-					TE_SetupBeamRingPoint(g_fZone_Start[zone], g_fZoneRadius[zone], g_fZoneRadius[zone] + 0.1, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.0, color, 0, 0);
+					TE_SetupBeamRingPoint(g_fZone_Start[zone], g_fZoneRadius[zone], g_fZoneRadius[zone] + 0.1, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 1.0, 0.0, color, 0, 0);
 					TE_SendToClient(client);
 				}
 				
@@ -850,7 +850,7 @@ void ShowZones(int client, float fTime = 0.1)
 						
 						GetArrayArray(g_hZonePointsData[zone], index, nextpoint, sizeof(nextpoint));
 						
-						TE_SetupBeamPoints(coordinates, nextpoint, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 0.7, 0.7, 2, 0.0, color, 10);
+						TE_SetupBeamPoints(coordinates, nextpoint, iDefaultModelIndex, iDefaultHaloIndex, 0, 30, fTime, 1.0, 1.0, 0, 0.0, color, 10);
 						TE_SendToClient(client);
 					}
 				}
