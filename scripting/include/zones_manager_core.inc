@@ -160,7 +160,7 @@ native int ZonesManager_GetZoneType(int zone);
 
 /**
  * Retrieves an arraylist of zones which has been assigned to client.
- * 
+ *
  * @param client		Client Index.
  * @return				ArrayList of zones, null of failure.
  */
@@ -238,7 +238,7 @@ native int ZonesManager_StartZone(int type, const char[] name);
 
 /**
  * Assigns zone creation to a client.
- * 
+ *
  * @param client		Client Index.
  * @param zone			Zone Entity Index.
  * @return				True if successful, false otherwise.
@@ -247,7 +247,7 @@ native bool ZonesManager_AssignZone(int client, int zone);
 
 /**
  * Unassigns zone creation from a client.
- * 
+ *
  * @param client		Client Index.
  * @param zone			Zone Entity Index.
  * @return				True if successful, false otherwise.
@@ -586,13 +586,13 @@ public void __pl_zones_manager_SetNTVOptional()
 }
 #endif
 
-public SharedPlugin __pl_zones_manager = 
+public SharedPlugin __pl_zones_manager =
 {
-	name = "zones_manager_core", 
-	file = "zones_manager_core.smx", 
+	name = "zones_manager_core",
+	file = "zones_manager_core.smx",
 	#if defined REQUIRE_PLUGIN
-	required = 1, 
+	required = 1,
 	#else
-	required = 0, 
+	required = 0,
 	#endif
-}; 
+};

@@ -6,7 +6,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
-#include <zones_manager>
+#include <zones_manager_core>
 
 //ConVars
 ConVar convar_Status;
@@ -15,12 +15,12 @@ ConVar convar_Status;
 bool g_bLate;
 bool g_bMeleeOnly[MAXPLAYERS + 1];
 
-public Plugin myinfo = 
+public Plugin myinfo =
 {
-	name = "Zones Manager - Effect - Melee Only", 
-	author = "Keith Warren (Drixevel)", 
-	description = "An effect for the zones manager plugin that applies melee only to clients.", 
-	version = "1.0.0", 
+	name = "Zones Manager - Effect - Melee Only",
+	author = "Keith Warren (Drixevel)",
+	description = "An effect for the zones manager plugin that applies melee only to clients.",
+	version = "1.0.0",
 	url = "http://www.drixevel.com/"
 };
 
@@ -33,7 +33,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
-	
+
 	convar_Status = CreateConVar("sm_zones_effect_meleeonly_status", "1", "Status of the plugin.\n(1 = on, 0 = off)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 }
 
@@ -48,7 +48,7 @@ public void OnConfigsExecuted()
 				OnClientPutInServer(i);
 			}
 		}
-		
+
 		g_bLate = false;
 	}
 }
@@ -62,12 +62,12 @@ public void OnClientPutInServer(int client)
 public Action OnWeaponCanSwitchTo(int client, int weapon)
 {
 	int melee = GetPlayerWeaponSlot(client, 2);
-	
+
 	if (IsValidEntity(melee) && melee != weapon && g_bMeleeOnly[client])
 	{
 		return Plugin_Handled;
 	}
-	
+
 	return Plugin_Continue;
 }
 
@@ -80,17 +80,17 @@ public void ZonesManager_OnQueueEffects_Post()
 public void Effect_OnEnterZone(int client, int entity, StringMap values)
 {
 	char sValue[32];
-	GetTrieString(values, "status", sValue, sizeof(sValue));
-	
-	if (!GetConVarBool(convar_Status) || StrEqual(sValue, "0"))
+	values.GetString("status", sValue, sizeof(sValue));
+
+	if (!convar_Status.BoolValue || StrEqual(sValue, "0"))
 	{
 		return;
 	}
-	
+
 	g_bMeleeOnly[client] = true;
-	
+
 	int melee = GetPlayerWeaponSlot(client, 2);
-	
+
 	if (IsValidEntity(melee))
 	{
 		EquipPlayerWeapon(client, melee);
@@ -100,12 +100,12 @@ public void Effect_OnEnterZone(int client, int entity, StringMap values)
 public void Effect_OnLeaveZone(int client, int entity, StringMap values)
 {
 	char sValue[32];
-	GetTrieString(values, "status", sValue, sizeof(sValue));
-	
-	if (!GetConVarBool(convar_Status) || StrEqual(sValue, "0"))
+	values.GetString("status", sValue, sizeof(sValue));
+
+	if (!convar_Status.BoolValue || StrEqual(sValue, "0"))
 	{
 		return;
 	}
-	
+
 	g_bMeleeOnly[client] = false;
 }
