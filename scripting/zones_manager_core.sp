@@ -56,7 +56,6 @@ bool g_bIsZone[MAX_ENTITY_LIMIT];
 
 //Not Box Type Zones Management
 bool g_bIsInsideZone[MAX_ENTITY_LIMIT][MAX_ENTITY_LIMIT];
-bool g_bIsInsideZone_Post[MAX_ENTITY_LIMIT][MAX_ENTITY_LIMIT];
 
 //Effects Data
 StringMap g_hTrie_EffectCalls;
@@ -180,7 +179,7 @@ public void OnMapStart()
 
 public void OnEntityCreated(int entity, const char[] classname)
 {
-	if (entity <= -1 && entity != INVALID_ENT_REFERENCE)
+	if (entity < -1 && entity != INVALID_ENT_REFERENCE)
 	{
 		entity = EntRefToEntIndex(entity);
 	}
@@ -190,7 +189,6 @@ public void OnEntityCreated(int entity, const char[] classname)
 		return;
 	}
 	
-	ResetZoneVariables(entity);
 	SDKHook(entity, SDKHook_SpawnPost, OnEntitySpawned);
 }
 
@@ -221,7 +219,7 @@ public void Event_PlayerDeath(Event event, char[] sEvent, bool dontbroadcast)
 
 public void OnEntitySpawned(int entity)
 {
-	if (entity <= -1 && entity != INVALID_ENT_REFERENCE)
+	if (entity < -1 && entity != INVALID_ENT_REFERENCE)
 	{
 		entity = EntRefToEntIndex(entity);
 	}
@@ -248,7 +246,7 @@ public void OnEntitySpawned(int entity)
 
 public void OnEntityDestroyed(int entity)
 {
-	if (entity <= -1 && entity != INVALID_ENT_REFERENCE)
+	if (entity < -1 && entity != INVALID_ENT_REFERENCE)
 	{
 		entity = EntRefToEntIndex(entity);
 	}
@@ -347,17 +345,6 @@ public void OnClientCookiesCached(int client)
 	{
 		bShowAllZones[client] = StringToBool(sValue);
 	}
-}
-
-public void OnClientPutInServer(int client)
-{
-	for (int i = 1; i < MAX_ENTITY_LIMIT; i++)
-	{
-		g_bIsInsideZone[client][i] = false;
-		g_bIsInsideZone_Post[client][i] = false;
-	}
-	
-	ResetCreateZoneVariables(client);
 }
 
 public void OnClientDisconnect(int client)
@@ -594,9 +581,6 @@ void ResetZoneVariables(int zone)
 	{
 		g_bIsInsideZone[zone][i] = false;
 		g_bIsInsideZone[i][zone] = false;
-		
-		g_bIsInsideZone_Post[zone][i] = false;
-		g_bIsInsideZone_Post[i][zone] = false;
 		
 		g_bHideZoneRender[zone][i] = false;
 		g_bHideZoneRender[i][zone] = false;
@@ -1117,8 +1101,6 @@ Action IsNearExternalZone(int entity, int zone, int type)
 	
 	if (!g_bIsInsideZone[entity][zone])
 	{
-		g_bIsInsideZone[entity][zone] = true;
-		
 		Call_StartForward(g_Forward_StartTouchZone);
 		Call_PushCell(entity);
 		Call_PushCell(zone);
@@ -1148,8 +1130,6 @@ Action IsNotNearExternalZone(int entity, int zone, int type)
 	
 	if (g_bIsInsideZone[entity][zone])
 	{
-		g_bIsInsideZone[entity][zone] = false;
-		
 		Call_StartForward(g_Forward_EndTouchZone);
 		Call_PushCell(entity);
 		Call_PushCell(zone);
@@ -1166,11 +1146,9 @@ void IsNearExternalZone_Post(int entity, int zone, int type)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(zone, Prop_Data, "m_iName", sName, sizeof(sName));
 	
-	if (!g_bIsInsideZone_Post[entity][zone])
+	if (!g_bIsInsideZone[entity][zone])
 	{
-		g_bIsInsideZone_Post[entity][zone] = true;
 		g_bIsInsideZone[entity][zone] = true;
-		
 		CallEffectCallback(zone, entity, EFFECT_CALLBACK_ONENTERZONE);
 		
 		Call_StartForward(g_Forward_StartTouchZone_Post);
@@ -1198,11 +1176,9 @@ void IsNotNearExternalZone_Post(int entity, int zone, int type)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 	
-	if (g_bIsInsideZone_Post[entity][zone])
+	if (g_bIsInsideZone[entity][zone])
 	{
-		g_bIsInsideZone_Post[entity][zone] = false;
 		g_bIsInsideZone[entity][zone] = false;
-		
 		CallEffectCallback(zone, entity, EFFECT_CALLBACK_ONLEAVEZONE);
 		
 		Call_StartForward(g_Forward_EndTouchZone_Post);
