@@ -1,48 +1,89 @@
- //Pragma
-#pragma semicolon 1
-#pragma newdecls required
-
-//Sourcemod Includes
+ /******************************************************************************************************
+	INCLUDES
+*****************************************************************************************************/
 #include <sourcemod>
+#include <sdktools>
+#include <sdkhooks>
 #include <zones_manager_core>
+#include <sourcemod-misc>
 
-//ConVars
-ConVar convar_Status;
+/****************************************************************************************************
+	DEFINES
+*****************************************************************************************************/
+#define PLUGIN_DESCRIPTION "A simple plugin to test the zones manager plugin and its API interface."
+#define PLUGIN_VERSION "1.0.1"
 
-//Globals
-bool g_bLate;
-int g_iPrintCap[MAXPLAYERS + 1];
-int g_iPrintCap_Post[MAXPLAYERS + 1];
+/****************************************************************************************************
+	ETIQUETTE.
+*****************************************************************************************************/
+#pragma newdecls required;
+#pragma semicolon 1;
 
-public Plugin myinfo =
+/****************************************************************************************************
+	PLUGIN INFO.
+*****************************************************************************************************/
+public Plugin myinfo = 
 {
-	name = "Zones Manager - Effect - Test Zones",
-	author = "Keith Warren (Drixevel)",
-	description = "A simple plugin to test the zones manager plugin and its API interface.",
-	version = "1.0.1",
-	url = "http://www.drixevel.com/"
+	name = "Zones Manager - Effect - Test Zones", 
+	author = "Keith Warren (Drixevel), SM9", 
+	description = PLUGIN_DESCRIPTION, 
+	version = PLUGIN_VERSION, 
+	url = "https://github.com/ShadersAllen/Zones-Manager"
 };
 
-public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
-{
-	g_bLate = late;
-	return APLRes_Success;
-}
+/****************************************************************************************************
+	HANDLES.
+*****************************************************************************************************/
+ConVar g_hCvarStatus;
+
+/****************************************************************************************************
+	BOOLS.
+*****************************************************************************************************/
+bool g_bLate;
+
+/****************************************************************************************************
+	INTS.
+*****************************************************************************************************/
+int g_iPrintCap[MAXPLAYERS + 1];
+int g_iPrintCap_Post[MAXPLAYERS + 1];
 
 public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
-
-	convar_Status = CreateConVar("sm_zones_effect_testzones_status", "1", "Status of the plugin.\n(1 = on, 0 = off)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	
+	g_hCvarStatus = CreateConVar("sm_zones_effect_testzones_status", "1", "Status of the plugin.\n(1 = on, 0 = off)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	
+	if (g_bLate) {
+		for (int i = 1; i <= MaxClients; i++) {
+			if (!IsClientConnected(i)) {
+				continue;
+			}
+			
+			OnClientConnected(i);
+		}
+		
+		ZonesManager_RequestQueueEffects();
+	}
 }
 
-public void OnConfigsExecuted()
+public APLRes AskPluginLoad2(Handle hMySelf, bool bLate, char[] szError, int iErrMax)
 {
-	if (g_bLate)
-	{
-		ZonesManager_RequestQueueEffects();
-		g_bLate = false;
-	}
+	RegPluginLibrary("zones_manager_testzones");
+	
+	g_bLate = bLate;
+	return APLRes_Success;
+}
+
+public void OnClientConnected(int iClient)
+{
+	g_iPrintCap[iClient] = 0;
+	g_iPrintCap_Post[iClient] = 0;
+}
+
+public void OnClientDisconnect(int iClient)
+{
+	g_iPrintCap[iClient] = 0;
+	g_iPrintCap_Post[iClient] = 0;
 }
 
 public void ZonesManager_OnQueueEffects_Post()
@@ -51,121 +92,114 @@ public void ZonesManager_OnQueueEffects_Post()
 	ZonesManager_RegisterEffectKey("test zones", "status", "1");
 }
 
-public void Effect_OnEnterZone(int client, int entity, StringMap values)
+public void Effect_OnEnterZone(int iEntity, int iZone, StringMap smValues)
 {
-	char sValue[32];
-	values.GetString("status", sValue, sizeof(sValue));
-
-	if (StrEqual(sValue, "0"))
-	{
+	if (!IsPlayerIndex(iEntity)) {
 		return;
 	}
-
-	PrintToChat(client, "You have entered this zone.");
-}
-
-public void Effect_OnActiveZone(int client, int entity, StringMap values)
-{
-	char sValue[32];
-	values.GetString("status", sValue, sizeof(sValue));
-
-	if (StrEqual(sValue, "0"))
-	{
+	
+	char szValue[32]; smValues.GetString("status", szValue, sizeof(szValue));
+	
+	if (!g_hCvarStatus.BoolValue || StrEqual(szValue, "0")) {
 		return;
 	}
-
-	PrintToChat(client, "You are sitting in this zone.");
+	
+	PrintToChat(iEntity, "You have entered this zone.");
 }
 
-public void Effect_OnLeaveZone(int client, int entity, StringMap values)
+public void Effect_OnActiveZone(int iEntity, int iZone, StringMap smValues)
 {
-	char sValue[32];
-	values.GetString("status", sValue, sizeof(sValue));
-
-	if (StrEqual(sValue, "0"))
-	{
+	if (!IsPlayerIndex(iEntity)) {
 		return;
 	}
-
-	PrintToChat(client, "You have left this zone.");
+	
+	char szValue[32]; smValues.GetString("status", szValue, sizeof(szValue));
+	
+	if (!g_hCvarStatus.BoolValue || StrEqual(szValue, "0")) {
+		return;
+	}
+	
+	PrintToChat(iEntity, "You are sitting in this zone.");
 }
 
-public void OnClientDisconnect(int client)
+public void Effect_OnLeaveZone(int iEntity, int iZone, StringMap smValues)
 {
-	g_iPrintCap[client] = 0;
-	g_iPrintCap_Post[client] = 0;
+	if (!IsPlayerIndex(iEntity)) {
+		return;
+	}
+	
+	char szValue[32]; smValues.GetString("status", szValue, sizeof(szValue));
+	
+	if (!g_hCvarStatus.BoolValue || StrEqual(szValue, "0")) {
+		return;
+	}
+	
+	PrintToChat(iEntity, "You have left this zone.");
 }
 
-public Action ZonesManager_OnStartTouchZone(int client, int entity, const char[] zone_name, int type)
+public Action ZonesManager_OnStartTouchZone(int iEntity, int iZone, const char[] szZoneName, int iZoneType)
 {
-	if (!convar_Status.BoolValue)
-	{
+	if (!g_hCvarStatus.BoolValue || !IsPlayerIndex(iEntity)) {
 		return Plugin_Continue;
 	}
-
-	PrintToChat(client, "StartTouch: Entity: %i - Name: %s - Type: %i", entity, zone_name, type);
+	
+	PrintToChat(iEntity, "StartTouch: Zone: %i - Name: %s - Type: %i", iZone, szZoneName, iZoneType);
 	return Plugin_Continue;
 }
 
-public Action ZonesManager_OnTouchZone(int client, int entity, const char[] zone_name, int type)
+public Action ZonesManager_OnTouchZone(int iEntity, int iZone, const char[] szZoneName, int iZoneType)
 {
-	if (!convar_Status.BoolValue)
-	{
+	if (!g_hCvarStatus.BoolValue || !IsPlayerIndex(iEntity)) {
 		return Plugin_Continue;
 	}
-
-	if (g_iPrintCap[client] <= 5)
+	
+	if (g_iPrintCap[iEntity] <= 5)
 	{
-		g_iPrintCap[client]++;
-		PrintToChat(client, "Touch: Entity: %i - Name: %s - Type: %i", entity, zone_name, type);
+		g_iPrintCap[iEntity]++;
+		PrintToChat(iEntity, "Touch: Entity: Zone: %i - Name: %s - Type: %i", iZone, szZoneName, iZoneType);
 	}
-
+	
 	return Plugin_Continue;
 }
 
-public Action ZonesManager_OnEndTouchZone(int client, int entity, const char[] zone_name, int type)
+public Action ZonesManager_OnEndTouchZone(int iEntity, int iZone, const char[] szZoneName, int iZoneType)
 {
-	if (!convar_Status.BoolValue)
-	{
+	if (!g_hCvarStatus.BoolValue || !IsPlayerIndex(iEntity)) {
 		return Plugin_Continue;
 	}
-
-	PrintToChat(client, "EndTouch: Entity: %i - Name: %s - Type: %i", entity, zone_name, type);
-	g_iPrintCap[client] = 0;
+	
+	PrintToChat(iEntity, "EndTouch: Entity: Zone: %i - Name: %s - Type: %i", iZone, szZoneName, iZoneType);
+	g_iPrintCap[iEntity] = 0;
 	return Plugin_Continue;
 }
 
-public void ZonesManager_OnStartTouchZone_Post(int client, int entity, const char[] zone_name, int type)
+public void ZonesManager_OnStartTouchZone_Post(int iEntity, int iZone, const char[] szZoneName, int iZoneType)
 {
-	if (!convar_Status.BoolValue)
-	{
+	if (!g_hCvarStatus.BoolValue || !IsPlayerIndex(iEntity)) {
 		return;
 	}
-
-	PrintToChat(client, "StartTouch_Post: Entity: %i - Name: %s - Type: %i", entity, zone_name, type);
+	
+	PrintToChat(iEntity, "StartTouch_Post: Zone: Zone: %i - Name: %s - Type: %i", iZone, szZoneName, iZoneType);
 }
 
-public void ZonesManager_OnTouchZone_Post(int client, int entity, const char[] zone_name, int type)
+public void ZonesManager_OnTouchZone_Post(int iEntity, int iZone, const char[] szZoneName, int iZoneType)
 {
-	if (!convar_Status.BoolValue)
-	{
+	if (!g_hCvarStatus.BoolValue || !IsPlayerIndex(iEntity)) {
 		return;
 	}
-
-	if (g_iPrintCap_Post[client] <= 5)
-	{
-		g_iPrintCap_Post[client]++;
-		PrintToChat(client, "Touch_Post: Entity: %i - Name: %s - Type: %i", entity, zone_name, type);
+	
+	if (g_iPrintCap_Post[iEntity] <= 5) {
+		g_iPrintCap_Post[iEntity]++;
+		PrintToChat(iEntity, "Touch_Post: Entity: Zone: %i - Name: %s - Type: %i", iZone, szZoneName, iZoneType);
 	}
 }
 
-public void ZonesManager_OnEndTouchZone_Post(int client, int entity, const char[] zone_name, int type)
+public void ZonesManager_OnEndTouchZone_Post(int iEntity, int iZone, const char[] szZoneName, int iZoneType)
 {
-	if (!convar_Status.BoolValue)
-	{
+	if (!g_hCvarStatus.BoolValue || !IsPlayerIndex(iEntity)) {
 		return;
 	}
-
-	PrintToChat(client, "EndTouch_Post: Entity: %i - Name: %s - Type: %i", entity, zone_name, type);
-	g_iPrintCap_Post[client] = 0;
+	
+	PrintToChat(iEntity, "EndTouch_Post: Entity: Zone: %i - Name: %s - Type: %i", iZone, szZoneName, iZoneType);
+	g_iPrintCap_Post[iEntity] = 0;
 }

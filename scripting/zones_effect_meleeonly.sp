@@ -1,73 +1,92 @@
- //Pragma
-#pragma semicolon 1
-#pragma newdecls required
-
-//Sourcemod Includes
+/******************************************************************************************************
+	INCLUDES
+*****************************************************************************************************/
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
 #include <zones_manager_core>
+#include <sourcemod-misc>
 
-//ConVars
-ConVar convar_Status;
+/****************************************************************************************************
+	DEFINES
+*****************************************************************************************************/
+#define PLUGIN_DESCRIPTION "An effect for the zones manager plugin that applies melee only to clients."
+#define PLUGIN_VERSION "1.0.0"
 
-//Globals
-bool g_bLate;
-bool g_bMeleeOnly[MAXPLAYERS + 1];
+/****************************************************************************************************
+	ETIQUETTE.
+*****************************************************************************************************/
+#pragma newdecls required;
+#pragma semicolon 1;
 
-public Plugin myinfo =
+/****************************************************************************************************
+	PLUGIN INFO.
+*****************************************************************************************************/
+public Plugin myinfo = 
 {
-	name = "Zones Manager - Effect - Melee Only",
-	author = "Keith Warren (Drixevel)",
-	description = "An effect for the zones manager plugin that applies melee only to clients.",
-	version = "1.0.0",
-	url = "http://www.drixevel.com/"
+	name = "Zones Manager - Effect - Melee Only", 
+	author = "Keith Warren (Drixevel), SM9", 
+	description = PLUGIN_DESCRIPTION, 
+	version = PLUGIN_VERSION, 
+	url = "https://github.com/ShadersAllen/Zones-Manager"
 };
 
-public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
-{
-	g_bLate = late;
-	return APLRes_Success;
-}
+/****************************************************************************************************
+	HANDLES.
+*****************************************************************************************************/
+ConVar g_hCvarStatus;
+
+/****************************************************************************************************
+	BOOLS.
+*****************************************************************************************************/
+bool g_bLate;
+bool g_bMeleeOnly[MAXPLAYERS + 1];
 
 public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
-
-	convar_Status = CreateConVar("sm_zones_effect_meleeonly_status", "1", "Status of the plugin.\n(1 = on, 0 = off)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-}
-
-public void OnConfigsExecuted()
-{
-	if (g_bLate)
-	{
-		for (int i = 1; i <= MaxClients; i++)
-		{
-			if (IsClientInGame(i))
-			{
-				OnClientPutInServer(i);
+	
+	g_hCvarStatus = CreateConVar("sm_zones_effect_meleeonly_status", "1", "Status of the plugin.\n(1 = on, 0 = off)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	
+	if (g_bLate) {
+		for (int i = 1; i <= MaxClients; i++) {
+			if (!IsClientConnected(i)) {
+				continue;
 			}
+			
+			OnClientConnected(i);
 		}
-
-		g_bLate = false;
+		
+		ZonesManager_RequestQueueEffects();
 	}
 }
 
-public void OnClientPutInServer(int client)
+public APLRes AskPluginLoad2(Handle hMySelf, bool bLate, char[] szError, int iErrMax)
 {
-	SDKHook(client, SDKHook_WeaponCanSwitchTo, OnWeaponCanSwitchTo);
-	g_bMeleeOnly[client] = false;
+	RegPluginLibrary("zones_manager_meleeonly");
+	
+	g_bLate = bLate;
+	return APLRes_Success;
 }
 
-public Action OnWeaponCanSwitchTo(int client, int weapon)
+public void OnClientConnected(int iClient)
 {
-	int melee = GetPlayerWeaponSlot(client, 2);
+	SDKHook(iClient, SDKHook_WeaponCanSwitchTo, OnWeaponCanSwitchTo);
+	g_bMeleeOnly[iClient] = false;
+}
 
-	if (IsValidEntity(melee) && melee != weapon && g_bMeleeOnly[client])
-	{
+public void OnClientDisconnect(int iClient) {
+	g_bMeleeOnly[iClient] = false;
+}
+
+public Action OnWeaponCanSwitchTo(int iClient, int iWeapon)
+{
+	int iMelee = GetPlayerWeaponSlot(iClient, 2);
+	
+	if (IsValidEntity(iMelee) && iMelee != iWeapon && g_bMeleeOnly[iClient]) {
 		return Plugin_Handled;
 	}
-
+	
 	return Plugin_Continue;
 }
 
@@ -77,35 +96,38 @@ public void ZonesManager_OnQueueEffects_Post()
 	ZonesManager_RegisterEffectKey("melee only", "status", "1");
 }
 
-public void Effect_OnEnterZone(int client, int entity, StringMap values)
+public void Effect_OnEnterZone(int iEntity, int iZone, StringMap smValues)
 {
-	char sValue[32];
-	values.GetString("status", sValue, sizeof(sValue));
-
-	if (!convar_Status.BoolValue || StrEqual(sValue, "0"))
-	{
+	if (!IsPlayerIndex(iEntity)) {
 		return;
 	}
-
-	g_bMeleeOnly[client] = true;
-
-	int melee = GetPlayerWeaponSlot(client, 2);
-
-	if (IsValidEntity(melee))
-	{
-		EquipPlayerWeapon(client, melee);
+	
+	char szValue[32]; smValues.GetString("status", szValue, sizeof(szValue));
+	
+	if (!g_hCvarStatus.BoolValue || StrEqual(szValue, "0")) {
+		return;
+	}
+	
+	g_bMeleeOnly[iEntity] = true;
+	
+	int iMelee = GetPlayerWeaponSlot(iEntity, 2);
+	
+	if (IsValidEntity(iMelee)) {
+		EquipPlayerWeapon(iEntity, iMelee);
 	}
 }
 
-public void Effect_OnLeaveZone(int client, int entity, StringMap values)
+public void Effect_OnLeaveZone(int iEntity, int iZone, StringMap smValues)
 {
-	char sValue[32];
-	values.GetString("status", sValue, sizeof(sValue));
-
-	if (!convar_Status.BoolValue || StrEqual(sValue, "0"))
-	{
+	if (!IsPlayerIndex(iEntity)) {
 		return;
 	}
-
-	g_bMeleeOnly[client] = false;
+	
+	char szValue[32]; smValues.GetString("status", szValue, sizeof(szValue));
+	
+	if (!g_hCvarStatus.BoolValue || StrEqual(szValue, "0")) {
+		return;
+	}
+	
+	g_bMeleeOnly[iEntity] = false;
 }
