@@ -54,7 +54,7 @@ public void OnPluginStart()
 				continue;
 			}
 			
-			OnClientConnected(i);
+			OnClientPutInServer(i);
 		}
 		
 		ZonesManager_RequestQueueEffects();
@@ -69,7 +69,7 @@ public APLRes AskPluginLoad2(Handle hMySelf, bool bLate, char[] szError, int iEr
 	return APLRes_Success;
 }
 
-public void OnClientConnected(int iClient)
+public void OnClientPutInServer(int iClient)
 {
 	SDKHook(iClient, SDKHook_WeaponCanSwitchTo, OnWeaponCanSwitchTo);
 	g_bMeleeOnly[iClient] = false;
