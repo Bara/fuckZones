@@ -208,6 +208,8 @@ public void OnEntityCreated(int iEntity, const char[] szClassName)
 	}
 	
 	SDKHook(iEntity, SDKHook_SpawnPost, OnEntitySpawned);
+	
+	RequestFrame(CheckEntityZones, EntIndexToEntRef(iEntity));
 }
 
 public void Event_PlayerSpawn(Event eEvent, char[] szEvent, bool bDontBroadcast)
@@ -242,8 +244,6 @@ public void OnEntitySpawned(int iEntity)
 	if (iEntity < 1 || iEntity > MAX_ENTITY_LIMIT) {
 		return;
 	}
-	
-	RequestFrame(CheckEntityZones, EntIndexToEntRef(iEntity));
 	
 	if (iEntity > MaxClients) {
 		g_bEntitySpawned[iEntity] = true;
@@ -317,6 +317,10 @@ void ClearAllZones()
 {
 	int iZone = INVALID_ENT_INDEX;
 	
+	if(g_alZoneEntities == null) {
+		return;
+	}
+	
 	for (int i = 0; i < g_alZoneEntities.Length; i++) {
 		iZone = EntRefToEntIndex(g_alZoneEntities.Get(i));
 		
@@ -325,6 +329,7 @@ void ClearAllZones()
 		}
 		
 		delete g_smZoneEffects[iZone];
+		AcceptEntityInput(iZone, "Disable");
 		AcceptEntityInput(iZone, "Kill");
 	}
 	
@@ -450,12 +455,12 @@ void CheckEntityZones(int iEntRef)
 			continue;
 		}
 		
-		if (g_bEntitySpawned[iEntity] && bSameOrigin && g_bIsInsideZone[iEntity][iZone]) {
+		if (bSameOrigin && g_bIsInsideZone[iEntity][iZone]) {
 			Zones_StartTouch(iZone, iEntity);
 			continue;
 		}
 		
-		if (!g_bEntitySpawned[iEntity] || !IsVectorInsideZone(iZone, vOrigin)) {
+		if ((!g_bEntitySpawned[iEntity] && IsPlayerIndex(iEntity)) || !IsVectorInsideZone(iZone, vOrigin)) {
 			Zones_EndTouch(iZone, iEntity);
 			continue;
 		}
@@ -997,15 +1002,15 @@ void IsNearExternalZone_Post(int iEntity, int iZone, int iType)
 		Call_PushString(szName);
 		Call_PushCell(iType);
 		Call_Finish();
-	} else {
-		CallEffectCallback(iZone, iEntity, EFFECT_CALLBACK_ONACTIVEZONE);
-		Call_StartForward(g_hTouchZone_Post);
-		Call_PushCell(iEntity);
-		Call_PushCell(iZone);
-		Call_PushString(szName);
-		Call_PushCell(iType);
-		Call_Finish();
 	}
+	
+	CallEffectCallback(iZone, iEntity, EFFECT_CALLBACK_ONACTIVEZONE);
+	Call_StartForward(g_hTouchZone_Post);
+	Call_PushCell(iEntity);
+	Call_PushCell(iZone);
+	Call_PushString(szName);
+	Call_PushCell(iType);
+	Call_Finish();
 }
 
 void IsNotNearExternalZone_Post(int iEntity, int iZone, int iType)
