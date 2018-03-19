@@ -22,10 +22,15 @@
 #define DEFAULT_MODELINDEX "sprites/laserbeam.vmt"
 #define DEFAULT_HALOINDEX "materials/sprites/halo.vmt"
 
-#define ZONE_TYPES 3
-#define ZONE_TYPE_BOX 0
-#define ZONE_TYPE_CIRCLE 1
-#define ZONE_TYPE_POLY 2
+#define ZONE_TYPES 4
+#define ZONE_TYPE_TRIGGER 0
+#define ZONE_TYPE_CUBE 1
+#define ZONE_TYPE_CIRCLE 2
+#define ZONE_TYPE_POLY 3
+
+#define ZONING_STATE_NONE 0
+#define ZONING_STATE_IDLE 1
+#define ZONING_STATE_DRAWING 2
 
 #define ZONE_INDEX_CURRENT -1337
 
@@ -90,10 +95,11 @@ native bool ZonesManager_TeleportClientToZone(int client, int zone);
  * Gets a clients current look point.
  *
  * @param client		Client Index.
+ * @param beam			Should the point get beamed?.
  * @param buffer		Buffer to store vector points.
  * @return				True if successful, false otherwise.
  */
-native bool ZonesManager_GetClientLookPoint(int client, float buffer[3]);
+native bool ZonesManager_GetClientLookPoint(int client, bool beam = false, float buffer[3]);
 
 /**
  * Gets a Zone Entity Index by its name.
@@ -235,6 +241,34 @@ native float ZonesManager_IsVectorInsideZone(int zone, float origin[3]);
  * @return				Index of the newly created zone.
  */
 native int ZonesManager_StartZone(int type, const char[] name);
+
+/**
+ * Registers an existing trigger_* as a zone.
+ *
+ * @param zone			Trigger Entity Index.
+ * @param name			Zone name.
+ * @return				True if successful, false otherwise.
+ */
+native int ZonesManager_RegisterTrigger(int zone, const char[] name)
+
+/**
+ * Sets the current zoning state for a zone on the client.
+ *
+ * @param client		Client Index.
+ * @param zone			Zone Entity Index.
+ * @param state			Zoning state.
+ * @return				True if successful, false otherwise.
+ */
+native int ZonesManager_SetZoningState(int client, int zone, int state)
+
+/**
+ * Gets the current zoning state for a zone on the client.
+ *
+ * @param client		Client Index.
+ * @param zone			Zone Entity Index.
+ * @return				Zoning state or ZONING_STATE_NONE on failure.
+ */
+native int ZonesManager_GetZoningState(int client, int zone)
 
 /**
  * Assigns zone creation to a client.
@@ -542,6 +576,8 @@ public void __pl_zones_manager_SetNTVOptional()
 	MarkNativeAsOptional("ZonesManager_IsEntityInZone");
 	MarkNativeAsOptional("ZonesManager_AssignZone");
 	MarkNativeAsOptional("ZonesManager_UnAssignZone");
+	MarkNativeAsOptional("ZonesManager_SetZoningState");
+	MarkNativeAsOptional("ZonesManager_GetZoningState");
 	MarkNativeAsOptional("ZonesManager_GetAssignedZones");
 	MarkNativeAsOptional("ZonesManager_GetZonePointsCount");
 	MarkNativeAsOptional("ZonesManager_GetZonePoints");
@@ -563,6 +599,7 @@ public void __pl_zones_manager_SetNTVOptional()
 	MarkNativeAsOptional("ZonesManager_RegisterEffectKey");
 	MarkNativeAsOptional("ZonesManager_CreateZoneAdvanced");
 	MarkNativeAsOptional("ZonesManager_CreateZoneFromKeyValuesString");
+	MarkNativeAsOptional("ZonesManager_RegisterTrigger");
 	MarkNativeAsOptional("ZonesManager_StartZone");
 	MarkNativeAsOptional("ZonesManager_SetZoneName");
 	MarkNativeAsOptional("ZonesManager_SetZoneStart");
