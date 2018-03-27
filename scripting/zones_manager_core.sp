@@ -763,7 +763,7 @@ void ShowZones(int iClient, float fTime = 0.2)
 						CopyArrayToArray(vNextPoint, vNextPoint_Expanded, 3);
 						vNextPoint_Expanded[2] += g_fZoneHeight[iZone];
 						
-						if (g_iZoningState[iClient][iZone] == ZONING_STATE_DRAWING && !AreVectorsEqual(vCoordinates, vNextPoint)) {
+						if (AreVectorsEqual(vCoordinates, vNextPoint)) {
 							TE_SetupBeamPoints(vCoordinates, vNextPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, fTime, 1.0, 1.0, 0, 0.0, iColor, 0);
 							TE_SendToClient(iClient);
 							
@@ -771,7 +771,7 @@ void ShowZones(int iClient, float fTime = 0.2)
 							TE_SendToClient(iClient);
 						}
 						
-						if (!AreVectorsEqual(vLookPoint, vNextPoint) && iIndex == g_alZonePoints[iZone].Length - 1) {
+						if (g_iZoningState[iClient][iZone] == ZONING_STATE_DRAWING && !AreVectorsEqual(vLookPoint, vNextPoint) && iIndex == g_alZonePoints[iZone].Length - 1) {
 							CopyArrayToArray(vLookPoint, vLookPoint_Expanded, 3);
 							vLookPoint_Expanded[2] += g_fZoneHeight[iZone];
 							
