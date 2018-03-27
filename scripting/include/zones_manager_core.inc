@@ -494,6 +494,64 @@ native bool ZonesManager_HideZoneFromClient(int client, int zone);
  */
 native bool ZonesManager_UnHideZoneFromClient(int client, int zone);
 
+/**
+ * Forces a zone Beam to show to a client even if he is not standing in it.
+ * @param client		Client Index.
+ * @param zone			Zone Entity Index.
+ *
+ * @return				True if successful, false otherwise.
+ */
+native bool ZonesManager_ForceZoneRenderingToClient(int client, int zone);
+
+/**
+ * Removes forcing a zone Beam to show to a client.
+ * @param client		Client Index.
+ * @param zone			Zone Entity Index.
+ *
+ * @return				True if successful, false otherwise.
+ */
+native bool ZonesManager_UnForceZoneRenderingToClient(int client, int zone);
+
+/**
+ * Hooks an entity to be processed in a zone.
+ * This does not need to be called on player or other zone entities.
+ * @param entity		Entity Index.
+ * @param zone			Zone Entity Index.
+ *
+ * @return				True if successful, false otherwise.
+ */
+native bool ZonesManager_Hook(int entity, int zone);
+
+/**
+ * UnHooks an entity being processed in a zone.
+ * This does not need to be called on player or other zone entities.
+ * @param entity		Entity Index.
+ * @param zone			Zone Entity Index.
+ *
+ * @return				True if successful, false otherwise.
+ */
+native bool ZonesManager_UnHook(int entity, int zone);
+
+/**
+ * Hooks an entity to be processed in a globally in all zones.
+ * This does not need to be called on player or other zone entities.
+ * @param client		Client Index.
+ * @param zone			Zone Entity Index.
+ *
+ * @return				True if successful, false otherwise.
+ */
+native bool ZonesManager_HookGlobal(int entity);
+
+/**
+ * UnHooks an entity being processed globally in all zones.
+ * This does not need to be called on player or other zone entities.
+ * @param client		Client Index.
+ * @param zone			Zone Entity Index.
+ *
+ * @return				True if successful, false otherwise.
+ */
+native bool ZonesManager_UnHookGlobal(int entity);
+
 /**----------------------------------------------------------*/
 //Forwards
 
@@ -618,8 +676,15 @@ public void __pl_zones_manager_SetNTVOptional()
 	MarkNativeAsOptional("ZonesManager_FinishZone");
 	MarkNativeAsOptional("ZonesManager_GetZoneKeyValues");
 	MarkNativeAsOptional("ZonesManager_GetZoneKeyValuesAsString");
+	MarkNativeAsOptional("ZonesManager_ForceZoneRenderingToClient");
+	MarkNativeAsOptional("ZonesManager_UnForceZoneRenderingToClient");
 	MarkNativeAsOptional("ZonesManager_HideZoneFromClient");
 	MarkNativeAsOptional("ZonesManager_UnHideZoneFromClient");
+	MarkNativeAsOptional("ZonesManager_Hook");
+	MarkNativeAsOptional("ZonesManager_HookGlobal");
+	MarkNativeAsOptional("ZonesManager_UnHook");
+	MarkNativeAsOptional("ZonesManager_UnHook");
+	MarkNativeAsOptional("ZonesManager_UnHookGlobal");
 }
 #endif
 

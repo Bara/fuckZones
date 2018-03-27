@@ -47,6 +47,7 @@ ArrayList g_alZoneEntities;
 ArrayList g_alEffectList;
 ArrayList g_alZonePoints[MAX_ENTITY_LIMIT];
 ArrayList g_alAssignedZones[MAXPLAYERS + 1];
+ArrayList g_alEntityList;
 
 StringMap g_smZoneEffects[MAX_ENTITY_LIMIT];
 StringMap g_smEffectCalls;
@@ -63,11 +64,15 @@ char g_szZoneName[MAX_ENTITY_LIMIT][MAX_ZONE_NAME_LENGTH];
 *****************************************************************************************************/
 bool g_bLate;
 bool g_bShowAllZones[MAXPLAYERS + 1] =  { true, ... };
-bool g_bIsZone[MAX_ENTITY_LIMIT];
-bool g_bIsInsideZone[MAX_ENTITY_LIMIT][MAX_ENTITY_LIMIT];
 bool g_bNativeKvToString = false;
-bool g_bHideZoneRender[MAX_ENTITY_LIMIT][MAX_ENTITY_LIMIT];
+bool g_bHideZoneRender[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
+bool g_bForceZoneRender[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
+bool g_bIsInsideZone[MAX_ENTITY_LIMIT][MAX_ENTITY_LIMIT];
+bool g_bEntityZoneHooked[MAX_ENTITY_LIMIT][MAX_ENTITY_LIMIT];
+bool g_bIsZone[MAX_ENTITY_LIMIT];
 bool g_bEntitySpawned[MAX_ENTITY_LIMIT];
+bool g_bEntityGlobalHooked[MAX_ENTITY_LIMIT];
+
 
 /****************************************************************************************************
 	INTS.
@@ -103,7 +108,7 @@ public void OnPluginStart()
 	
 	g_bNativeKvToString = GetFeatureStatus(FeatureType_Native, "ExportToString") == FeatureStatus_Available;
 	
-	CreateTimer(0.0, Timer_DisplayZones, _, TIMER_REPEAT);
+	CreateTimer(0.1, Timer_DisplayZones, _, TIMER_REPEAT);
 	
 	if (g_bLate) {
 		for (int i = 1; i <= MaxClients; i++) {
@@ -132,6 +137,8 @@ public APLRes AskPluginLoad2(Handle hMySelf, bool bLate, char[] szError, int iEr
 	CreateNative("ZonesManager_UnAssignZone", Native_UnAssignZone);
 	CreateNative("ZonesManager_HideZoneFromClient", Native_HideZoneFromClient);
 	CreateNative("ZonesManager_UnHideZoneFromClient", Native_UnHideZoneFromClient);
+	CreateNative("ZonesManager_ForceZoneRenderingToClient", Native_ForceZoneRenderingToClient);
+	CreateNative("ZonesManager_UnForceZoneRenderingToClient", Native_UnForceZoneRenderingToClient);
 	CreateNative("ZonesManager_GetAssignedZones", Native_GetAssignedZones);
 	CreateNative("ZonesManager_GetZonePointsCount", Native_GetZonePointsCount);
 	CreateNative("ZonesManager_GetZonePoints", Native_GetZonePoints);
@@ -172,6 +179,10 @@ public APLRes AskPluginLoad2(Handle hMySelf, bool bLate, char[] szError, int iEr
 	CreateNative("ZonesManager_FinishZone", Native_FinishZone);
 	CreateNative("ZonesManager_GetZoneKeyValues", Native_GetZoneKeyValues);
 	CreateNative("ZonesManager_GetZoneKeyValuesAsString", Native_GetZoneKeyValuesAsString);
+	CreateNative("ZonesManager_Hook", Native_Hook);
+	CreateNative("ZonesManager_HookGlobal", Native_HookGlobal);
+	CreateNative("ZonesManager_UnHook", Native_UnHook);
+	CreateNative("ZonesManager_UnHookGlobal", Native_UnHookGlobal);
 	
 	g_hQueueEffects_Post = CreateGlobalForward("ZonesManager_OnQueueEffects_Post", ET_Ignore);
 	g_hStartTouchZone = CreateGlobalForward("ZonesManager_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
@@ -207,13 +218,36 @@ public void OnEntityCreated(int iEntity, const char[] szClassName)
 		return;
 	}
 	
-	if (!HasEntProp(iEntity, Prop_Send, "m_vecOrigin")) {
+	SDKHook(iEntity, SDKHook_SpawnPost, OnEntitySpawned);
+	
+	if (g_alEntityList == null) {
+		g_alEntityList = new ArrayList(3);
+	}
+	
+	int iEntRef = EntIndexToEntRef(iEntity);
+	
+	if (g_alEntityList.FindValue(iEntRef) != -1) {
 		return;
 	}
 	
-	SDKHook(iEntity, SDKHook_SpawnPost, OnEntitySpawned);
+	g_alEntityList.Push(iEntRef);
+}
+
+public void OnClientPutInServer(int iClient)
+{
+	g_bEntityGlobalHooked[iClient] = true;
 	
-	RequestFrame(CheckEntityZones, EntIndexToEntRef(iEntity));
+	if (g_alEntityList == null) {
+		g_alEntityList = new ArrayList(3);
+	}
+	
+	int iEntRef = EntIndexToEntRef(iClient);
+	
+	if (g_alEntityList.FindValue(iEntRef) != -1) {
+		return;
+	}
+	
+	g_alEntityList.Push(iEntRef);
 }
 
 public void Event_PlayerSpawn(Event eEvent, char[] szEvent, bool bDontBroadcast)
@@ -264,7 +298,20 @@ public void OnEntityDestroyed(int iEntity)
 		return;
 	}
 	
+	g_bEntityGlobalHooked[iEntity] = false;
 	ResetZoneVariables(iEntity);
+	
+	if (g_alEntityList == null) {
+		return;
+	}
+	
+	int iArrayCell = g_alEntityList.FindValue(EntIndexToEntRef(iEntity));
+	
+	if (iArrayCell == -1) {
+		return;
+	}
+	
+	g_alEntityList.Erase(iArrayCell);
 }
 
 public void OnMapEnd()
@@ -274,6 +321,8 @@ public void OnMapEnd()
 	for (int i = 1; i < MAX_ENTITY_LIMIT; i++) {
 		ResetZoneVariables(i);
 	}
+	
+	delete g_alEntityList;
 }
 
 public void OnAllPluginsLoaded() {
@@ -313,7 +362,7 @@ public void OnClientConnected(int iClient) {
 
 public void OnClientDisconnect(int iClient)
 {
-	ResetZoneVariables(iClient);
+	g_bEntityGlobalHooked[iClient] = false;
 	ResetCreateZoneVariables(iClient);
 }
 
@@ -415,73 +464,85 @@ int SpawnAZoneFromKeyValues(KeyValues kvZoneKV)
 	return CreateZone(szName, iType, vStartPosition, vEndPosition, fRadius, iColor, alPoints, fHeight, smEffects);
 }
 
-void CheckEntityZones(int iEntRef)
+public void OnGameFrame() {
+	CheckEntityZones();
+}
+
+void CheckEntityZones()
 {
-	if (iEntRef == INVALID_ENT_REFERENCE) {
+	if (g_alEntityList == null) {
 		return;
 	}
 	
-	int iZoneType = INVALID_ARRAY_INDEX;
+	int iEntity = INVALID_ENT_INDEX;
 	
-	int iEntity = EntRefToEntIndex(iEntRef);
-	
-	if (!IsValidEntity(iEntity)) {
-		return;
-	}
-	
-	if (IsValidZone(iEntity)) {
-		return;
-	}
-	
-	int iZone = INVALID_ENT_INDEX;
-	float vOrigin[3];
-	
-	if (iEntity <= MaxClients && iEntity > 0) {
-		GetClientAbsOrigin(iEntity, vOrigin);
-	} else {
-		GetEntPropVector(iEntity, Prop_Data, "m_vecOrigin", vOrigin);
-	}
-	
-	if (AreVectorsEqual(vOrigin, g_vInvalidOrigin)) {
-		RequestFrame(CheckEntityZones, iEntRef);
-		return;
-	}
-	
-	bool bSameOrigin = AreVectorsEqual(g_vEntityOrigin[iEntity], vOrigin);
-	
-	for (int i = 0; i < g_alZoneEntities.Length; i++) {
-		iZone = EntRefToEntIndex(g_alZoneEntities.Get(i));
+	for (int i = 0; i < g_alEntityList.Length; i++) {
+		iEntity = EntRefToEntIndex(g_alEntityList.Get(i));
 		
-		if (!IsValidZone(iZone)) {
-			g_alZoneEntities.Erase(i);
+		if (!IsValidEntity(iEntity)) {
+			g_alEntityList.Erase(i);
 			continue;
 		}
 		
-		iZoneType = GetZoneType(iZone);
+		int iZoneType = INVALID_ARRAY_INDEX;
+		int iZone = INVALID_ENT_INDEX;
+		float vOrigin[3];
 		
-		if (iZoneType != ZONE_TYPE_CIRCLE && iZoneType != ZONE_TYPE_POLY) {
-			continue;
+		if (iEntity <= MaxClients && iEntity > 0) {
+			GetClientAbsOrigin(iEntity, vOrigin);
+		} else {
+			GetEntPropVector(iEntity, Prop_Data, "m_vecOrigin", vOrigin);
 		}
 		
-		if (iZone == iEntity) {
-			continue;
+		if (AreVectorsEqual(vOrigin, g_vInvalidOrigin)) {
+			return;
 		}
 		
-		if (bSameOrigin && g_bIsInsideZone[iEntity][iZone]) {
+		bool bPlayer = IsPlayerIndex(iEntity);
+		bool bSameOrigin = AreVectorsEqual(g_vEntityOrigin[iEntity], vOrigin);
+		
+		for (int y = 0; y < g_alZoneEntities.Length; y++) {
+			iZone = EntRefToEntIndex(g_alZoneEntities.Get(y));
+			
+			if (!IsValidZone(iZone)) {
+				g_alZoneEntities.Erase(y);
+				continue;
+			}
+			
+			if (iZone == iEntity) {
+				continue;
+			}
+			
+			if (!g_bEntityZoneHooked[iEntity][iZone] && !g_bEntityGlobalHooked[iEntity] && !IsValidZone(iEntity) && !bPlayer) {
+				continue;
+			}
+			
+			iZoneType = GetZoneType(iZone);
+			
+			if (iZoneType != ZONE_TYPE_CIRCLE && iZoneType != ZONE_TYPE_POLY) {
+				continue;
+			}
+			
+			if (bSameOrigin) {
+				if (g_bIsInsideZone[iEntity][iZone]) {
+					Zones_StartTouch(iZone, iEntity);
+				} else {
+					Zones_EndTouch(iZone, iEntity);
+				}
+				
+				continue;
+			}
+			
+			if ((!g_bEntitySpawned[iEntity] && bPlayer) || !IsVectorInsideZone(iZone, vOrigin)) {
+				Zones_EndTouch(iZone, iEntity);
+				continue;
+			}
+			
 			Zones_StartTouch(iZone, iEntity);
-			continue;
 		}
 		
-		if ((!g_bEntitySpawned[iEntity] && IsPlayerIndex(iEntity)) || !IsVectorInsideZone(iZone, vOrigin)) {
-			Zones_EndTouch(iZone, iEntity);
-			continue;
-		}
-		
-		Zones_StartTouch(iZone, iEntity);
+		CopyArrayToArray(vOrigin, g_vEntityOrigin[iEntity], 3);
 	}
-	
-	CopyArrayToArray(vOrigin, g_vEntityOrigin[iEntity], 3);
-	RequestFrame(CheckEntityZones, iEntRef);
 }
 
 void ResetCreateZoneVariables(int iClient)
@@ -505,6 +566,9 @@ void ResetCreateZoneVariables(int iClient)
 			continue;
 		}
 		
+		g_bHideZoneRender[i][iZone] = false;
+		g_bForceZoneRender[i][iZone] = false;
+		
 		g_iZoningState[iClient][iZone] = ZONING_STATE_NONE;
 		
 		if (g_bEntitySpawned[iZone]) {
@@ -522,20 +586,22 @@ void ResetZoneVariables(int iZone)
 	int iArrayCell = INVALID_ARRAY_INDEX;
 	
 	for (int i = 1; i < MAX_ENTITY_LIMIT; i++) {
-		g_bIsInsideZone[iZone][i] = false;
 		g_bIsInsideZone[i][iZone] = false;
+		g_bEntityZoneHooked[i][iZone] = false;
 		
-		g_bHideZoneRender[iZone][i] = false;
-		g_bHideZoneRender[i][iZone] = false;
-		
-		if (i <= MaxClients && g_alAssignedZones[i] != null) {
-			iArrayCell = g_alAssignedZones[i].FindValue(EntIndexToEntRef(iZone));
+		if (i <= MaxClients) {
+			g_bForceZoneRender[i][iZone] = false;
+			g_bHideZoneRender[i][iZone] = false;
 			
-			if (iArrayCell == INVALID_ARRAY_INDEX) {
-				continue;
+			if (g_alAssignedZones[i] != null) {
+				iArrayCell = g_alAssignedZones[i].FindValue(EntIndexToEntRef(iZone));
+				
+				if (iArrayCell == INVALID_ARRAY_INDEX) {
+					continue;
+				}
+				
+				g_alAssignedZones[i].Erase(iArrayCell);
 			}
-			
-			g_alAssignedZones[i].Erase(iArrayCell);
 		}
 	}
 	
@@ -608,7 +674,7 @@ public Action Timer_DisplayZones(Handle hTimer)
 	}
 }
 
-void ShowZones(int iClient, float fTime = 0.1)
+void ShowZones(int iClient, float fTime = 0.2)
 {
 	float vCoordinates[3];
 	float vNextPoint[3];
@@ -697,7 +763,7 @@ void ShowZones(int iClient, float fTime = 0.1)
 						CopyArrayToArray(vNextPoint, vNextPoint_Expanded, 3);
 						vNextPoint_Expanded[2] += g_fZoneHeight[iZone];
 						
-						if (!AreVectorsEqual(vCoordinates, vNextPoint)) {
+						if (g_iZoningState[iClient][iZone] == ZONING_STATE_DRAWING && !AreVectorsEqual(vCoordinates, vNextPoint)) {
 							TE_SetupBeamPoints(vCoordinates, vNextPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, fTime, 1.0, 1.0, 0, 0.0, iColor, 0);
 							TE_SendToClient(iClient);
 							
@@ -705,7 +771,7 @@ void ShowZones(int iClient, float fTime = 0.1)
 							TE_SendToClient(iClient);
 						}
 						
-						if (g_iZoningState[iClient][iZone] == ZONING_STATE_DRAWING && !AreVectorsEqual(vLookPoint, vNextPoint) && iIndex == g_alZonePoints[iZone].Length - 1) {
+						if (!AreVectorsEqual(vLookPoint, vNextPoint) && iIndex == g_alZonePoints[iZone].Length - 1) {
 							CopyArrayToArray(vLookPoint, vLookPoint_Expanded, 3);
 							vLookPoint_Expanded[2] += g_fZoneHeight[iZone];
 							
@@ -745,6 +811,14 @@ void ShowZones(int iClient, float fTime = 0.1)
 			continue;
 		}
 		
+		if (g_bHideZoneRender[iClient][iZone]) {
+			continue;
+		}
+		
+		if (!g_bIsInsideZone[iClient][iZone]) {
+			continue;
+		}
+		
 		bSkip = false;
 		
 		if (g_alAssignedZones[iClient] != null) {
@@ -759,10 +833,6 @@ void ShowZones(int iClient, float fTime = 0.1)
 		}
 		
 		if (bSkip) {
-			continue;
-		}
-		
-		if (g_bHideZoneRender[iClient][iZone]) {
 			continue;
 		}
 		
@@ -1094,6 +1164,10 @@ void IsNotNearExternalZone_Post(int iEntity, int iZone, int iType)
 
 public Action Zones_StartTouch(int iZone, int iEntity)
 {
+	if (!g_bEntityZoneHooked[iEntity][iZone] && !g_bEntityGlobalHooked[iEntity] && !IsValidZone(iEntity) && !IsPlayerIndex(iEntity)) {
+		return Plugin_Handled;
+	}
+	
 	int iZoneType = GetZoneType(iZone);
 	Action aAction = IsNearExternalZone(iEntity, iZone, iZone);
 	
@@ -1106,6 +1180,10 @@ public Action Zones_StartTouch(int iZone, int iEntity)
 
 public Action Zones_EndTouch(int iZone, int iEntity)
 {
+	if (!g_bEntityZoneHooked[iEntity][iZone] && !g_bEntityGlobalHooked[iEntity] && !IsValidZone(iEntity) && !IsPlayerIndex(iEntity)) {
+		return Plugin_Handled;
+	}
+	
 	int iZoneType = GetZoneType(iZone);
 	Action aAction = IsNotNearExternalZone(iEntity, iZone, iZoneType);
 	
@@ -1363,6 +1441,10 @@ bool AddZonePoint(ArrayList alPoints, float fPoint[3])
 		return false;
 	}
 	
+	if (alPoints.FindValue(fPoint[0], 0) != -1 && alPoints.FindValue(fPoint[1], 1) != -1 && alPoints.FindValue(fPoint[2], 2) != -1) {
+		return false;
+	}
+	
 	int iSize = 0;
 	int iActual = 0;
 	
@@ -1377,22 +1459,22 @@ bool AddZonePoint(ArrayList alPoints, float fPoint[3])
 	return true;
 }
 
-bool RemoveZonePoint(ArrayList alPoints, float fPoint[3])
+bool RemoveZonePoint(int iZone, float fPoint[3])
 {
-	if (alPoints == null) {
+	if (g_alZonePoints[iZone] == null) {
 		return false;
 	}
 	
 	float fBuffer[3];
 	
-	for (int i = 0; i < alPoints.Length; i++) {
-		alPoints.GetArray(i, fBuffer);
+	for (int i = 0; i < g_alZonePoints[iZone].Length; i++) {
+		g_alZonePoints[iZone].GetArray(i, fBuffer);
 		
 		if (!AreVectorsEqual(fPoint, fBuffer)) {
 			continue;
 		}
 		
-		alPoints.Erase(i);
+		g_alZonePoints[iZone].Erase(i);
 		return true;
 	}
 	
@@ -1618,7 +1700,6 @@ float GetHighestCorner(int iZone)
 bool IsVectorInsideZone(int iZone, float vOrigin[3])
 {
 	switch (GetZoneType(iZone)) {
-		/*
 		case ZONE_TYPE_CUBE, ZONE_TYPE_TRIGGER: {
 			// Count zone corners
 			// https://forums.alliedmods.net/showpost.php?p=2006539&postcount=8
@@ -1653,7 +1734,7 @@ bool IsVectorInsideZone(int iZone, float vOrigin[3])
 			}
 			
 			return false;
-		}*/
+		}
 		
 		case ZONE_TYPE_CIRCLE: {
 			return GetVectorDistance(vOrigin, g_vEntityOrigin[iZone]) <= (g_fZoneRadius[iZone] / 2.0);
@@ -1744,18 +1825,43 @@ void InitCubeVector(int iEntity, float vStart[3], float vEnd[3])
 public void GetPolygonCenter(int iZone, float vPos[3])
 {
 	//needs to have atleast one point..
+	float vFirst[3];
+	float vLast[3];
+	
 	int iSize = g_alZonePoints[iZone].Length;
+	g_alZonePoints[iZone].GetArray(0, vFirst, sizeof(vFirst));
+	g_alZonePoints[iZone].GetArray(iSize - 1, vLast, sizeof(vLast));
 	
-	float vPoint1[3];
+	bool bPA = false;
 	
-	for (int i = 0; i < iSize; i++) {
-		g_alZonePoints[iZone].GetArray(i, vPoint1, sizeof(vPoint1));
-		vPos[0] += vPoint1[0];
-		vPos[1] += vPoint1[1];
+	if (vFirst[0] != vLast[0] || vFirst[1] != vLast[1]) {
+		g_alZonePoints[iZone].PushArray(vFirst);
+		iSize += 1;
+		bPA = true;
 	}
 	
-	vPos[0] /= float(iSize);
-	vPos[1] /= float(iSize);
+	float fArea = 0.0;
+	float x, y, f;
+	
+	float vP1[3];
+	float vP2[3];
+	
+	for (int i = 0, j = iSize - 1; i < iSize; j = i++) {
+		g_alZonePoints[iZone].GetArray(i, vP1, sizeof(vP1));
+		g_alZonePoints[iZone].GetArray(j, vP2, sizeof(vP2));
+		f = (vP1[0] * vP2[1]) - (vP2[0] * vP1[1]);
+		fArea += f;
+		x += (vP1[0] + vP2[0]) * f;
+		y += (vP1[1] + vP2[1]) * f;
+	}
+	
+	f = fArea * 3;
+	vPos[0] = x / f;
+	vPos[1] = y / f;
+	
+	if (bPA) {
+		g_alZonePoints[iZone].Resize(iSize - 1);
+	}
 }
 
 bool IsPointInZone(float vPoint[3], int iZone)
@@ -1893,6 +1999,55 @@ bool IsPointInZone(float vPoint[3], int iZone)
 	float vCurrentPoint2[2][3];
 	float vNextPoint2[2][3];
 	
+	//Now we check for base hitting
+	//This method is weird, but works most of the time
+	for (int k = 0; k < iLIntNum; k++) {
+		for (int l = k + 1; l < iLIntNum; l++) {
+			if (l == k) {
+				continue;
+			}
+			
+			i = iLintersected[k];
+			j = iLintersected[l];
+			
+			if (i == j) {
+				continue;
+			}
+			
+			if (g_alZonePoints[iZone].Length == i + 1) {
+				g_alZonePoints[iZone].GetArray(i, vCurrentPoint2[0], 3);
+				g_alZonePoints[iZone].GetArray(0, vNextPoint2[0], 3);
+			} else {
+				g_alZonePoints[iZone].GetArray(i, vCurrentPoint2[0], 3);
+				g_alZonePoints[iZone].GetArray(i + 1, vNextPoint2[0], 3);
+			}
+			
+			if (g_alZonePoints[iZone].Length == j + 1) {
+				g_alZonePoints[iZone].GetArray(j, vCurrentPoint2[1], 3);
+				g_alZonePoints[iZone].GetArray(0, vNextPoint2[1], 3);
+			} else {
+				g_alZonePoints[iZone].GetArray(j, vCurrentPoint2[1], 3);
+				g_alZonePoints[iZone].GetArray(j + 1, vNextPoint2[1], 3);
+			}
+			
+			//Get equation of both lines then find slope of them
+			fM1 = (vNextPoint2[0][1] - vCurrentPoint2[0][1]) / (vNextPoint2[0][0] - vCurrentPoint2[0][0]);
+			fM2 = (vNextPoint2[1][1] - vCurrentPoint2[1][1]) / (vNextPoint2[1][0] - vCurrentPoint2[1][0]);
+			fLeq1 = (fM1 * vCurrentPoint2[0][0]) - vCurrentPoint2[0][1];
+			fLeq2 = (fM2 * vCurrentPoint2[1][0]) - vCurrentPoint2[1][1];
+			fLeq1 = -fLeq1;
+			fLeq2 = -fLeq2;
+			
+			//Get x point of intersection
+			fXpoint1 = ((fIntersect[k][1] - fLeq1) / fM1);
+			fXpoint2 = ((fIntersect[l][1] - fLeq2) / fM2);
+			
+			if (fXpoint1 > vPoint[0] > fXpoint2 || fXpoint1 < vPoint[0] < fXpoint2) {
+				iIntersections++;
+			}
+		}
+	}
+	
 	for (int k = 0; k < iLIntNumT; k++) {
 		for (int l = k + 1; l < iLIntNumT; l++) {
 			if (l == k) {
@@ -1932,7 +2087,7 @@ bool IsPointInZone(float vPoint[3], int iZone)
 			
 			//Get x point of intersection
 			fXpoint1 = ((fIntersectT[k][1] - fLeq1) / fM1);
-			fXpoint2 = ((fIntersectT[l][1] - fLeq2 / fM2));
+			fXpoint2 = ((fIntersectT[l][1] - fLeq2) / fM2);
 			
 			if (fXpoint1 > vPoint[0] > fXpoint2 || fXpoint1 < vPoint[0] < fXpoint2) {
 				iIntersections++;
@@ -2674,6 +2829,7 @@ public int Native_SetZoneRadius(Handle hPlugin, int iNumParams)
 	}
 	
 	g_fZoneRadius[iZone] = fRadius;
+	
 	return true;
 }
 
@@ -2713,6 +2869,7 @@ public int Native_SetZoneHeight(Handle hPlugin, int iNumParams)
 	}
 	
 	g_fZoneHeight[iZone] = fHeight;
+	
 	return true;
 }
 
@@ -2786,7 +2943,7 @@ public int Native_RemoveZonePoint(Handle hPlugin, int iNumParams)
 		return INVALID_ENT_INDEX;
 	}
 	
-	return RemoveZonePoint(g_alZonePoints[iZone], vPoint);
+	return RemoveZonePoint(iZone, vPoint);
 }
 
 public int Native_RemoveLastZonePoint(Handle hPlugin, int iNumParams)
@@ -2811,7 +2968,7 @@ public int Native_RemoveLastZonePoint(Handle hPlugin, int iNumParams)
 	
 	float vPoint[3]; g_alZonePoints[iZone].GetArray(iSize - 1, vPoint);
 	
-	return RemoveZonePoint(g_alZonePoints[iZone], vPoint);
+	return RemoveZonePoint(iZone, vPoint);
 }
 
 public int Native_RemoveMultipleZonePoints(Handle hPlugin, int iNumParams)
@@ -2841,7 +2998,7 @@ public int Native_RemoveMultipleZonePoints(Handle hPlugin, int iNumParams)
 	for (int i = 0; i < alPoints.Length; i++) {
 		alPoints.GetArray(i, vBuffer);
 		
-		if (RemoveZonePoint(g_alZonePoints[iZone], vBuffer)) {
+		if (RemoveZonePoint(iZone, vBuffer)) {
 			iRemoved++;
 		}
 	}
@@ -3045,5 +3202,117 @@ public int Native_UnHideZoneFromClient(Handle hPlugin, int iNumParams)
 	}
 	
 	g_bHideZoneRender[iClient][iZone] = false;
+	return true;
+}
+
+public int Native_ForceZoneRenderingToClient(Handle hPlugin, int iNumParams)
+{
+	int iClient = GetNativeCell(1);
+	int iZone = GetNativeCell(2);
+	
+	if (!IsValidZone(iZone)) {
+		ThrowNativeError(SP_ERROR_NATIVE, "Entity %d is not a valid zone", iZone);
+		return false;
+	}
+	
+	if (!IsPlayerIndex(iClient)) {
+		return false;
+	}
+	
+	g_bForceZoneRender[iClient][iZone] = true;
+	return true;
+}
+
+public int Native_UnForceZoneRenderingToClient(Handle hPlugin, int iNumParams)
+{
+	int iClient = GetNativeCell(1);
+	int iZone = GetNativeCell(2);
+	
+	if (!IsValidZone(iZone)) {
+		ThrowNativeError(SP_ERROR_NATIVE, "Entity %d is not a valid zone", iZone);
+		return false;
+	}
+	
+	if (!IsPlayerIndex(iClient)) {
+		return false;
+	}
+	
+	g_bForceZoneRender[iClient][iZone] = false;
+	return true;
+}
+
+public int Native_Hook(Handle hPlugin, int iNumParams)
+{
+	int iEntity = GetNativeCell(1);
+	int iZone = GetNativeCell(2);
+	
+	if (!IsValidEntity(iEntity)) {
+		return false;
+	}
+	
+	if (IsValidZone(iEntity)) {
+		return true;
+	}
+	
+	if (!IsValidZone(iZone)) {
+		ThrowNativeError(SP_ERROR_NATIVE, "Entity %d is not a valid zone", iZone);
+		return false;
+	}
+	
+	g_bEntityZoneHooked[iEntity][iZone] = true;
+	return true;
+}
+
+public int Native_HookGlobal(Handle hPlugin, int iNumParams)
+{
+	int iEntity = GetNativeCell(1);
+	
+	if (!IsValidEntity(iEntity)) {
+		return false;
+	}
+	
+	if (IsValidZone(iEntity)) {
+		return true;
+	}
+	
+	g_bEntityGlobalHooked[iEntity] = true;
+	return true;
+}
+
+public int Native_UnHook(Handle hPlugin, int iNumParams)
+{
+	int iEntity = GetNativeCell(1);
+	int iZone = GetNativeCell(2);
+	
+	if (!IsValidEntity(iEntity)) {
+		return false;
+	}
+	
+	if (IsValidZone(iEntity)) {
+		return true;
+	}
+	
+	if (!IsValidZone(iZone)) {
+		ThrowNativeError(SP_ERROR_NATIVE, "Entity %d is not a valid zone", iZone);
+		return false;
+	}
+	
+	g_bEntityZoneHooked[iEntity][iZone] = false;
+	return true;
+}
+
+public int Native_UnHookGlobal(Handle hPlugin, int iNumParams)
+{
+	int iEntity = GetNativeCell(1);
+	
+	if (!IsValidEntity(iEntity)) {
+		return false;
+	}
+	
+	if (IsValidZone(iEntity)) {
+		return true;
+	}
+	
+	g_bEntityGlobalHooked[iEntity] = false;
 	return true;
 } 
