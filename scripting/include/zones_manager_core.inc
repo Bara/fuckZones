@@ -23,14 +23,18 @@
 #define DEFAULT_HALOINDEX "materials/sprites/halo.vmt"
 
 #define ZONE_TYPES 4
-#define ZONE_TYPE_TRIGGER 0
-#define ZONE_TYPE_CUBE 1
-#define ZONE_TYPE_CIRCLE 2
-#define ZONE_TYPE_POLY 3
+#define ZONE_TYPE_TRIGGER 1
+#define ZONE_TYPE_CUBE 2
+#define ZONE_TYPE_CIRCLE 3
+#define ZONE_TYPE_POLY 4
 
 #define ZONING_STATE_NONE 0
 #define ZONING_STATE_IDLE 1
 #define ZONING_STATE_DRAWING 2
+
+#define ZONE_DRAW_HALF 0
+#define ZONE_DRAW_FULL 1
+#define ZONE_DRAW_NONE 2
 
 #define ZONE_INDEX_CURRENT -1337
 
@@ -155,6 +159,44 @@ native float ZonesManager_GetZoneRadius(int zone);
  * @return				True if successful, false otherwise.
  */
 native bool ZonesManager_GetZoneColor(int zone, int buffer[4]);
+
+/**
+ * Gets a zone draw type.
+ *
+ * @param zone			Zone Entity Index.
+ * @return				Zone draw type.
+ */
+native int ZonesManager_GetZoneDrawType(int zone);
+
+/**
+ * Gets an arraylist of zone entities.
+ *
+ * @return				ArrayList of zones, null on failure.
+ */
+native ArrayList ZonesManager_GetZoneList();
+
+/**
+ * Gets the current zone count.
+ *
+ * @return				Zone count.
+ */
+native int ZonesManager_GetZoneCount();
+
+/**
+ * Returns true if zone is spawned and active.
+ *
+ * @param zone			Zone Entity Index.
+ * @return				True / false.
+ */
+native bool ZonesManager_IsZoneActive(int zone);
+
+/**
+ * Deletes a zone safely.
+ *
+ * @param zone			Zone Entity Index.
+ * @return				True if successful, false otherwise.
+ */
+native bool ZonesManager_DeleteZone(int zone);
 
 /**
  * Gets a zone type.
@@ -337,6 +379,16 @@ native bool ZonesManager_SetZoneRadius(int zone, float radius);
 native bool ZonesManager_SetZoneColor(int zone, int color[4]);
 
 /**
+ * Sets a zones draw type.
+ * ZONE_DRAW_HALF or ZONE_TYPE_FULL.
+ *
+ * @param zone			Zone Entity Index.
+ * @param drawtypee		Zone draw type.
+ * @return				True if successful, false otherwise.
+ */
+native bool ZonesManager_SetZoneDrawType(int zone, int drawtype = ZONE_DRAW_HALF);
+
+/**
  * Sets a zones height.
  * This is currently only applicable to polygon and circle zones.
  *
@@ -443,12 +495,13 @@ native KeyValues ZonesManager_GetZoneKeyValuesAsString(int zone, char[] buffer);
  * @param end			End vector (Currently only applicable to box zones).
  * @param radius		Zone radius (Currently only applicable to circle zones).
  * @param color			Zone color (This uses decimal RGB color codes where 0 is R, 1 is G, 2 is B and 3 is alpha).
+ * @param drawtype		Zone draw type (ZONE_DRAW_HALF or ZONE_DRAW_FULL).
  * @param points		ArrayList of zone points (Currently only applicable to polygon zones).
  * @param height		Height of zone points (Currently only applicable to polygon zones).
- * @param height		ArrayList of effects for the zone.
+ * @param effects		ArrayList of effects for the zone.
  * @return				Entity index of the zone, -1 on failure.
  */
-native int ZonesManager_CreateZoneAdvanced(int type, const char[] name, float start[3], float end[3] =  { -1.0, -1.0, -1.0 }, float radius = -1.0, int color[4] =  { 255, 255, 0, 255 }, ArrayList points = null, float height = 256.0, StringMap effects = null);
+native int ZonesManager_CreateZoneAdvanced(int type, const char[] name, float start[3], float end[3] =  { -1.0, -1.0, -1.0 }, float radius = -1.0, int color[4] =  { 255, 255, 0, 255 }, int drawtype = ZONE_DRAW_HALF, ArrayList points = null, float height = 256.0, StringMap effects = null);
 
 /**
  * Loads a zone from KeyValues string..
@@ -566,63 +619,80 @@ forward void ZonesManager_OnQueueEffects_Post();
  *
  * @param entity			Entity Index.
  * @param zone          	Entity index for this zone.
- * @param zone_name			Name of the zone.
+ * @param name				Name of the zone.
  * @param type            	Type of zone.
  * @return                	Plugin_Handled or Plugin_Stop = stops post forward counterpart from firing.
 **/
-forward Action ZonesManager_OnStartTouchZone(int entity, int zone, const char[] zone_name, int type);
+forward Action ZonesManager_OnStartTouchZone(int entity, int zone, const char[] name, int type);
 
 /**
  * Called right before each tick while an entity is in a zone.
  *
  * @param entity			Entity Index.
  * @param zone          	Entity index for this zone.
- * @param zone_name			Name of the zone.
+ * @param name				Name of the zone.
  * @param type            	Type of zone.
  * @return              	Plugin_Handled or Plugin_Stop = stops post forward counterpart from firing.
 **/
-forward Action ZonesManager_OnTouchZone(int entity, int zone, const char[] zone_name, int type);
+forward Action ZonesManager_OnTouchZone(int entity, int zone, const char[] name, int type);
 
 /**
  * Called right before once an entity leaves the zone.
  *
  * @param entity			Entity Index.
  * @param zone          	Entity index for this zone.
- * @param zone_name			Name of the zone.
+ * @param name				Name of the zone.
  * @param type            	Type of zone.
  * @return                	Plugin_Handled or Plugin_Stop = stops post forward counterpart from firing.
 **/
-forward Action ZonesManager_OnEndTouchZone(int entity, int zone, const char[] zone_name, int type);
+forward Action ZonesManager_OnEndTouchZone(int entity, int zone, const char[] name, int type);
 
 /**
  * Called right after an entity enters the zone.
  *
  * @param entity			Entity Index.
  * @param zone          	Entity index for this zone.
- * @param zone_name			Name of the zone.
+ * @param name				Name of the zone.
  * @param type            	Type of zone.
 **/
-forward void ZonesManager_OnStartTouchZone_Post(int entity, int zone, const char[] zone_name, int type);
+forward void ZonesManager_OnStartTouchZone_Post(int entity, int zone, const char[] name, int type);
 
 /**
  * Called right after each tick while an entity is in a zone.
  *
  * @param entity			Entity Index.
  * @param zone          	Entity index for this zone.
- * @param zone_name			Name of the zone.
+ * @param name				Name of the zone.
  * @param type            	Type of zone.
 **/
-forward void ZonesManager_OnTouchZone_Post(int entity, int zone, const char[] zone_name, int type);
+forward void ZonesManager_OnTouchZone_Post(int entity, int zone, const char[] name, int type);
 
 /**
  * Called right after once an entity leaves the zone.
  *
  * @param entity			Entity Index.
  * @param zone          	Entity index for this zone.
- * @param zone_name			Name of the zone.
+ * @param name				Name of the zone.
  * @param type            	Type of zone.
 **/
-forward void ZonesManager_OnEndTouchZone_Post(int entity, int zone, const char[] zone_name, int type);
+forward void ZonesManager_OnEndTouchZone_Post(int entity, int zone, const char[] name, int type);
+
+/**
+ * Called right after a zone has been hooked / spawned.
+ *
+ * @param zone				Zone Entity Index.
+ * @param zonetype          Zone Type.
+ * @param name				Name of the zone.
+ * @param start            	Zone start vector.
+ * @param end            	Zone end vector.
+ * @param radius            Zone radius.
+ * @param height            Zone height.
+ * @param color             Zone color.
+ * @param drawtype          Zone draw type.
+ * @param drawtype          Zone points.
+ * @param effects         	Zone effects.
+**/
+forward void ZonesManager_OnZoneSpawned(int zone, int zonetype, const char[] name, float start[3], float end[3], float radius, float height, int color[4], int drawtype, ArrayList points, StringMap effects);
 
 #if !defined REQUIRE_PLUGIN
 public void __pl_zones_manager_SetNTVOptional()
@@ -646,6 +716,11 @@ public void __pl_zones_manager_SetNTVOptional()
 	MarkNativeAsOptional("ZonesManager_GetZoneEnd");
 	MarkNativeAsOptional("ZonesManager_GetZoneRadius");
 	MarkNativeAsOptional("ZonesManager_GetZoneColor");
+	MarkNativeAsOptional("ZonesManager_GetZoneDrawType");
+	MarkNativeAsOptional("ZonesManager_GetZoneList");
+	MarkNativeAsOptional("ZonesManager_GetZoneCount");
+	MarkNativeAsOptional("ZonesManager_IsZoneActive");
+	MarkNativeAsOptional("ZonesManager_DeleteZone");
 	MarkNativeAsOptional("ZonesManager_GetZoneType");
 	MarkNativeAsOptional("ZonesManager_GetZoneLowestCorner");
 	MarkNativeAsOptional("ZonesManager_GetZoneHighestCorner");
@@ -664,6 +739,7 @@ public void __pl_zones_manager_SetNTVOptional()
 	MarkNativeAsOptional("ZonesManager_SetZoneEnd");
 	MarkNativeAsOptional("ZonesManager_SetZoneRadius");
 	MarkNativeAsOptional("ZonesManager_SetZoneColor");
+	MarkNativeAsOptional("ZonesManager_SetZoneDrawType");
 	MarkNativeAsOptional("ZonesManager_SetZoneHeight");
 	MarkNativeAsOptional("ZonesManager_AddZonePoint");
 	MarkNativeAsOptional("ZonesManager_AddMultipleZonePoints");
@@ -688,13 +764,13 @@ public void __pl_zones_manager_SetNTVOptional()
 }
 #endif
 
-public SharedPlugin __pl_zones_manager =
+public SharedPlugin __pl_zones_manager = 
 {
-	name = "zones_manager_core",
-	file = "zones_manager_core.smx",
+	name = "zones_manager_core", 
+	file = "zones_manager_core.smx", 
 	#if defined REQUIRE_PLUGIN
-	required = 1,
+	required = 1, 
 	#else
-	required = 0,
+	required = 0, 
 	#endif
 };

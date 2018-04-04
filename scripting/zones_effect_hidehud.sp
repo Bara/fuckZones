@@ -23,7 +23,7 @@
 public Plugin myinfo = 
 {
 	name = "Zones Manager - Effect - Hide Hud", 
-	author = "Keith Warren (Drixevel), SM9", 
+	author = "Keith Warren (Shaders Allen), SM9", 
 	description = PLUGIN_DESCRIPTION, 
 	version = PLUGIN_VERSION, 
 	url = "https://github.com/ShadersAllen/Zones-Manager"
