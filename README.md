@@ -1,1 +1,3 @@
-this is a readme lul
+# Zones Manager
+
+How to create a Zone???
