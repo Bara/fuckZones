@@ -1,0 +1,43 @@
+name: Compile with SourceMod
+
+on:
+  pull_request:
+    branches: master
+  push:
+    branches: master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        SM_VERSION: ["1.10", "1.11"]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set environment variables
+        run: |
+          SOURCEMOD_PATH=$GITHUB_WORKSPACE
+          echo ::set-env name=SOURCEMOD_PATH::$SOURCEMOD_PATH
+          echo ::set-env name=SCRIPTS_PATH::$SOURCEMOD_PATH/scripting
+
+      - name: Setup SourcePawn Compiler ${{ matrix.SM_VERSION }}
+        uses: rumblefrog/setup-sp@master
+        with:
+          version: ${{ matrix.SM_VERSION }}
+
+      - name: Compile plugins
+        run: |
+          echo -e "\nCompiling zones_effect_hidehud.sp..."
+          spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include zones_effect_hidehud.sp
+          echo -e "\nCompiling zones_effect_meleeonly.sp..."
+          spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include zones_effect_meleeonly.sp
+          echo -e "\nCompiling zones_effect_termplate.sp..."
+          spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include zones_effect_termplate.sp
+          echo -e "\nCompiling testzones.sp..."
+          spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include testzones.sp
+          echo -e "\nCompiling zones_manager_core.sp..."
+          spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include zones_manager_core.sp
+        working-directory: ${{ env.SCRIPTS_PATH }}/

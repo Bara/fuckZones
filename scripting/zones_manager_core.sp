@@ -1,24 +1,24 @@
-/******************************************************************************************************x
-	INCLUDES
-*****************************************************************************************************/
-#include <sourcemod>
-#include <sourcemod-misc>
-#include <sdktools>
-#include <sdkhooks>
-#include <zones_manager_core>
-
-/****************************************************************************************************
-	DEFINES
-*****************************************************************************************************/
-#define PLUGIN_DESCRIPTION "A sourcemod plugin with rich features for dynamic zone development."
-#define PLUGIN_VERSION "1.2.0"
-
 /****************************************************************************************************
 	ETIQUETTE.
 *****************************************************************************************************/
 #pragma newdecls required;
 #pragma semicolon 1;
 #pragma dynamic 131072;
+
+/******************************************************************************************************x
+	INCLUDES
+*****************************************************************************************************/
+#include <sourcemod>
+#include <sdktools>
+#include <sdkhooks>
+#include <zones_manager_core>
+#include <zones_manager_stocks>
+
+/****************************************************************************************************
+	DEFINES
+*****************************************************************************************************/
+#define PLUGIN_DESCRIPTION "A sourcemod plugin with rich features for dynamic zone development."
+#define PLUGIN_VERSION "1.2.0"
 
 /****************************************************************************************************
 	PLUGIN INFO.
@@ -46,12 +46,12 @@ Handle g_hOnZoneSpawned;
 
 ArrayList g_alZoneEntities;
 ArrayList g_alEffectList;
-ArrayList g_alZonePoints[MAX_ENTITY_LIMIT];
+ArrayList g_alZonePoints[4096];
 ArrayList g_alAssignedZones[MAXPLAYERS + 1];
 ArrayList g_alEntityList;
 ArrayList g_alDelayedTriggerZones;
 
-StringMap g_smZoneEffects[MAX_ENTITY_LIMIT];
+StringMap g_smZoneEffects[4096];
 StringMap g_smEffectCalls;
 StringMap g_smEffectKeys;
 
@@ -59,20 +59,20 @@ StringMap g_smEffectKeys;
 	STRINGS.
 *****************************************************************************************************/
 char g_szErrorModel[] = "models/error.mdl";
-char g_szZoneName[MAX_ENTITY_LIMIT][MAX_ZONE_NAME_LENGTH];
+char g_szZoneName[4096][MAX_ZONE_NAME_LENGTH];
 
 /****************************************************************************************************
 	BOOLS.
 *****************************************************************************************************/
 bool g_bLate;
 bool g_bNativeKvToString = false;
-bool g_bHideZoneRender[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
-bool g_bForceZoneRender[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
-bool g_bIsInsideZone[MAX_ENTITY_LIMIT][MAX_ENTITY_LIMIT];
-bool g_bEntityZoneHooked[MAX_ENTITY_LIMIT][MAX_ENTITY_LIMIT];
-bool g_bIsZone[MAX_ENTITY_LIMIT];
-bool g_bEntitySpawned[MAX_ENTITY_LIMIT];
-bool g_bEntityGlobalHooked[MAX_ENTITY_LIMIT];
+bool g_bHideZoneRender[MAXPLAYERS + 1][4096];
+bool g_bForceZoneRender[MAXPLAYERS + 1][4096];
+bool g_bIsInsideZone[4096][4096];
+bool g_bEntityZoneHooked[4096][4096];
+bool g_bIsZone[4096];
+bool g_bEntitySpawned[4096];
+bool g_bEntityGlobalHooked[4096];
 bool g_bMapStarted = false;
 
 /****************************************************************************************************
@@ -80,23 +80,23 @@ bool g_bMapStarted = false;
 *****************************************************************************************************/
 int g_iDefaultModelIndex;
 int g_iDefaultHaloIndex;
-int g_iZoneType[MAX_ENTITY_LIMIT];
-int g_iZoneColor[MAX_ENTITY_LIMIT][4];
-int g_iZoneDrawType[MAX_ENTITY_LIMIT];
-int g_iZoningState[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
+int g_iZoneType[4096];
+int g_iZoneColor[4096][4];
+int g_iZoneDrawType[4096];
+int g_iZoningState[MAXPLAYERS + 1][4096];
 
 /****************************************************************************************************
 	FLOATS.
 *****************************************************************************************************/
-float g_vZoneStart[MAX_ENTITY_LIMIT][3];
-float g_vZoneEnd[MAX_ENTITY_LIMIT][3];
-float g_fZoneRadius[MAX_ENTITY_LIMIT];
-float g_fZoneHeight[MAX_ENTITY_LIMIT];
-float g_fZonePointsDistance[MAX_ENTITY_LIMIT];
-float g_fZonePointsMin[MAX_ENTITY_LIMIT][3];
-float g_fZonePointsMax[MAX_ENTITY_LIMIT][3];
-float g_vEntityOrigin[MAX_ENTITY_LIMIT][3];
-float g_vZoneCorners[MAX_ENTITY_LIMIT][8][3];
+float g_vZoneStart[4096][3];
+float g_vZoneEnd[4096][3];
+float g_fZoneRadius[4096];
+float g_fZoneHeight[4096];
+float g_fZonePointsDistance[4096];
+float g_fZonePointsMin[4096][3];
+float g_fZonePointsMax[4096][3];
+float g_vEntityOrigin[4096][3];
+float g_vZoneCorners[4096][8][3];
 
 public void OnPluginStart()
 {
@@ -217,7 +217,7 @@ public void OnMapStart()
 	
 	PrecacheModel(g_szErrorModel);
 	
-	for (int i = 1; i < MAX_ENTITY_LIMIT; i++) {
+	for (int i = 1; i < 4096; i++) {
 		ResetZoneVariables(i);
 	}
 	
@@ -226,11 +226,11 @@ public void OnMapStart()
 
 public void OnEntityCreated(int iEntity, const char[] szClassName)
 {
-	if (iEntity < INVALID_ENT_INDEX) {
+	if (iEntity < -1) {
 		iEntity = EntRefToEntIndex(iEntity);
 	}
 	
-	if (iEntity < 1 || iEntity >= MAX_ENTITY_LIMIT) {
+	if (iEntity < 1 || iEntity >= 4096) {
 		return;
 	}
 	
@@ -242,7 +242,7 @@ public void OnEntityCreated(int iEntity, const char[] szClassName)
 	
 	int iEntRef = EntIndexToEntRef(iEntity);
 	
-	if (g_alEntityList.FindValue(iEntRef) != INVALID_ARRAY_INDEX) {
+	if (g_alEntityList.FindValue(iEntRef) != -1) {
 		return;
 	}
 	
@@ -269,7 +269,7 @@ public void OnClientPutInServer(int iClient)
 	
 	int iEntRef = EntIndexToEntRef(iClient);
 	
-	if (g_alEntityList.FindValue(iEntRef) != INVALID_ARRAY_INDEX) {
+	if (g_alEntityList.FindValue(iEntRef) != -1) {
 		return;
 	}
 	
@@ -301,11 +301,11 @@ public void Event_PlayerDeath(Event eEvent, char[] szEvent, bool bDontBroadcast)
 
 public void OnEntitySpawned(int iEntity)
 {
-	if (iEntity < INVALID_ENT_INDEX) {
+	if (iEntity < -1) {
 		iEntity = EntRefToEntIndex(iEntity);
 	}
 	
-	if (iEntity < 1 || iEntity >= MAX_ENTITY_LIMIT) {
+	if (iEntity < 1 || iEntity >= 4096) {
 		return;
 	}
 	
@@ -328,11 +328,11 @@ public void OnEntitySpawned(int iEntity)
 
 public void OnEntityDestroyed(int iEntity)
 {
-	if (iEntity < INVALID_ENT_INDEX) {
+	if (iEntity < -1) {
 		iEntity = EntRefToEntIndex(iEntity);
 	}
 	
-	if (iEntity < 1 || iEntity >= MAX_ENTITY_LIMIT) {
+	if (iEntity < 1 || iEntity >= 4096) {
 		return;
 	}
 	
@@ -345,7 +345,7 @@ public void OnEntityDestroyed(int iEntity)
 	
 	int iArrayCell = g_alEntityList.FindValue(EntIndexToEntRef(iEntity));
 	
-	if (iArrayCell == INVALID_ARRAY_INDEX) {
+	if (iArrayCell == -1) {
 		return;
 	}
 	
@@ -356,7 +356,7 @@ public void OnMapEnd()
 {
 	ClearAllZones();
 	
-	for (int i = 1; i < MAX_ENTITY_LIMIT; i++) {
+	for (int i = 1; i < 4096; i++) {
 		ResetZoneVariables(i);
 	}
 	
@@ -402,7 +402,7 @@ void DelayedTriggerLoad()
 		return;
 	}
 	
-	char szBuffer[4096]; int iZoneType = INVALID_ARRAY_INDEX;
+	char szBuffer[4096]; int iZoneType = -1;
 	KeyValues kvZoneKV;
 	
 	for (int i = 0; i < g_alDelayedTriggerZones.Length; i++) {
@@ -433,7 +433,7 @@ public void OnClientDisconnect(int iClient)
 
 void ClearAllZones()
 {
-	int iZone = INVALID_ENT_INDEX;
+	int iZone = -1;
 	
 	if (g_alZoneEntities == null) {
 		return;
@@ -461,7 +461,7 @@ bool DeleteZone(int iZone)
 	}
 	
 	int iEntRef = EntIndexToEntRef(iZone);
-	int iArrayIndex = INVALID_ARRAY_INDEX;
+	int iArrayIndex = -1;
 	
 	for (int i = 1; i <= MaxClients; i++) {
 		if (g_alAssignedZones[i] == null) {
@@ -470,7 +470,7 @@ bool DeleteZone(int iZone)
 		
 		iArrayIndex = g_alAssignedZones[i].FindValue(iEntRef);
 		
-		if (iArrayIndex != INVALID_ARRAY_INDEX) {
+		if (iArrayIndex != -1) {
 			g_alAssignedZones[i].Erase(iArrayIndex);
 		}
 		
@@ -482,7 +482,7 @@ bool DeleteZone(int iZone)
 	if (g_alZoneEntities != null) {
 		iArrayIndex = g_alZoneEntities.FindValue(iEntRef);
 		
-		if (iArrayIndex != INVALID_ARRAY_INDEX) {
+		if (iArrayIndex != -1) {
 			g_alZoneEntities.Erase(iArrayIndex);
 		}
 		
@@ -505,10 +505,10 @@ bool DeleteZone(int iZone)
 	return true;
 }
 
-int SpawnAZoneFromKeyValues(KeyValues kvZoneKV, int & iZoneType = INVALID_ARRAY_INDEX)
+int SpawnAZoneFromKeyValues(KeyValues kvZoneKV, int & iZoneType = -1)
 {
 	if (kvZoneKV == null) {
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	kvZoneKV.Rewind();
@@ -521,7 +521,7 @@ int SpawnAZoneFromKeyValues(KeyValues kvZoneKV, int & iZoneType = INVALID_ARRAY_
 	if (!kvZoneKV.JumpToKey(szName)) {
 		LogError("Error spawning zone from KV (Could not jump to key %s)", szName);
 		delete kvZoneKV;
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	char szType[MAX_ZONE_TYPE_LENGTH]; kvZoneKV.GetString("type", szType, sizeof(szType));
@@ -579,7 +579,7 @@ int SpawnAZoneFromKeyValues(KeyValues kvZoneKV, int & iZoneType = INVALID_ARRAY_
 	
 	delete kvZoneKV;
 	
-	int iEntity = INVALID_ENT_INDEX;
+	int iEntity = -1;
 	
 	if (iZoneType == ZONE_TYPE_TRIGGER) {
 		int iEntRef = INVALID_ENT_REFERENCE;
@@ -592,7 +592,7 @@ int SpawnAZoneFromKeyValues(KeyValues kvZoneKV, int & iZoneType = INVALID_ARRAY_
 			
 			if (iEntRef == INVALID_ENT_REFERENCE) {
 				g_alEntityList.Erase(i);
-				iEntity = INVALID_ENT_INDEX;
+				iEntity = -1;
 				continue;
 			}
 			
@@ -600,14 +600,14 @@ int SpawnAZoneFromKeyValues(KeyValues kvZoneKV, int & iZoneType = INVALID_ARRAY_
 			
 			if (!IsValidEntity(iEntity) || iEntity < 1) {
 				g_alEntityList.Erase(i);
-				iEntity = INVALID_ENT_INDEX;
+				iEntity = -1;
 				continue;
 			}
 			
 			GetEntityClassname(iEntity, szClassName, sizeof(szClassName));
 			
-			if (StrContains(szClassName, "trigger_", false) == INVALID_ARRAY_INDEX) {
-				iEntity = INVALID_ENT_INDEX;
+			if (StrContains(szClassName, "trigger_", false) == -1) {
+				iEntity = -1;
 				continue;
 			}
 			
@@ -615,7 +615,7 @@ int SpawnAZoneFromKeyValues(KeyValues kvZoneKV, int & iZoneType = INVALID_ARRAY_
 			GetEntPropVector(iEntity, Prop_Send, "m_vecMaxs", vEnd);
 			
 			if (!AreVectorsEqual(vStartPosition, vStart) || !AreVectorsEqual(vEndPosition, vEnd)) {
-				iEntity = INVALID_ENT_INDEX;
+				iEntity = -1;
 				continue;
 			}
 			
@@ -623,8 +623,8 @@ int SpawnAZoneFromKeyValues(KeyValues kvZoneKV, int & iZoneType = INVALID_ARRAY_
 		}
 	}
 	
-	if (iEntity == INVALID_ENT_INDEX && iZoneType == ZONE_TYPE_TRIGGER) {
-		return INVALID_ENT_INDEX;
+	if (iEntity == -1 && iZoneType == ZONE_TYPE_TRIGGER) {
+		return -1;
 	}
 	
 	return CreateZone(szName, iZoneType, vStartPosition, vEndPosition, fRadius, iColor, iDrawType, alPoints, fHeight, smEffects, iEntity);
@@ -640,7 +640,7 @@ void CheckEntityZones()
 		return;
 	}
 	
-	int iEntity = INVALID_ENT_INDEX;
+	int iEntity = -1;
 	int iEntRef = INVALID_ENT_REFERENCE;
 	
 	for (int i = 0; i < g_alEntityList.Length; i++) {
@@ -658,8 +658,8 @@ void CheckEntityZones()
 			continue;
 		}
 		
-		int iZoneType = INVALID_ARRAY_INDEX;
-		int iZone = INVALID_ENT_INDEX;
+		int iZoneType = -1;
+		int iZone = -1;
 		float vOrigin[3];
 		
 		if (iEntity <= MaxClients) {
@@ -672,7 +672,7 @@ void CheckEntityZones()
 			continue;
 		}
 		
-		bool bPlayer = IsPlayerIndex(iEntity);
+		bool bPlayer = IsClientValid(iEntity);
 		bool bSameOrigin = AreVectorsEqual(g_vEntityOrigin[iEntity], vOrigin);
 		
 		if (g_alZoneEntities != null) {
@@ -740,7 +740,7 @@ void CheckEntityZones()
 
 void ResetCreateZoneVariables(int iClient)
 {
-	int iZone = INVALID_ENT_INDEX;
+	int iZone = -1;
 	
 	if (g_alAssignedZones[iClient] == null) {
 		return;
@@ -776,9 +776,9 @@ void ResetCreateZoneVariables(int iClient)
 
 void ResetZoneVariables(int iZone)
 {
-	int iArrayCell = INVALID_ARRAY_INDEX;
+	int iArrayCell = -1;
 	
-	for (int i = 1; i < MAX_ENTITY_LIMIT; i++) {
+	for (int i = 1; i < 4096; i++) {
 		g_bIsInsideZone[i][iZone] = false;
 		g_bEntityZoneHooked[i][iZone] = false;
 		
@@ -789,7 +789,7 @@ void ResetZoneVariables(int iZone)
 			if (g_alAssignedZones[i] != null) {
 				iArrayCell = g_alAssignedZones[i].FindValue(EntIndexToEntRef(iZone));
 				
-				if (iArrayCell == INVALID_ARRAY_INDEX) {
+				if (iArrayCell == -1) {
 					continue;
 				}
 				
@@ -812,7 +812,7 @@ void ResetZoneVariables(int iZone)
 	g_bIsZone[iZone] = false;
 	g_bEntitySpawned[iZone] = false;
 	
-	g_iZoneType[iZone] = INVALID_ARRAY_INDEX;
+	g_iZoneType[iZone] = -1;
 	g_iZoneDrawType[iZone] = ZONE_DRAW_HALF;
 	g_szZoneName[iZone][0] = '\0';
 	
@@ -882,8 +882,8 @@ void ShowZones(int iClient, float fTime = 0.2)
 	float vLookPoint[3];
 	float vLookPoint_Expanded[3];
 	
-	int iIndex = INVALID_ARRAY_INDEX;
-	int iZone = INVALID_ENT_INDEX;
+	int iIndex = -1;
+	int iZone = -1;
 	
 	int iColor[4] =  { 255, 0, 0, 255 };
 	int iLooped = 0;
@@ -1095,7 +1095,7 @@ void ShowZones(int iClient, float fTime = 0.2)
 	}
 }
 
-stock int InitZone(int iZoneType, int & iArrayCell, int iZone = INVALID_ENT_INDEX)
+stock int InitZone(int iZoneType, int & iArrayCell, int iZone = -1)
 {
 	bool bTrigger = false;
 	char szClassName[64];
@@ -1103,9 +1103,9 @@ stock int InitZone(int iZoneType, int & iArrayCell, int iZone = INVALID_ENT_INDE
 	if (IsValidEntity(iZone) && iZone > MaxClients) {
 		GetEntityClassname(iZone, szClassName, sizeof(szClassName));
 		
-		if (StrContains(szClassName, "trigger_", false) == INVALID_ARRAY_INDEX) {
+		if (StrContains(szClassName, "trigger_", false) == -1) {
 			ThrowError("You can only register an existing trigger_* entity as a zone");
-			return INVALID_ENT_INDEX;
+			return -1;
 		}
 		
 		bTrigger = true;
@@ -1113,7 +1113,7 @@ stock int InitZone(int iZoneType, int & iArrayCell, int iZone = INVALID_ENT_INDE
 	
 	if (iZoneType == ZONE_TYPE_TRIGGER && !bTrigger) {
 		ThrowError("Entity %d is not a valid trigger", iZone);
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	if (!bTrigger || iZone <= MaxClients) {
@@ -1125,7 +1125,7 @@ stock int InitZone(int iZoneType, int & iArrayCell, int iZone = INVALID_ENT_INDE
 	}
 	
 	if (!IsValidEntity(iZone) || iZone <= MaxClients) {
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	if (g_alZoneEntities == null) {
@@ -1135,7 +1135,7 @@ stock int InitZone(int iZoneType, int & iArrayCell, int iZone = INVALID_ENT_INDE
 	g_bIsZone[iZone] = true;
 	iArrayCell = g_alZoneEntities.FindValue(EntIndexToEntRef(iZone));
 	
-	if (iArrayCell != INVALID_ARRAY_INDEX) {
+	if (iArrayCell != -1) {
 		return iZone;
 	}
 	
@@ -1157,21 +1157,21 @@ bool IsValidZone(int iZone)
 	return g_bIsZone[iZone];
 }
 
-int CreateZone(const char[] szName, int iType, float vStart[3], float vEnd[3], float fRadius, int iColor[4], int iDrawType = ZONE_DRAW_HALF, ArrayList alPoints = null, float fHeight = 0.0, StringMap smEffects = null, int iEntity = INVALID_ENT_INDEX)
+int CreateZone(const char[] szName, int iType, float vStart[3], float vEnd[3], float fRadius, int iColor[4], int iDrawType = ZONE_DRAW_HALF, ArrayList alPoints = null, float fHeight = 0.0, StringMap smEffects = null, int iEntity = -1)
 {
 	char szType[MAX_ZONE_TYPE_LENGTH]; GetZoneTypeName(iType, szType, sizeof(szType));
 	
-	LogDebug("zonesmanager", "%s %s Zone: %s - %.2f/%.2f/%.2f - %.2f/%.2f/%.2f - %.2f", iType == ZONE_TYPE_TRIGGER ? "Hooking" : "Spawning", szType, szName, vStart[0], vStart[1], vStart[2], vEnd[0], vEnd[1], vEnd[2], fRadius);
+	LogMessage("zonesmanager", "%s %s Zone: %s - %.2f/%.2f/%.2f - %.2f/%.2f/%.2f - %.2f", iType == ZONE_TYPE_TRIGGER ? "Hooking" : "Spawning", szType, szName, vStart[0], vStart[1], vStart[2], vEnd[0], vEnd[1], vEnd[2], fRadius);
 	
-	int iArrayCell = INVALID_ARRAY_INDEX;
+	int iArrayCell = -1;
 	iEntity = InitZone(iType, iArrayCell, iEntity);
 	
-	if (iEntity == INVALID_ENT_INDEX || iArrayCell == INVALID_ARRAY_INDEX) {
+	if (iEntity == -1 || iArrayCell == -1) {
 		if (IsValidEntity(iEntity) && iEntity > MaxClients) {
 			DeleteZone(iEntity);
 		}
 		
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	if (!g_bEntitySpawned[iEntity]) {
@@ -1190,7 +1190,7 @@ int CreateZone(const char[] szName, int iType, float vStart[3], float vEnd[3], f
 		
 		if (!DispatchSpawn(iEntity)) {
 			DeleteZone(iEntity);
-			return INVALID_ENT_INDEX;
+			return -1;
 		}
 		
 		AcceptEntityInput(iEntity, "Enable");
@@ -1260,12 +1260,12 @@ int CreateZone(const char[] szName, int iType, float vStart[3], float vEnd[3], f
 	
 	strcopy(g_szZoneName[iEntity], MAX_ZONE_NAME_LENGTH, szName);
 	
-	LogDebug("zonesmanager", "%s Zone %s has been %s successfully with the entity index %i.", szType, szName, iType == ZONE_TYPE_TRIGGER ? "hooked" : "spawned", iEntity);
+	LogMessage("zonesmanager", "%s Zone %s has been %s successfully with the entity index %i.", szType, szName, iType == ZONE_TYPE_TRIGGER ? "hooked" : "spawned", iEntity);
 	
 	SDKHookEx(iEntity, SDKHook_Touch, Zones_StartTouch);
 	SDKHookEx(iEntity, SDKHook_EndTouch, Zones_EndTouch);
 	
-	int iAssignedIndex = INVALID_ARRAY_INDEX;
+	int iAssignedIndex = -1;
 	int iEntRef = EntIndexToEntRef(iEntity);
 	
 	for (int i = 1; i <= MaxClients; i++) {
@@ -1279,7 +1279,7 @@ int CreateZone(const char[] szName, int iType, float vStart[3], float vEnd[3], f
 		
 		iAssignedIndex = g_alAssignedZones[i].FindValue(iEntRef);
 		
-		if (iAssignedIndex == INVALID_ARRAY_INDEX) {
+		if (iAssignedIndex == -1) {
 			continue;
 		}
 		
@@ -1388,7 +1388,7 @@ void IsNotNearExternalZone_Post(int iEntity, int iZone, int iType)
 
 public Action Zones_StartTouch(int iZone, int iEntity)
 {
-	if (!g_bEntityZoneHooked[iEntity][iZone] && !g_bEntityGlobalHooked[iEntity] && !IsValidZone(iEntity) && !IsPlayerIndex(iEntity)) {
+	if (!g_bEntityZoneHooked[iEntity][iZone] && !g_bEntityGlobalHooked[iEntity] && !IsValidZone(iEntity) && !IsClientValid(iEntity)) {
 		return Plugin_Handled;
 	}
 	
@@ -1404,7 +1404,7 @@ public Action Zones_StartTouch(int iZone, int iEntity)
 
 public Action Zones_EndTouch(int iZone, int iEntity)
 {
-	if (!g_bEntityZoneHooked[iEntity][iZone] && !g_bEntityGlobalHooked[iEntity] && !IsValidZone(iEntity) && !IsPlayerIndex(iEntity)) {
+	if (!g_bEntityZoneHooked[iEntity][iZone] && !g_bEntityGlobalHooked[iEntity] && !IsValidZone(iEntity) && !IsClientValid(iEntity)) {
 		return Plugin_Handled;
 	}
 	
@@ -1461,7 +1461,7 @@ void RegisterNewEffect(Handle hPlugin, const char[] szEffectName, Function fFunc
 	Handle hCallBacks[MAX_EFFECT_CALLBACKS];
 	int iIndex = g_alEffectList.FindString(szEffectName);
 	
-	if (iIndex != INVALID_ARRAY_INDEX) {
+	if (iIndex != -1) {
 		g_smEffectCalls.GetArray(szEffectName, hCallBacks, sizeof(hCallBacks));
 		
 		for (int i = 0; i < MAX_EFFECT_CALLBACKS; i++) {
@@ -1554,7 +1554,7 @@ public bool TraceEntityFilter_NoPlayers(int iEntity, int iContentsMask) {
 
 bool TeleportToZone(int iClient, int iZone)
 {
-	if (!IsPlayerIndex(iClient) || !IsClientInGame(iClient) || !IsPlayerAlive(iClient)) {
+	if (!IsClientValid(iClient) || !IsClientInGame(iClient) || !IsPlayerAlive(iClient)) {
 		return false;
 	}
 	
@@ -1616,10 +1616,10 @@ bool GetZoneTeleportLocation(int iZone, float vLocation[3])
 int GetZoneByName(const char[] szName)
 {
 	if (g_alZoneEntities == null) {
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
-	int iEntity = INVALID_ENT_INDEX;
+	int iEntity = -1;
 	
 	for (int i = 0; i < g_alZoneEntities.Length; i++) {
 		iEntity = g_alZoneEntities.Get(i);
@@ -1641,7 +1641,7 @@ int GetZoneByName(const char[] szName)
 		return iEntity;
 	}
 	
-	return INVALID_ENT_INDEX;
+	return -1;
 }
 
 bool AddZonePoint(ArrayList alPoints, float fPoint[3])
@@ -1650,7 +1650,7 @@ bool AddZonePoint(ArrayList alPoints, float fPoint[3])
 		return false;
 	}
 	
-	if (alPoints.FindValue(fPoint[0], 0) != INVALID_ARRAY_INDEX && alPoints.FindValue(fPoint[1], 1) != INVALID_ARRAY_INDEX && alPoints.FindValue(fPoint[2], 2) != INVALID_ARRAY_INDEX) {
+	if (alPoints.FindValue(fPoint[0], 0) != -1 && alPoints.FindValue(fPoint[1], 1) != -1 && alPoints.FindValue(fPoint[2], 2) != -1) {
 		return false;
 	}
 	
@@ -1702,7 +1702,7 @@ KeyValues CreateZoneKeyValues(int iZone)
 		return null;
 	}
 	
-	if (g_iZoneType[iZone] == INVALID_ENT_INDEX) {
+	if (g_iZoneType[iZone] == -1) {
 		ThrowError("Type for zone %d is undefined", iZone);
 		return null;
 	}
@@ -1722,7 +1722,7 @@ KeyValues CreateZoneKeyValues(int iZone)
 		return null;
 	}
 	
-	if (g_iZoneColor[iZone][0] == INVALID_ARRAY_INDEX || g_iZoneColor[iZone][1] == INVALID_ARRAY_INDEX || g_iZoneColor[iZone][2] == INVALID_ARRAY_INDEX || g_iZoneColor[iZone][3] == INVALID_ARRAY_INDEX) {
+	if (g_iZoneColor[iZone][0] == -1 || g_iZoneColor[iZone][1] == -1 || g_iZoneColor[iZone][2] == -1 || g_iZoneColor[iZone][3] == -1) {
 		ThrowError("Color (%d, %d, %d, %d) for zone %d is undefined or invalid", g_iZoneColor[iZone][0], g_iZoneColor[iZone][1], g_iZoneColor[iZone][2], g_iZoneColor[iZone][3], iZone);
 		return null;
 	}
@@ -2490,7 +2490,7 @@ public int Native_AssignZone(Handle hPlugin, int iNumParams)
 	int iClient = GetNativeCell(1);
 	int iZone = GetNativeCell(2);
 	
-	if (!IsPlayerIndex(iClient)) {
+	if (!IsClientValid(iClient)) {
 		return false;
 	}
 	
@@ -2500,7 +2500,7 @@ public int Native_AssignZone(Handle hPlugin, int iNumParams)
 	}
 	
 	int iEntRef = EntIndexToEntRef(iZone);
-	int iAssignedIndex = INVALID_ARRAY_INDEX;
+	int iAssignedIndex = -1;
 	
 	for (int i = 1; i <= MaxClients; i++) {
 		if (!IsClientInGame(i) || i == iClient) {
@@ -2513,7 +2513,7 @@ public int Native_AssignZone(Handle hPlugin, int iNumParams)
 		
 		iAssignedIndex = g_alAssignedZones[i].FindValue(iEntRef);
 		
-		if (iAssignedIndex == INVALID_ARRAY_INDEX) {
+		if (iAssignedIndex == -1) {
 			continue;
 		}
 		
@@ -2525,7 +2525,7 @@ public int Native_AssignZone(Handle hPlugin, int iNumParams)
 		g_alAssignedZones[iClient] = new ArrayList();
 	}
 	
-	if (g_alAssignedZones[iClient].FindValue(iEntRef) == INVALID_ENT_INDEX) {
+	if (g_alAssignedZones[iClient].FindValue(iEntRef) == -1) {
 		g_alAssignedZones[iClient].Push(iEntRef);
 		g_iZoningState[iClient][iZone] = ZONING_STATE_IDLE;
 	}
@@ -2543,7 +2543,7 @@ public int Native_UnAssignZone(Handle hPlugin, int iNumParams)
 	int iClient = GetNativeCell(1);
 	int iZone = GetNativeCell(2);
 	
-	if (!IsPlayerIndex(iClient)) {
+	if (!IsClientValid(iClient)) {
 		return false;
 	}
 	
@@ -2558,7 +2558,7 @@ public int Native_UnAssignZone(Handle hPlugin, int iNumParams)
 	int iEntRef = EntIndexToEntRef(iZone);
 	int iArrayCell = g_alAssignedZones[iClient].FindValue(iEntRef);
 	
-	if (iArrayCell != INVALID_ARRAY_INDEX) {
+	if (iArrayCell != -1) {
 		g_alAssignedZones[iClient].Erase(iArrayCell);
 		g_iZoningState[iClient][iZone] = ZONING_STATE_NONE;
 		
@@ -2587,7 +2587,7 @@ public int Native_SetZoningState(Handle hPlugin, int iNumParams)
 	int iZone = GetNativeCell(2);
 	int iZoningState = GetNativeCell(3);
 	
-	if (!IsPlayerIndex(iClient)) {
+	if (!IsClientValid(iClient)) {
 		return false;
 	}
 	
@@ -2596,7 +2596,7 @@ public int Native_SetZoningState(Handle hPlugin, int iNumParams)
 	}
 	
 	int iEntRef = EntIndexToEntRef(iZone);
-	int iAssignedIndex = INVALID_ARRAY_INDEX;
+	int iAssignedIndex = -1;
 	
 	for (int i = 1; i <= MaxClients; i++) {
 		if (!IsClientInGame(i) || i == iClient) {
@@ -2609,7 +2609,7 @@ public int Native_SetZoningState(Handle hPlugin, int iNumParams)
 		
 		iAssignedIndex = g_alAssignedZones[i].FindValue(iEntRef);
 		
-		if (iAssignedIndex == INVALID_ARRAY_INDEX) {
+		if (iAssignedIndex == -1) {
 			continue;
 		}
 		
@@ -2621,7 +2621,7 @@ public int Native_SetZoningState(Handle hPlugin, int iNumParams)
 		g_alAssignedZones[iClient] = new ArrayList();
 	}
 	
-	if (g_alAssignedZones[iClient].FindValue(iEntRef) == INVALID_ENT_INDEX) {
+	if (g_alAssignedZones[iClient].FindValue(iEntRef) == -1) {
 		g_alAssignedZones[iClient].Push(iEntRef);
 		g_iZoningState[iClient][iZone] = ZONING_STATE_IDLE;
 	}
@@ -2646,7 +2646,7 @@ public int Native_GetZoningState(Handle hPlugin, int iNumParams)
 	int iClient = GetNativeCell(1);
 	int iZone = GetNativeCell(2);
 	
-	if (!IsPlayerIndex(iClient)) {
+	if (!IsClientValid(iClient)) {
 		return ZONING_STATE_NONE;
 	}
 	
@@ -2666,7 +2666,7 @@ public int Native_GetAssignedZones(Handle hPlugin, int iNumParams)
 	
 	int iClient = GetNativeCell(1);
 	
-	if (!IsPlayerIndex(iClient)) {
+	if (!IsClientValid(iClient)) {
 		return view_as<int>(INVALID_HANDLE);
 	}
 	
@@ -2685,19 +2685,19 @@ public int Native_GetZonePointsCount(Handle hPlugin, int iNumParams)
 {
 	if (!g_bMapStarted) {
 		ThrowNativeError(SP_ERROR_NATIVE, "You can't call this before the map has started");
-		return INVALID_ARRAY_INDEX;
+		return -1;
 	}
 	
 	int iZone = GetNativeCell(1);
 	
 	if (!IsValidZone(iZone)) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Entity %d is not a valid zone", iZone);
-		return INVALID_ARRAY_INDEX;
+		return -1;
 	}
 	
 	if (GetZoneType(iZone) != ZONE_TYPE_POLY) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Zone %d is not a polygon", iZone);
-		return INVALID_ARRAY_INDEX;
+		return -1;
 	}
 	
 	return g_alZonePoints[iZone].Length;
@@ -2759,7 +2759,7 @@ public int Native_TeleportClientToZone(Handle hPlugin, int iNumParams)
 	int iClient = GetNativeCell(1);
 	int iZone = GetNativeCell(2);
 	
-	if (!IsPlayerIndex(iClient) || !IsPlayerAlive(iClient)) {
+	if (!IsClientValid(iClient) || !IsPlayerAlive(iClient)) {
 		return false;
 	}
 	
@@ -2781,7 +2781,7 @@ public int Native_GetClientLookPoint(Handle hPlugin, int iNumParams)
 	int iClient = GetNativeCell(1);
 	bool bBeam = view_as<bool>(GetNativeCell(2));
 	
-	if (!IsPlayerIndex(iClient) || !IsPlayerAlive(iClient)) {
+	if (!IsClientValid(iClient) || !IsPlayerAlive(iClient)) {
 		return false;
 	}
 	
@@ -2793,7 +2793,7 @@ public int Native_GetZoneByName(Handle hPlugin, int iNumParams)
 {
 	if (!g_bMapStarted) {
 		ThrowNativeError(SP_ERROR_NATIVE, "You can't call this before the map has started");
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	char szZone[MAX_ZONE_NAME_LENGTH]; GetNativeString(1, szZone, sizeof(szZone));
@@ -2967,14 +2967,14 @@ public int Native_GetZoneType(Handle hPlugin, int iNumParams)
 {
 	if (!g_bMapStarted) {
 		ThrowNativeError(SP_ERROR_NATIVE, "You can't call this before the map has started");
-		return INVALID_ARRAY_INDEX;
+		return -1;
 	}
 	
 	int iZone = GetNativeCell(1);
 	
 	if (!IsValidZone(iZone)) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Entity %d is not a valid zone", iZone);
-		return INVALID_ARRAY_INDEX;
+		return -1;
 	}
 	
 	return GetZoneType(iZone);
@@ -3059,14 +3059,14 @@ public int Native_CreateZoneAdvanced(Handle hPlugin, int iNumParams)
 {
 	if (!g_bMapStarted) {
 		ThrowNativeError(SP_ERROR_NATIVE, "You can't call this before the map has started");
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	int iZoneType = GetNativeCell(1);
 	
 	if (iZoneType == ZONE_TYPE_TRIGGER) {
 		ThrowNativeError(SP_ERROR_NATIVE, "You can't hook an existing trigger using this native, use ZonesManager_RegisterTrigger and ZonesMananger_FinishZone instead.");
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	char szName[MAX_ZONE_NAME_LENGTH]; GetNativeString(2, szName, sizeof(szName));
@@ -3082,7 +3082,7 @@ public int Native_CreateZoneAdvanced(Handle hPlugin, int iNumParams)
 	int iZone = CreateZone(szName, iZoneType, vStart, vEnd, fRadius, iColor, iDrawType, alPoints, fHeight, smEffects);
 	
 	if (!IsValidZone(iZone)) {
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	return iZone;
@@ -3092,15 +3092,15 @@ public int Native_CreateZoneFromKeyValuesString(Handle hPlugin, int iNumParams)
 {
 	if (!g_bMapStarted) {
 		ThrowNativeError(SP_ERROR_NATIVE, "You can't call this before the map has started");
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
-	char szBuffer[MAX_ENTITY_LIMIT]; GetNativeString(1, szBuffer, sizeof(szBuffer));
+	char szBuffer[4096]; GetNativeString(1, szBuffer, sizeof(szBuffer));
 	KeyValues kvZoneKV = new KeyValues("zones_manager");
 	
 	if (!kvZoneKV.ImportFromString(szBuffer)) {
 		delete kvZoneKV;
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	int iZoneType = -1;
@@ -3112,12 +3112,12 @@ public int Native_CreateZoneFromKeyValuesString(Handle hPlugin, int iNumParams)
 				g_alDelayedTriggerZones = new ArrayList(ByteCountToCells(4096));
 			}
 			
-			if (g_alDelayedTriggerZones.FindString(szBuffer) == INVALID_ARRAY_INDEX) {
+			if (g_alDelayedTriggerZones.FindString(szBuffer) == -1) {
 				g_alDelayedTriggerZones.PushString(szBuffer);
 			}
 		}
 		
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	return iZone;
@@ -3127,7 +3127,7 @@ public int Native_StartZone(Handle hPlugin, int iNumParams)
 {
 	if (!g_bMapStarted) {
 		ThrowNativeError(SP_ERROR_NATIVE, "You can't call this before the map has started");
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	int iZoneType = GetNativeCell(1);
@@ -3135,24 +3135,24 @@ public int Native_StartZone(Handle hPlugin, int iNumParams)
 	
 	if (iZoneType < ZONE_TYPE_TRIGGER || iZoneType > ZONE_TYPE_POLY) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Invalid zone type %d", iZoneType);
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	if (iZoneType == ZONE_TYPE_TRIGGER) {
 		ThrowNativeError(SP_ERROR_NATIVE, "You can't hook an existing trigger using this native, use ZonesManager_RegisterTrigger and ZonesMananger_FinishZone instead.");
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	if (!strlen(szName)) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Invalid zone name '%s'", szName);
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
-	int iArrayIndex = INVALID_ARRAY_INDEX;
-	int iZone = InitZone(iZoneType, iArrayIndex, INVALID_ENT_INDEX);
+	int iArrayIndex = -1;
+	int iZone = InitZone(iZoneType, iArrayIndex, -1);
 	
-	if (!IsValidZone(iZone) || iArrayIndex == INVALID_ARRAY_INDEX) {
-		return INVALID_ENT_INDEX;
+	if (!IsValidZone(iZone) || iArrayIndex == -1) {
+		return -1;
 	}
 	
 	if (iZoneType == ZONE_TYPE_POLY && g_alZonePoints[iZone] == null) {
@@ -3186,15 +3186,15 @@ public int Native_RegisterTrigger(Handle hPlugin, int iNumParams)
 	
 	char szClassName[64]; GetEntityClassname(iTriggerIndex, szClassName, sizeof(szClassName));
 	
-	if (StrContains(szClassName, "trigger_", false) == INVALID_ARRAY_INDEX) {
+	if (StrContains(szClassName, "trigger_", false) == -1) {
 		ThrowNativeError(SP_ERROR_NATIVE, "You can only register an existing trigger_* entity as a zone");
 		return false;
 	}
 	
-	int iArrayIndex = INVALID_ARRAY_INDEX;
+	int iArrayIndex = -1;
 	iTriggerIndex = InitZone(ZONE_TYPE_TRIGGER, iArrayIndex, iTriggerIndex);
 	
-	if (!IsValidZone(iTriggerIndex) || iArrayIndex == INVALID_ARRAY_INDEX) {
+	if (!IsValidZone(iTriggerIndex) || iArrayIndex == -1) {
 		return false;
 	}
 	
@@ -3252,7 +3252,7 @@ public int Native_SetZoneStart(Handle hPlugin, int iNumParams)
 	
 	if (iZoneType == ZONE_TYPE_TRIGGER) {
 		ThrowNativeError(SP_ERROR_NATIVE, "You can't set the zone start on existing trigger_* entities");
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	CopyArrayToArray(vStart, g_vZoneStart[iZone], 3);
@@ -3592,7 +3592,7 @@ public int Native_AddZoneEffect(Handle hPlugin, int iNumParams)
 		return false;
 	}
 	
-	if (g_alEffectList.FindString(szEffect) == INVALID_ENT_INDEX) {
+	if (g_alEffectList.FindString(szEffect) == -1) {
 		ThrowNativeError(SP_ERROR_NATIVE, "The specified effect '%s' does not exist", szEffect);
 		return false;
 	}
@@ -3634,7 +3634,7 @@ public int Native_RemoveZoneEffect(Handle hPlugin, int iNumParams)
 		return false;
 	}
 	
-	if (g_alEffectList.FindString(szEffect) == INVALID_ENT_INDEX) {
+	if (g_alEffectList.FindString(szEffect) == -1) {
 		ThrowNativeError(SP_ERROR_NATIVE, "The specified effect '%s' does not exist", szEffect);
 		return false;
 	}
@@ -3670,7 +3670,7 @@ public int Native_GetZoneKeyValuesAsString(Handle hPlugin, int iNumParams)
 	}
 	
 	int iZone = GetNativeCell(1);
-	char szBuffer[MAX_ENTITY_LIMIT];
+	char szBuffer[4096];
 	
 	if (!GetZoneKeyValuesAsString(iZone, szBuffer, sizeof(szBuffer))) {
 		return false;
@@ -3683,64 +3683,64 @@ public int Native_FinishZone(Handle hPlugin, int iNumParams)
 {
 	if (!g_bMapStarted) {
 		ThrowNativeError(SP_ERROR_NATIVE, "You can't call this before the map has started");
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	int iZone = GetNativeCell(1);
 	
 	if (!IsValidZone(iZone)) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Entity %d is not a valid zone", iZone);
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	if (!strlen(g_szZoneName[iZone])) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Name for zone %d is undefined", iZone);
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
-	if (g_iZoneType[iZone] == INVALID_ENT_INDEX) {
+	if (g_iZoneType[iZone] == -1) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Type for zone %d is undefined", iZone);
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	if (!IsValidOrigin(g_vZoneStart[iZone])) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Start point for zone %d is undefined", iZone);
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	if (!IsValidOrigin(g_vZoneEnd[iZone]) && (g_iZoneType[iZone] == ZONE_TYPE_CUBE || g_iZoneType[iZone] == ZONE_TYPE_TRIGGER)) {
 		ThrowNativeError(SP_ERROR_NATIVE, "End point for zone %d is undefined", iZone);
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	if (g_fZoneRadius[iZone] == -1.0 && g_iZoneType[iZone] == ZONE_TYPE_CIRCLE) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Radius for zone %d is undefined", iZone);
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
-	if (g_iZoneColor[iZone][0] == INVALID_ARRAY_INDEX || g_iZoneColor[iZone][1] == INVALID_ARRAY_INDEX || g_iZoneColor[iZone][2] == INVALID_ARRAY_INDEX || g_iZoneColor[iZone][3] == INVALID_ARRAY_INDEX) {
+	if (g_iZoneColor[iZone][0] == -1 || g_iZoneColor[iZone][1] == -1 || g_iZoneColor[iZone][2] == -1 || g_iZoneColor[iZone][3] == -1) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Color (%d, %d, %d, %d) for zone %d is undefined or invalid", g_iZoneColor[iZone][0], g_iZoneColor[iZone][1], g_iZoneColor[iZone][2], g_iZoneColor[iZone][3], iZone);
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	if (g_iZoneDrawType[iZone] < ZONE_DRAW_HALF || g_iZoneDrawType[iZone] > ZONE_DRAW_NONE) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Draw Type for zone %d is undefined or invalid", iZone);
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	if (g_alZonePoints[iZone] == null && g_iZoneType[iZone] == ZONE_TYPE_POLY) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Point list for zone %d is undefined", iZone);
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	if (g_iZoneType[iZone] == ZONE_TYPE_POLY && !g_alZonePoints[iZone].Length) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Point list for zone %d is empty", iZone);
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	if (g_fZoneHeight[iZone] == -1.0 && (g_iZoneType[iZone] == ZONE_TYPE_POLY || g_iZoneType[iZone] == ZONE_TYPE_CIRCLE)) {
 		ThrowNativeError(SP_ERROR_NATIVE, "Height for zone %d is undefined", iZone);
-		return INVALID_ENT_INDEX;
+		return -1;
 	}
 	
 	return CreateZone(g_szZoneName[iZone], g_iZoneType[iZone], g_vZoneStart[iZone], g_vZoneEnd[iZone], g_fZoneRadius[iZone], g_iZoneColor[iZone], g_iZoneDrawType[iZone], g_alZonePoints[iZone], g_fZoneHeight[iZone], g_smZoneEffects[iZone], iZone);
@@ -3761,7 +3761,7 @@ public int Native_HideZoneFromClient(Handle hPlugin, int iNumParams)
 		return false;
 	}
 	
-	if (!IsPlayerIndex(iClient)) {
+	if (!IsClientValid(iClient)) {
 		return false;
 	}
 	
@@ -3784,7 +3784,7 @@ public int Native_UnHideZoneFromClient(Handle hPlugin, int iNumParams)
 		return false;
 	}
 	
-	if (!IsPlayerIndex(iClient)) {
+	if (!IsClientValid(iClient)) {
 		return false;
 	}
 	
@@ -3807,7 +3807,7 @@ public int Native_ForceZoneRenderingToClient(Handle hPlugin, int iNumParams)
 		return false;
 	}
 	
-	if (!IsPlayerIndex(iClient)) {
+	if (!IsClientValid(iClient)) {
 		return false;
 	}
 	
@@ -3830,7 +3830,7 @@ public int Native_UnForceZoneRenderingToClient(Handle hPlugin, int iNumParams)
 		return false;
 	}
 	
-	if (!IsPlayerIndex(iClient)) {
+	if (!IsClientValid(iClient)) {
 		return false;
 	}
 	

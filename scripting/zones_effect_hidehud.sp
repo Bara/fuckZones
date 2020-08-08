@@ -3,7 +3,7 @@
 *****************************************************************************************************/
 #include <sourcemod>
 #include <zones_manager_core>
-#include <sourcemod-misc>
+#include <zones_manager_stocks>
 
 /****************************************************************************************************
 	DEFINES
@@ -89,7 +89,7 @@ public void ZonesManager_OnQueueEffects_Post()
 
 public void Effect_OnEnterZone(int iEntity, int iZone, StringMap smValues)
 {
-	if (!IsPlayerIndex(iEntity)) {
+	if (!IsClientValid(iEntity)) {
 		return;
 	}
 	
@@ -106,7 +106,7 @@ public void Effect_OnEnterZone(int iEntity, int iZone, StringMap smValues)
 
 public void Effect_OnLeaveZone(int iEntity, int iZone, StringMap smValues)
 {
-	if (!IsPlayerIndex(iEntity)) {
+	if (!IsClientValid(iEntity)) {
 		return;
 	}
 	

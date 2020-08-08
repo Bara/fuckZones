@@ -291,7 +291,7 @@ native int ZonesManager_StartZone(int type, const char[] name);
  * @param name			Zone name.
  * @return				True if successful, false otherwise.
  */
-native int ZonesManager_RegisterTrigger(int zone, const char[] name)
+native int ZonesManager_RegisterTrigger(int zone, const char[] name);
 
 /**
  * Sets the current zoning state for a zone on the client.
@@ -301,7 +301,7 @@ native int ZonesManager_RegisterTrigger(int zone, const char[] name)
  * @param state			Zoning state.
  * @return				True if successful, false otherwise.
  */
-native int ZonesManager_SetZoningState(int client, int zone, int state)
+native int ZonesManager_SetZoningState(int client, int zone, int state);
 
 /**
  * Gets the current zoning state for a zone on the client.
@@ -310,7 +310,7 @@ native int ZonesManager_SetZoningState(int client, int zone, int state)
  * @param zone			Zone Entity Index.
  * @return				Zoning state or ZONING_STATE_NONE on failure.
  */
-native int ZonesManager_GetZoningState(int client, int zone)
+native int ZonesManager_GetZoningState(int client, int zone);
 
 /**
  * Assigns zone creation to a client.

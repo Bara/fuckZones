@@ -5,7 +5,7 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <zones_manager_core>
-#include <sourcemod-misc>
+#include <zones_manager_stocks>
 
 /****************************************************************************************************
 	DEFINES
@@ -94,7 +94,7 @@ public void ZonesManager_OnQueueEffects_Post()
 
 public void Effect_OnEnterZone(int iEntity, int iZone, StringMap smValues)
 {
-	if (!IsPlayerIndex(iEntity)) {
+	if (!IsClientValid(iEntity)) {
 		return;
 	}
 	
@@ -109,7 +109,7 @@ public void Effect_OnEnterZone(int iEntity, int iZone, StringMap smValues)
 
 public void Effect_OnActiveZone(int iEntity, int iZone, StringMap smValues)
 {
-	if (!IsPlayerIndex(iEntity)) {
+	if (!IsClientValid(iEntity)) {
 		return;
 	}
 	
@@ -124,7 +124,7 @@ public void Effect_OnActiveZone(int iEntity, int iZone, StringMap smValues)
 
 public void Effect_OnLeaveZone(int iEntity, int iZone, StringMap smValues)
 {
-	if (!IsPlayerIndex(iEntity)) {
+	if (!IsClientValid(iEntity)) {
 		return;
 	}
 	
@@ -139,7 +139,7 @@ public void Effect_OnLeaveZone(int iEntity, int iZone, StringMap smValues)
 
 public Action ZonesManager_OnStartTouchZone(int iEntity, int iZone, const char[] szZoneName, int iZoneType)
 {
-	if (!g_hCvarStatus.BoolValue || !IsPlayerIndex(iEntity)) {
+	if (!g_hCvarStatus.BoolValue || !IsClientValid(iEntity)) {
 		return Plugin_Continue;
 	}
 	
@@ -149,7 +149,7 @@ public Action ZonesManager_OnStartTouchZone(int iEntity, int iZone, const char[]
 
 public Action ZonesManager_OnTouchZone(int iEntity, int iZone, const char[] szZoneName, int iZoneType)
 {
-	if (!g_hCvarStatus.BoolValue || !IsPlayerIndex(iEntity)) {
+	if (!g_hCvarStatus.BoolValue || !IsClientValid(iEntity)) {
 		return Plugin_Continue;
 	}
 	
@@ -164,7 +164,7 @@ public Action ZonesManager_OnTouchZone(int iEntity, int iZone, const char[] szZo
 
 public Action ZonesManager_OnEndTouchZone(int iEntity, int iZone, const char[] szZoneName, int iZoneType)
 {
-	if (!g_hCvarStatus.BoolValue || !IsPlayerIndex(iEntity)) {
+	if (!g_hCvarStatus.BoolValue || !IsClientValid(iEntity)) {
 		return Plugin_Continue;
 	}
 	
@@ -175,7 +175,7 @@ public Action ZonesManager_OnEndTouchZone(int iEntity, int iZone, const char[] s
 
 public void ZonesManager_OnStartTouchZone_Post(int iEntity, int iZone, const char[] szZoneName, int iZoneType)
 {
-	if (!g_hCvarStatus.BoolValue || !IsPlayerIndex(iEntity)) {
+	if (!g_hCvarStatus.BoolValue || !IsClientValid(iEntity)) {
 		return;
 	}
 	
@@ -184,7 +184,7 @@ public void ZonesManager_OnStartTouchZone_Post(int iEntity, int iZone, const cha
 
 public void ZonesManager_OnTouchZone_Post(int iEntity, int iZone, const char[] szZoneName, int iZoneType)
 {
-	if (!g_hCvarStatus.BoolValue || !IsPlayerIndex(iEntity)) {
+	if (!g_hCvarStatus.BoolValue || !IsClientValid(iEntity)) {
 		return;
 	}
 	
@@ -196,7 +196,7 @@ public void ZonesManager_OnTouchZone_Post(int iEntity, int iZone, const char[] s
 
 public void ZonesManager_OnEndTouchZone_Post(int iEntity, int iZone, const char[] szZoneName, int iZoneType)
 {
-	if (!g_hCvarStatus.BoolValue || !IsPlayerIndex(iEntity)) {
+	if (!g_hCvarStatus.BoolValue || !IsClientValid(iEntity)) {
 		return;
 	}
 	
