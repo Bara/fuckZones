@@ -36,8 +36,8 @@ jobs:
           spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include zones_effect_meleeonly.sp
           echo -e "\nCompiling zones_effect_template.sp..."
           spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include zones_effect_template.sp
-          echo -e "\nCompiling testzones.sp..."
-          spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include testzones.sp
+          echo -e "\nCompiling zones_effect_testzones.sp..."
+          spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include zones_effect_testzones.sp
           echo -e "\nCompiling zones_manager_core.sp..."
           spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include zones_manager_core.sp
         working-directory: ${{ env.SCRIPTS_PATH }}/
