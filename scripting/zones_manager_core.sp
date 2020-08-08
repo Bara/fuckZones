@@ -234,7 +234,7 @@ public void OnEntityCreated(int iEntity, const char[] szClassName)
 		return;
 	}
 	
-	SDKHook(iEntity, SDKHook_SpawnPost, OnEntitySpawned);
+	SDKHook(iEntity, SDKHook_SpawnPost, OnEntitySpawnPost);
 	
 	if (g_alEntityList == null) {
 		g_alEntityList = new ArrayList(3);
@@ -299,7 +299,7 @@ public void Event_PlayerDeath(Event eEvent, char[] szEvent, bool bDontBroadcast)
 	FillArrayToValue(g_vEntityOrigin[iClient], 3, -1.0);
 }
 
-public void OnEntitySpawned(int iEntity)
+public void OnEntitySpawnPost(int iEntity)
 {
 	if (iEntity < -1) {
 		iEntity = EntRefToEntIndex(iEntity);
