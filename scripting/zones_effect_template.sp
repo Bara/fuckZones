@@ -1,112 +1,91 @@
-/******************************************************************************************************
-	INCLUDES
-*****************************************************************************************************/
+//Pragma
+#pragma semicolon 1
+#pragma newdecls required
+
+//Sourcemod Includes
 #include <sourcemod>
-#include <sdktools>
-#include <sdkhooks>
-#include <zones_manager_core>
-#include <zones_manager_stocks>
+#include <zones_manager>
 
-/****************************************************************************************************
-	DEFINES
-*****************************************************************************************************/
-#define PLUGIN_DESCRIPTION "A template plugin to edit for effects for zones manager."
-#define PLUGIN_VERSION "1.0.1"
+//ConVars
+ConVar convar_Status;
 
-/****************************************************************************************************
-	ETIQUETTE.
-*****************************************************************************************************/
-#pragma newdecls required;
-#pragma semicolon 1;
+//Globals
+bool g_bLate;
+int g_iPrintCap[MAXPLAYERS + 1];
+int g_iPrintCap_Post[MAXPLAYERS + 1];
 
-/****************************************************************************************************
-	PLUGIN INFO.
-*****************************************************************************************************/
-public Plugin myinfo = 
+public Plugin myinfo =
 {
-	name = "Zones Manager - Effect - Template", 
-	author = "Keith Warren (Shaders Allen), SM9", 
-	description = PLUGIN_DESCRIPTION, 
-	version = PLUGIN_VERSION, 
-	url = "https://github.com/ShadersAllen/Zones-Manager"
+	name = "Zones Manager - Effect - Template",
+	author = "Keith Warren (Drixevel)",
+	description = "A template plugin to edit for effects for zones manager.",
+	version = "1.0.1",
+	url = "http://www.drixevel.com/"
 };
 
-/****************************************************************************************************
-	HANDLES.
-*****************************************************************************************************/
-ConVar g_hCvarStatus;
-
-/****************************************************************************************************
-	BOOLS.
-*****************************************************************************************************/
-bool g_bLate;
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
+	g_bLate = late;
+	return APLRes_Success;
+}
 
 public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
-	
-	g_hCvarStatus = CreateConVar("sm_zones_effect_template_status", "1", "Status of the plugin.\n(1 = on, 0 = off)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-	
-	if (g_bLate) {
-		ZonesManager_RequestQueueEffects();
-	}
+
+	convar_Status = CreateConVar("sm_zones_effect_template_status", "1", "Status of the plugin.\n(1 = on, 0 = off)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 }
 
-public APLRes AskPluginLoad2(Handle hMySelf, bool bLate, char[] szError, int iErrMax)
+public void OnConfigsExecuted()
 {
-	RegPluginLibrary("zones_manager_template");
-	
-	g_bLate = bLate;
-	return APLRes_Success;
+	if (g_bLate)
+	{
+		ZonesManager_Request_QueueEffects();
+		g_bLate = false;
+	}
 }
 
 public void ZonesManager_OnQueueEffects_Post()
 {
-	ZonesManager_RegisterEffect("template zone", Effect_OnEnterZone, Effect_OnActiveZone, Effect_OnLeaveZone);
-	ZonesManager_RegisterEffectKey("template zone", "status", "1");
+	ZonesManager_Register_Effect("template zone", Effect_OnEnterZone, Effect_OnActiveZone, Effect_OnLeaveZone);
+	ZonesManager_Register_Effect_Key("template zone", "status", "1");
 }
 
-public void Effect_OnEnterZone(int iEntity, int iZone, StringMap smValues)
+public void Effect_OnEnterZone(int client, int entity, StringMap values)
 {
-	if (!IsClientValid(iEntity)) {
+	char sValue[32];
+	GetTrieString(values, "status", sValue, sizeof(sValue));
+
+	if (StrEqual(sValue, "0"))
+	{
 		return;
 	}
-	
-	char szValue[32]; smValues.GetString("status", szValue, sizeof(szValue));
-	
-	if (!g_hCvarStatus.BoolValue || StrEqual(szValue, "0")) {
-		return;
-	}
-	
-	PrintToChat(iEntity, "You have entered this zone.");
+
+	PrintToChat(client, "You have entered this zone.");
 }
 
-public void Effect_OnActiveZone(int iEntity, int iZone, StringMap smValues)
+public void Effect_OnActiveZone(int client, int entity, StringMap values)
 {
-	if (!IsClientValid(iEntity)) {
+	char sValue[32];
+	GetTrieString(values, "status", sValue, sizeof(sValue));
+
+	if (StrEqual(sValue, "0"))
+	{
 		return;
 	}
-	
-	char szValue[32]; smValues.GetString("status", szValue, sizeof(szValue));
-	
-	if (!g_hCvarStatus.BoolValue || StrEqual(szValue, "0")) {
-		return;
-	}
-	
-	PrintToChat(iEntity, "You are sitting in this zone.");
+
+	PrintToChat(client, "You are sitting in this zone.");
 }
 
-public void Effect_OnLeaveZone(int iEntity, int iZone, StringMap smValues)
+public void Effect_OnLeaveZone(int client, int entity, StringMap values)
 {
-	if (!IsClientValid(iEntity)) {
+	char sValue[32];
+	GetTrieString(values, "status", sValue, sizeof(sValue));
+
+	if (StrEqual(sValue, "0"))
+	{
 		return;
 	}
-	
-	char szValue[32]; smValues.GetString("status", szValue, sizeof(szValue));
-	
-	if (!g_hCvarStatus.BoolValue || StrEqual(szValue, "0")) {
-		return;
-	}
-	
-	PrintToChat(iEntity, "You have left this zone.");
-} 
+
+	PrintToChat(client, "You have left this zone.");
+}
