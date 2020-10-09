@@ -21,7 +21,7 @@ jobs:
         run: |
           SOURCEMOD_PATH=$GITHUB_WORKSPACE
           echo ::set-env name=SOURCEMOD_PATH::$SOURCEMOD_PATH
-          echo ::set-env name=SCRIPTS_PATH::$SOURCEMOD_PATH/scripting
+          echo ::set-env name=SCRIPTS_PATH::$SOURCEMOD_PATH/addons/sourcemod/scripting
 
       - name: Setup SourcePawn Compiler ${{ matrix.SM_VERSION }}
         uses: rumblefrog/setup-sp@master
@@ -39,5 +39,5 @@ jobs:
           echo -e "\nCompiling zones_effect_testzones.sp..."
           spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include zones_effect_testzones.sp
           echo -e "\nCompiling zones_manager_core.sp..."
-          spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include zones_manager_core.sp
+          spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include zones_manager.sp
         working-directory: ${{ env.SCRIPTS_PATH }}/
