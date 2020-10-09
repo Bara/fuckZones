@@ -11,8 +11,6 @@ ConVar convar_Status;
 
 //Globals
 bool g_bLate;
-int g_iPrintCap[MAXPLAYERS + 1];
-int g_iPrintCap_Post[MAXPLAYERS + 1];
 
 public Plugin myinfo =
 {
@@ -53,6 +51,11 @@ public void ZonesManager_OnQueueEffects_Post()
 
 public void Effect_OnEnterZone(int client, int entity, StringMap values)
 {
+	if (!convar_Status.BoolValue)
+	{
+		return;
+	}
+
 	char sValue[32];
 	GetTrieString(values, "status", sValue, sizeof(sValue));
 
@@ -66,6 +69,11 @@ public void Effect_OnEnterZone(int client, int entity, StringMap values)
 
 public void Effect_OnActiveZone(int client, int entity, StringMap values)
 {
+	if (!convar_Status.BoolValue)
+	{
+		return;
+	}
+	
 	char sValue[32];
 	GetTrieString(values, "status", sValue, sizeof(sValue));
 
@@ -79,6 +87,11 @@ public void Effect_OnActiveZone(int client, int entity, StringMap values)
 
 public void Effect_OnLeaveZone(int client, int entity, StringMap values)
 {
+	if (!convar_Status.BoolValue)
+	{
+		return;
+	}
+	
 	char sValue[32];
 	GetTrieString(values, "status", sValue, sizeof(sValue));
 
