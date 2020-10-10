@@ -30,7 +30,6 @@
 #include <clientprefs>
 #include <multicolors>
 
-ConVar g_cStatus = null;
 ConVar g_cPrecisionValue = null;
 
 GlobalForward g_fwQueueEffects_Post = null;
@@ -124,7 +123,6 @@ public void OnPluginStart()
 	LoadTranslations("common.phrases");
 	LoadTranslations("zonesmanager.phrases");
 
-	g_cStatus = CreateConVar("sm_zonesmanager_status", "1", "Status of the plugin.", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 	g_cPrecisionValue = CreateConVar("sm_zonesmanager_precision_value", "10.0", "Default value to use when setting a zones precision area.", FCVAR_NOTIFY, true, 0.0);
 
 	HookEventEx("teamplay_round_start", Event_OnRoundStart);
@@ -657,11 +655,6 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 
 public Action Command_EditZoneMenu(int client, int args)
 {
-	if (!GetConVarBool(g_cStatus))
-	{
-		return Plugin_Handled;
-	}
-
 	if (client == 0)
 	{
 		CReplyToCommand(client, "You must be in-game to use this command.");
@@ -674,11 +667,6 @@ public Action Command_EditZoneMenu(int client, int args)
 
 public Action Command_OpenZonesMenu(int client, int args)
 {
-	if (!GetConVarBool(g_cStatus))
-	{
-		return Plugin_Handled;
-	}
-
 	if (client == 0)
 	{
 		CReplyToCommand(client, "You must be in-game to use this command.");
@@ -691,11 +679,6 @@ public Action Command_OpenZonesMenu(int client, int args)
 
 public Action Command_TeleportToZone(int client, int args)
 {
-	if (!GetConVarBool(g_cStatus))
-	{
-		return Plugin_Handled;
-	}
-
 	char sArg1[65];
 	GetCmdArg(1, sArg1, sizeof(sArg1));
 
@@ -741,33 +724,18 @@ public Action Command_TeleportToZone(int client, int args)
 
 public Action Command_RegenerateZones(int client, int args)
 {
-	if (!GetConVarBool(g_cStatus))
-	{
-		return Plugin_Handled;
-	}
-
 	RegenerateZones(client);
 	return Plugin_Handled;
 }
 
 public Action Command_DeleteAllZones(int client, int args)
 {
-	if (!GetConVarBool(g_cStatus))
-	{
-		return Plugin_Handled;
-	}
-
 	DeleteAllZones(client);
 	return Plugin_Handled;
 }
 
 public Action Command_ReloadEffects(int client, int args)
 {
-	if (!GetConVarBool(g_cStatus))
-	{
-		return Plugin_Handled;
-	}
-
 	QueueEffects();
 	CReplyToCommand(client, "Effects data has been reloaded.");
 	return Plugin_Handled;
@@ -1405,7 +1373,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 			char sName[MAX_ZONE_NAME_LENGTH];
 			GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-			float precision = GetConVarFloat(g_cPrecisionValue);
+			float precision = g_cPrecisionValue.FloatValue;
 
 			if (StrEqual(sInfo, "a_add_x"))
 			{
