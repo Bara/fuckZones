@@ -1,14 +1,5 @@
-//Pragma
 #pragma semicolon 1
 #pragma newdecls required
-
-//Defines
-
-#define PLUGIN_DESCRIPTION "A sourcemod plugin with rich features for dynamic zone development."
-#define PLUGIN_VERSION "1.1.0"
-
-#define MAX_RADIUS_ZONES 256
-#define MAX_ZONES 256
 
 #define MAX_ZONE_NAME_LENGTH 128
 #define MAX_ZONE_TYPE_LENGTH 64
@@ -33,18 +24,15 @@
 
 #define MAX_ENTITY_LIMIT 4096
 
-//Sourcemod Includes
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
 #include <clientprefs>
 #include <multicolors>
 
-//ConVars
 ConVar g_cStatus = null;
 ConVar g_cPrecisionValue = null;
 
-//Forwards
 GlobalForward g_fwQueueEffects_Post = null;
 GlobalForward g_fwStartTouchZone = null;
 GlobalForward g_fwTouchZone = null;
@@ -53,7 +41,6 @@ GlobalForward g_fwStartTouchZone_Post = null;
 GlobalForward g_fwTouchZone_Post = null;
 GlobalForward g_fwEndTouchZone_Post = null;
 
-//Globals
 bool g_bLate;
 KeyValues g_kvConfig = null;
 bool g_bShowAllZones[MAXPLAYERS + 1] = {true, ...};
@@ -64,7 +51,6 @@ bool g_bIsInZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 ArrayList g_aColors;
 StringMap g_smColorData;
 
-//Engine related stuff for entities.
 int g_iDefaultModelIndex;
 int g_iDefaultHaloIndex;
 char g_sErrorModel[] = "models/error.mdl";
@@ -102,13 +88,12 @@ bool g_bIsViewingZone[MAXPLAYERS + 1];
 bool g_bSettingName[MAXPLAYERS + 1];
 int g_iEditingName[MAXPLAYERS + 1] = {INVALID_ENT_REFERENCE, ...};
 
-//Plugin Information
 public Plugin myinfo =
 {
 	name = "Zones Manager - Core",
 	author = "Bara (Original author: Drixevel)",
-	description = PLUGIN_DESCRIPTION,
-	version = PLUGIN_VERSION,
+	description = "A sourcemod plugin with rich features for dynamic zone development.",
+	version = "1.1.0",
 	url = "github.com/Bara"
 };
 
@@ -139,11 +124,8 @@ public void OnPluginStart()
 	LoadTranslations("common.phrases");
 	LoadTranslations("zonesmanager.phrases");
 
-	CreateConVar("sm_zonesmanager_version", PLUGIN_VERSION, PLUGIN_DESCRIPTION, FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_SPONLY | FCVAR_DONTRECORD);
 	g_cStatus = CreateConVar("sm_zonesmanager_status", "1", "Status of the plugin.", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 	g_cPrecisionValue = CreateConVar("sm_zonesmanager_precision_value", "10.0", "Default value to use when setting a zones precision area.", FCVAR_NOTIFY, true, 0.0);
-
-	//AutoExecConfig();
 
 	HookEventEx("teamplay_round_start", Event_OnRoundStart);
 	HookEventEx("round_start", Event_OnRoundStart);
