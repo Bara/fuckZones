@@ -57,7 +57,7 @@ GlobalForward g_fwEndTouchZone_Post = null;
 bool g_bLate;
 KeyValues g_kvConfig = null;
 bool g_bShowAllZones[MAXPLAYERS + 1] = {true, ...};
-Handle g_coShowZones;
+Handle g_coShowZones = null;
 
 bool g_bIsInZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 
@@ -873,7 +873,7 @@ public int MenuHandle_ZonesMenu(Menu menu, MenuAction action, int param1, int pa
 
 		case MenuAction_End:
 		{
-			CloseHandle(menu);
+			delete menu;
 		}
 	}
 }
@@ -922,7 +922,7 @@ public int MenuHandle_TeleportToZoneMenu(Menu menu, MenuAction action, int param
 
 		case MenuAction_End:
 		{
-			CloseHandle(menu);
+			delete menu;
 		}
 	}
 }
@@ -985,7 +985,7 @@ public int MenuHandle_ConfirmDeleteAllZones(Menu menu, MenuAction action, int pa
 
 		case MenuAction_End:
 		{
-			CloseHandle(menu);
+			delete menu;
 		}
 	}
 }
@@ -1042,7 +1042,7 @@ public int MenuHandle_ManageZonesMenu(Menu menu, MenuAction action, int param1, 
 
 		case MenuAction_End:
 		{
-			CloseHandle(menu);
+			delete menu;
 		}
 	}
 }
@@ -1120,7 +1120,7 @@ public int MenuHandle_ManageEditMenu(Menu menu, MenuAction action, int param1, i
 
 		case MenuAction_End:
 		{
-			CloseHandle(menu);
+			delete menu;
 		}
 	}
 }
@@ -1369,7 +1369,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 
 		case MenuAction_End:
 		{
-			CloseHandle(menu);
+			delete menu;
 		}
 	}
 }
@@ -1553,7 +1553,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 
 		case MenuAction_End:
 		{
-			CloseHandle(menu);
+			delete menu;
 		}
 	}
 }
@@ -1744,7 +1744,7 @@ public int MenuHandler_EditZoneTypeMenu(Menu menu, MenuAction action, int param1
 
 		case MenuAction_End:
 		{
-			CloseHandle(menu);
+			delete menu;
 		}
 	}
 }
@@ -1810,7 +1810,7 @@ public int MenuHandler_EditZoneColorMenu(Menu menu, MenuAction action, int param
 
 		case MenuAction_End:
 		{
-			CloseHandle(menu);
+			delete menu;
 		}
 	}
 }
@@ -1868,7 +1868,7 @@ public int MenuHandle_ManageConfirmDeleteZoneMenu(Menu menu, MenuAction action, 
 
 		case MenuAction_End:
 		{
-			CloseHandle(menu);
+			delete menu;
 		}
 	}
 }
@@ -2038,7 +2038,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 
 		case MenuAction_End:
 		{
-			CloseHandle(menu);
+			delete menu;
 		}
 	}
 }
@@ -2105,7 +2105,7 @@ public int MenuHandler_AddZoneEffect(Menu menu, MenuAction action, int param1, i
 
 		case MenuAction_End:
 		{
-			CloseHandle(menu);
+			delete menu;
 		}
 	}
 }
@@ -2166,7 +2166,7 @@ public int MenuHandler_EditZoneEffect(Menu menu, MenuAction action, int param1, 
 
 		case MenuAction_End:
 		{
-			CloseHandle(menu);
+			delete menu;
 		}
 	}
 }
@@ -2301,7 +2301,7 @@ public int MenuHandler_RemoveZoneEffect(Menu menu, MenuAction action, int param1
 
 		case MenuAction_End:
 		{
-			CloseHandle(menu);
+			delete menu;
 		}
 	}
 }
@@ -2384,7 +2384,7 @@ public int MenuHandler_ZoneTypeMenu(Menu menu, MenuAction action, int param1, in
 
 		case MenuAction_End:
 		{
-			CloseHandle(menu);
+			delete menu;
 		}
 	}
 }
@@ -3082,7 +3082,8 @@ void CallEffectCallback(int entity, int client, int callback)
 		char sEffect[MAX_EFFECT_NAME_LENGTH];
 		g_aEffectsList.GetString(i, sEffect, sizeof(sEffect));
 
-		Handle callbacks[MAX_EFFECT_CALLBACKS]; StringMap values;
+		Handle callbacks[MAX_EFFECT_CALLBACKS];
+		StringMap values = null;
 		if (g_smEffectCalls.GetArray(sEffect, callbacks, sizeof(callbacks)) && callbacks[callback] != null && GetForwardFunctionCount(callbacks[callback]) > 0 && g_smZoneEffects[entity].GetValue(sEffect, values))
 		{
 			Call_StartForward(callbacks[callback]);
@@ -3213,7 +3214,7 @@ bool GetClientLookPoint(int client, float lookposition[3], bool beam = false)
 
 	TR_GetEndPosition(lookposition, hTrace);
 
-	CloseHandle(hTrace);
+	delete hTrace;
 
 	if (beam)
 	{
