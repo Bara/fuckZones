@@ -7,7 +7,7 @@
 #include <zones_manager>
 
 //ConVars
-ConVar convar_Status;
+ConVar g_cStatus;
 
 //Globals
 bool g_bLate;
@@ -16,11 +16,11 @@ int g_iPrintCap_Post[MAXPLAYERS + 1];
 
 public Plugin myinfo =
 {
-	name = "Zones Manager - Effect - Test Zones",
-	author = "Keith Warren (Drixevel)",
+	name = "Zones Manager - Effect: Test Zones",
+	author = "Bara (Original author: Drixevel)",
 	description = "A simple plugin to test the zones manager plugin and its API interface.",
-	version = "1.0.1",
-	url = "http://www.drixevel.com/"
+	version = "1.1.0",
+	url = "github.com/Bara"
 };
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -33,7 +33,7 @@ public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
 
-	convar_Status = CreateConVar("sm_zones_effect_testzones_status", "1", "Status of the plugin.\n(1 = on, 0 = off)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	g_cStatus = CreateConVar("sm_zones_effect_testzones_status", "1", "Status of the plugin.\n(1 = on, 0 = off)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 }
 
 public void OnConfigsExecuted()
@@ -98,7 +98,7 @@ public void OnClientDisconnect(int client)
 
 public Action ZonesManager_OnStartTouchZone(int client, int entity, const char[] zone_name, int type)
 {
-	if (!GetConVarBool(convar_Status))
+	if (!GetConVarBool(g_cStatus))
 	{
 		return Plugin_Continue;
 	}
@@ -109,7 +109,7 @@ public Action ZonesManager_OnStartTouchZone(int client, int entity, const char[]
 
 public Action ZonesManager_OnTouchZone(int client, int entity, const char[] zone_name, int type)
 {
-	if (!GetConVarBool(convar_Status))
+	if (!GetConVarBool(g_cStatus))
 	{
 		return Plugin_Continue;
 	}
@@ -125,7 +125,7 @@ public Action ZonesManager_OnTouchZone(int client, int entity, const char[] zone
 
 public Action ZonesManager_OnEndTouchZone(int client, int entity, const char[] zone_name, int type)
 {
-	if (!GetConVarBool(convar_Status))
+	if (!GetConVarBool(g_cStatus))
 	{
 		return Plugin_Continue;
 	}
@@ -137,7 +137,7 @@ public Action ZonesManager_OnEndTouchZone(int client, int entity, const char[] z
 
 public void ZonesManager_OnStartTouchZone_Post(int client, int entity, const char[] zone_name, int type)
 {
-	if (!GetConVarBool(convar_Status))
+	if (!GetConVarBool(g_cStatus))
 	{
 		return;
 	}
@@ -147,7 +147,7 @@ public void ZonesManager_OnStartTouchZone_Post(int client, int entity, const cha
 
 public void ZonesManager_OnTouchZone_Post(int client, int entity, const char[] zone_name, int type)
 {
-	if (!GetConVarBool(convar_Status))
+	if (!GetConVarBool(g_cStatus))
 	{
 		return;
 	}
@@ -161,7 +161,7 @@ public void ZonesManager_OnTouchZone_Post(int client, int entity, const char[] z
 
 public void ZonesManager_OnEndTouchZone_Post(int client, int entity, const char[] zone_name, int type)
 {
-	if (!GetConVarBool(convar_Status))
+	if (!GetConVarBool(g_cStatus))
 	{
 		return;
 	}

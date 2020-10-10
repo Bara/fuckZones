@@ -7,8 +7,8 @@
 #include <zones_manager>
 
 //ConVars
-ConVar convar_Status;
-ConVar convar_HudBitFlag;
+ConVar g_cStatus;
+ConVar g_cHudBitFlag;
 
 //Globals
 bool g_bLate;
@@ -16,11 +16,11 @@ int g_iCachedHud[MAXPLAYERS + 1];
 
 public Plugin myinfo =
 {
-	name = "Zones Manager - Effect - Hide Hud",
-	author = "Keith Warren (Drixevel)",
+	name = "Zones Manager - Effect: Hide HUD",
+	author = "Bara (Original author: Drixevel)",
 	description = "An effect for hiding the hud for clients effectively with zones.",
-	version = "1.0.0",
-	url = "http://www.drixevel.com/"
+	version = "1.1.0",
+	url = "github.com/Bara"
 };
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -33,8 +33,8 @@ public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
 
-	convar_Status = CreateConVar("sm_zones_effect_hidehud_status", "1", "Status of the plugin.\n(1 = on, 0 = off)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-	convar_HudBitFlag = CreateConVar("sm_zones_effect_hidehud_bitflag", "4096", "Bitflag to decimal to set on clients.", FCVAR_NOTIFY);
+	g_cStatus = CreateConVar("sm_zones_effect_hidehud_status", "1", "Status of the plugin.\n(1 = on, 0 = off)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	g_cHudBitFlag = CreateConVar("sm_zones_effect_hidehud_bitflag", "4096", "Bitflag to decimal to set on clients.", FCVAR_NOTIFY);
 }
 
 public void OnConfigsExecuted()
@@ -69,14 +69,14 @@ public void Effect_OnEnterZone(int client, int entity, StringMap values)
 	char sValue[32];
 	GetTrieString(values, "status", sValue, sizeof(sValue));
 	
-	if (!GetConVarBool(convar_Status) || StrEqual(sValue, "0"))
+	if (!GetConVarBool(g_cStatus) || StrEqual(sValue, "0"))
 	{
 		return;
 	}
 	
 	g_iCachedHud[client] = GetEntProp(client, Prop_Send, "m_iHideHUD");
 	
-	SetEntProp(client, Prop_Send, "m_iHideHUD", GetEntProp(client, Prop_Send, "m_iHideHUD") | GetConVarInt(convar_HudBitFlag));
+	SetEntProp(client, Prop_Send, "m_iHideHUD", GetEntProp(client, Prop_Send, "m_iHideHUD") | GetConVarInt(g_cHudBitFlag));
 }
 
 public void Effect_OnLeaveZone(int client, int entity, StringMap values)
@@ -84,7 +84,7 @@ public void Effect_OnLeaveZone(int client, int entity, StringMap values)
 	char sValue[32];
 	GetTrieString(values, "status", sValue, sizeof(sValue));
 	
-	if (!GetConVarBool(convar_Status) || StrEqual(sValue, "0"))
+	if (!GetConVarBool(g_cStatus) || StrEqual(sValue, "0"))
 	{
 		return;
 	}

@@ -7,18 +7,18 @@
 #include <zones_manager>
 
 //ConVars
-ConVar convar_Status;
+ConVar g_cStatus;
 
 //Globals
 bool g_bLate;
 
 public Plugin myinfo =
 {
-	name = "Zones Manager - Effect - Template",
-	author = "Keith Warren (Drixevel)",
+	name = "Zones Manager - Effect: Template",
+	author = "Bara (Original author: Drixevel)",
 	description = "A template plugin to edit for effects for zones manager.",
-	version = "1.0.1",
-	url = "http://www.drixevel.com/"
+	version = "1.1.0",
+	url = "github.com/Bara"
 };
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -31,7 +31,7 @@ public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
 
-	convar_Status = CreateConVar("sm_zones_effect_template_status", "1", "Status of the plugin.\n(1 = on, 0 = off)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	g_cStatus = CreateConVar("sm_zones_effect_template_status", "1", "Status of the plugin.\n(1 = on, 0 = off)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 }
 
 public void OnConfigsExecuted()
@@ -51,7 +51,7 @@ public void ZonesManager_OnQueueEffects_Post()
 
 public void Effect_OnEnterZone(int client, int entity, StringMap values)
 {
-	if (!convar_Status.BoolValue)
+	if (!g_cStatus.BoolValue)
 	{
 		return;
 	}
@@ -69,7 +69,7 @@ public void Effect_OnEnterZone(int client, int entity, StringMap values)
 
 public void Effect_OnActiveZone(int client, int entity, StringMap values)
 {
-	if (!convar_Status.BoolValue)
+	if (!g_cStatus.BoolValue)
 	{
 		return;
 	}
@@ -87,7 +87,7 @@ public void Effect_OnActiveZone(int client, int entity, StringMap values)
 
 public void Effect_OnLeaveZone(int client, int entity, StringMap values)
 {
-	if (!convar_Status.BoolValue)
+	if (!g_cStatus.BoolValue)
 	{
 		return;
 	}

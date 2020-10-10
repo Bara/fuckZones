@@ -5,7 +5,7 @@
 //Defines
 
 #define PLUGIN_DESCRIPTION "A sourcemod plugin with rich features for dynamic zone development."
-#define PLUGIN_VERSION "1.0.2"
+#define PLUGIN_VERSION "1.1.0"
 
 #define MAX_RADIUS_ZONES 256
 #define MAX_ZONES 256
@@ -41,8 +41,8 @@
 #include <multicolors>
 
 //ConVars
-ConVar convar_Status;
-ConVar convar_PrecisionValue;
+ConVar g_cStatus;
+ConVar g_cPrecisionValue;
 
 //Forwards
 Handle g_Forward_QueueEffects_Post;
@@ -105,11 +105,11 @@ int iEditingName[MAXPLAYERS + 1] = {INVALID_ENT_REFERENCE, ...};
 //Plugin Information
 public Plugin myinfo =
 {
-	name = "Zones-Manager",
-	author = "Keith Warren (Drixevel)",
+	name = "Zones Manager - Core",
+	author = "Bara (Original author: Drixevel)",
 	description = PLUGIN_DESCRIPTION,
 	version = PLUGIN_VERSION,
-	url = "http://www.drixevel.com/"
+	url = "github.com/Bara"
 };
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -140,8 +140,8 @@ public void OnPluginStart()
 	LoadTranslations("zonesmanager.phrases");
 
 	CreateConVar("sm_zonesmanager_version", PLUGIN_VERSION, PLUGIN_DESCRIPTION, FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_SPONLY | FCVAR_DONTRECORD);
-	convar_Status = CreateConVar("sm_zonesmanager_status", "1", "Status of the plugin.", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-	convar_PrecisionValue = CreateConVar("sm_zonesmanager_precision_value", "10.0", "Default value to use when setting a zones precision area.", FCVAR_NOTIFY, true, 0.0);
+	g_cStatus = CreateConVar("sm_zonesmanager_status", "1", "Status of the plugin.", FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	g_cPrecisionValue = CreateConVar("sm_zonesmanager_precision_value", "10.0", "Default value to use when setting a zones precision area.", FCVAR_NOTIFY, true, 0.0);
 
 	//AutoExecConfig();
 
@@ -675,7 +675,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 
 public Action Command_EditZoneMenu(int client, int args)
 {
-	if (!GetConVarBool(convar_Status))
+	if (!GetConVarBool(g_cStatus))
 	{
 		return Plugin_Handled;
 	}
@@ -692,7 +692,7 @@ public Action Command_EditZoneMenu(int client, int args)
 
 public Action Command_OpenZonesMenu(int client, int args)
 {
-	if (!GetConVarBool(convar_Status))
+	if (!GetConVarBool(g_cStatus))
 	{
 		return Plugin_Handled;
 	}
@@ -709,7 +709,7 @@ public Action Command_OpenZonesMenu(int client, int args)
 
 public Action Command_TeleportToZone(int client, int args)
 {
-	if (!GetConVarBool(convar_Status))
+	if (!GetConVarBool(g_cStatus))
 	{
 		return Plugin_Handled;
 	}
@@ -759,7 +759,7 @@ public Action Command_TeleportToZone(int client, int args)
 
 public Action Command_RegenerateZones(int client, int args)
 {
-	if (!GetConVarBool(convar_Status))
+	if (!GetConVarBool(g_cStatus))
 	{
 		return Plugin_Handled;
 	}
@@ -770,7 +770,7 @@ public Action Command_RegenerateZones(int client, int args)
 
 public Action Command_DeleteAllZones(int client, int args)
 {
-	if (!GetConVarBool(convar_Status))
+	if (!GetConVarBool(g_cStatus))
 	{
 		return Plugin_Handled;
 	}
@@ -781,7 +781,7 @@ public Action Command_DeleteAllZones(int client, int args)
 
 public Action Command_ReloadEffects(int client, int args)
 {
-	if (!GetConVarBool(convar_Status))
+	if (!GetConVarBool(g_cStatus))
 	{
 		return Plugin_Handled;
 	}
@@ -1423,7 +1423,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 			char sName[MAX_ZONE_NAME_LENGTH];
 			GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-			float precision = GetConVarFloat(convar_PrecisionValue);
+			float precision = GetConVarFloat(g_cPrecisionValue);
 
 			if (StrEqual(sInfo, "a_add_x"))
 			{
