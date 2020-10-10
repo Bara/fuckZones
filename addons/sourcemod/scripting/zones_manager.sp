@@ -774,17 +774,17 @@ int GetEarliestTouchZone(int client)
 
 void OpenZonesMenu(int client)
 {
-	Menu menu = CreateMenu(MenuHandle_ZonesMenu);
-	SetMenuTitle(menu, "Zones Manager");
+	Menu menu = new Menu(MenuHandle_ZonesMenu);
+	menu.SetTitle("Zones Manager");
 
-	AddMenuItem(menu, "manage", "Manage Zones");
-	AddMenuItem(menu, "create", "Create a Zone");
-	AddMenuItem(menu, "---", "---", ITEMDRAW_DISABLED);
+	menu.AddItem("manage", "Manage Zones");
+	menu.AddItem("create", "Create a Zone");
+	menu.AddItem("---", "---", ITEMDRAW_DISABLED);
 	AddMenuItemFormat(menu, "viewall", ITEMDRAW_DEFAULT, "Draw Zones: %s", g_bShowAllZones[client] ? "On" : "Off");
 	AddMenuItemFormat(menu, "regenerate", ITEMDRAW_DEFAULT, "Regenerate Zones");
 	AddMenuItemFormat(menu, "deleteall", ITEMDRAW_DEFAULT, "Delete all Zones");
 
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.Display(client, MENU_TIME_FOREVER);
 }
 
 public int MenuHandle_ZonesMenu(Menu menu, MenuAction action, int param1, int param2)
@@ -794,7 +794,7 @@ public int MenuHandle_ZonesMenu(Menu menu, MenuAction action, int param1, int pa
 		case MenuAction_Select:
 		{
 			char sInfo[32];
-			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
+			menu.GetItem(param2, sInfo, sizeof(sInfo));
 
 			if (StrEqual(sInfo, "manage"))
 			{
@@ -830,8 +830,8 @@ public int MenuHandle_ZonesMenu(Menu menu, MenuAction action, int param1, int pa
 
 void OpenTeleportToZoneMenu(int client)
 {
-	Menu menu = CreateMenu(MenuHandle_TeleportToZoneMenu);
-	SetMenuTitle(menu, "Teleport to which zone:");
+	Menu menu = new Menu(MenuHandle_TeleportToZoneMenu);
+	menu.SetTitle("Teleport to which zone:");
 
 	for (int i = 0; i < g_aZoneEntities.Length; i++)
 	{
@@ -845,17 +845,17 @@ void OpenTeleportToZoneMenu(int client)
 			char sName[MAX_ZONE_NAME_LENGTH];
 			GetEntPropString(zone, Prop_Data, "m_iName", sName, sizeof(sName));
 
-			AddMenuItem(menu, sEntity, sName);
+			menu.AddItem(sEntity, sName);
 		}
 	}
 
-	if (GetMenuItemCount(menu) == 0)
+	if (menu.ItemCount == 0)
 	{
-		AddMenuItem(menu, "", "[No Zones]", ITEMDRAW_DISABLED);
+		menu.AddItem("", "[No Zones]", ITEMDRAW_DISABLED);
 	}
 
-	SetMenuExitBackButton(menu, true);
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.ExitBackButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
 }
 
 public int MenuHandle_TeleportToZoneMenu(Menu menu, MenuAction action, int param1, int param2)
@@ -865,7 +865,7 @@ public int MenuHandle_TeleportToZoneMenu(Menu menu, MenuAction action, int param
 		case MenuAction_Select:
 		{
 			char sEntity[64]; char sName[MAX_ZONE_NAME_LENGTH];
-			GetMenuItem(menu, param2, sEntity, sizeof(sEntity), _, sName, sizeof(sName));
+			menu.GetItem(param2, sEntity, sizeof(sEntity), _, sName, sizeof(sName));
 
 			TeleportToZone(param1, sName);
 		}
@@ -905,14 +905,14 @@ void DeleteAllZones(int client = -1, bool confirmation = true)
 		return;
 	}
 
-	Menu menu = CreateMenu(MenuHandle_ConfirmDeleteAllZones);
-	SetMenuTitle(menu, "Are you sure you want to delete all zones on this map?");
+	Menu menu = new Menu(MenuHandle_ConfirmDeleteAllZones);
+	menu.SetTitle("Are you sure you want to delete all zones on this map?");
 
-	AddMenuItem(menu, "", "---", ITEMDRAW_DISABLED);
-	AddMenuItem(menu, "Yes", "Yes");
-	AddMenuItem(menu, "No", "No");
+	menu.AddItem("", "---", ITEMDRAW_DISABLED);
+	menu.AddItem("Yes", "Yes");
+	menu.AddItem("No", "No");
 
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.Display(client, MENU_TIME_FOREVER);
 }
 
 public int MenuHandle_ConfirmDeleteAllZones(Menu menu, MenuAction action, int param1, int param2)
@@ -922,7 +922,7 @@ public int MenuHandle_ConfirmDeleteAllZones(Menu menu, MenuAction action, int pa
 		case MenuAction_Select:
 		{
 			char sInfo[32];
-			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
+			menu.GetItem(param2, sInfo, sizeof(sInfo));
 
 			if (StrEqual(sInfo, "No"))
 			{
@@ -942,8 +942,8 @@ public int MenuHandle_ConfirmDeleteAllZones(Menu menu, MenuAction action, int pa
 
 void OpenManageZonesMenu(int client)
 {
-	Menu menu = CreateMenu(MenuHandle_ManageZonesMenu);
-	SetMenuTitle(menu, "Manage Zones:");
+	Menu menu = new Menu(MenuHandle_ManageZonesMenu);
+	menu.SetTitle("Manage Zones:");
 
 	for (int i = 0; i < g_aZoneEntities.Length; i++)
 	{
@@ -957,17 +957,17 @@ void OpenManageZonesMenu(int client)
 			char sName[MAX_ZONE_NAME_LENGTH];
 			GetEntPropString(zone, Prop_Data, "m_iName", sName, sizeof(sName));
 
-			AddMenuItem(menu, sEntity, sName);
+			menu.AddItem(sEntity, sName);
 		}
 	}
 
-	if (GetMenuItemCount(menu) == 0)
+	if (menu.ItemCount == 0)
 	{
-		AddMenuItem(menu, "", "[No Zones]", ITEMDRAW_DISABLED);
+		menu.AddItem("", "[No Zones]", ITEMDRAW_DISABLED);
 	}
 
-	SetMenuExitBackButton(menu, true);
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.ExitBackButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
 }
 
 public int MenuHandle_ManageZonesMenu(Menu menu, MenuAction action, int param1, int param2)
@@ -977,7 +977,7 @@ public int MenuHandle_ManageZonesMenu(Menu menu, MenuAction action, int param1, 
 		case MenuAction_Select:
 		{
 			char sEntity[12]; char sName[MAX_ZONE_NAME_LENGTH];
-			GetMenuItem(menu, param2, sEntity, sizeof(sEntity), _, sName, sizeof(sName));
+			menu.GetItem(param2, sEntity, sizeof(sEntity), _, sName, sizeof(sName));
 
 			OpenEditZoneMenu(param1, StringToInt(sEntity));
 		}
@@ -1002,20 +1002,20 @@ void OpenEditZoneMenu(int client, int entity)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	Menu menu = CreateMenu(MenuHandle_ManageEditMenu);
-	SetMenuTitle(menu, "Manage Zone '%s':", sName);
+	Menu menu = new Menu(MenuHandle_ManageEditMenu);
+	menu.SetTitle("Manage Zone '%s':", sName);
 
-	AddMenuItem(menu, "edit", "Edit Zone");
-	AddMenuItem(menu, "delete", "Delete Zone");
-	AddMenuItem(menu, "", "---", ITEMDRAW_DISABLED);
-	AddMenuItem(menu, "effects_add", "Add Effect");
-	AddMenuItem(menu, "effects_edit", "Edit Effect", ITEMDRAW_DISABLED);
-	AddMenuItem(menu, "effects_remove", "Remove Effect");
+	menu.AddItem("edit", "Edit Zone");
+	menu.AddItem("delete", "Delete Zone");
+	menu.AddItem("", "---", ITEMDRAW_DISABLED);
+	menu.AddItem("effects_add", "Add Effect");
+	menu.AddItem("effects_edit", "Edit Effect", ITEMDRAW_DISABLED);
+	menu.AddItem("effects_remove", "Remove Effect");
 
 	PushMenuCell(menu, "entity", entity);
 
-	SetMenuExitBackButton(menu, true);
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.ExitBackButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
 }
 
 public int MenuHandle_ManageEditMenu(Menu menu, MenuAction action, int param1, int param2)
@@ -1025,7 +1025,7 @@ public int MenuHandle_ManageEditMenu(Menu menu, MenuAction action, int param1, i
 		case MenuAction_Select:
 		{
 			char sInfo[32];
-			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
+			menu.GetItem(param2, sInfo, sizeof(sInfo));
 
 			int entity = GetMenuCell(menu, "entity");
 
@@ -1083,42 +1083,42 @@ void OpenZonePropertiesMenu(int client, int entity)
 	char sRadiusAmount[64];
 	FormatEx(sRadiusAmount, sizeof(sRadiusAmount), "\nRadius is currently: %.2f", g_fZoneRadius[entity]);
 
-	Menu menu = CreateMenu(MenuHandle_ZonePropertiesMenu);
-	SetMenuTitle(menu, "Edit properties for zone '%s':%s", sName, GetZoneType(entity) == ZONE_TYPE_CIRCLE ? sRadiusAmount : "");
+	Menu menu = new Menu(MenuHandle_ZonePropertiesMenu);
+	menu.SetTitle("Edit properties for zone '%s':%s", sName, GetZoneType(entity) == ZONE_TYPE_CIRCLE ? sRadiusAmount : "");
 
-	AddMenuItem(menu, "edit_name", "Name");
-	AddMenuItem(menu, "edit_type", "Type");
-	AddMenuItem(menu, "edit_color", "Color");
+	menu.AddItem("edit_name", "Name");
+	menu.AddItem("edit_type", "Type");
+	menu.AddItem("edit_color", "Color");
 
 	switch (GetZoneType(entity))
 	{
 		case ZONE_TYPE_BOX:
 		{
-			AddMenuItem(menu, "edit_startpoint_a", "StartPoint A");
-			AddMenuItem(menu, "edit_startpoint_a_precision", "StartPoint A Precision");
-			AddMenuItem(menu, "edit_startpoint_b", "StartPoint B");
-			AddMenuItem(menu, "edit_startpoint_b_precision", "StartPoint B Precision");
+			menu.AddItem("edit_startpoint_a", "StartPoint A");
+			menu.AddItem("edit_startpoint_a_precision", "StartPoint A Precision");
+			menu.AddItem("edit_startpoint_b", "StartPoint B");
+			menu.AddItem("edit_startpoint_b_precision", "StartPoint B Precision");
 		}
 
 		case ZONE_TYPE_CIRCLE:
 		{
-			AddMenuItem(menu, "edit_startpoint", "StartPoint");
-			AddMenuItem(menu, "edit_add_radius", "Add to Radius");
-			AddMenuItem(menu, "edit_remove_radius", "Remove from Radius");
+			menu.AddItem("edit_startpoint", "StartPoint");
+			menu.AddItem("edit_add_radius", "Add to Radius");
+			menu.AddItem("edit_remove_radius", "Remove from Radius");
 		}
 
 		case ZONE_TYPE_POLY:
 		{
-			AddMenuItem(menu, "edit_add_point", "Add a Point");
-			AddMenuItem(menu, "edit_remove_point", "Remove last Point");
-			AddMenuItem(menu, "edit_clear_points", "Clear all Points");
+			menu.AddItem("edit_add_point", "Add a Point");
+			menu.AddItem("edit_remove_point", "Remove last Point");
+			menu.AddItem("edit_clear_points", "Clear all Points");
 		}
 	}
 
 	PushMenuCell(menu, "entity", entity);
 
-	SetMenuExitBackButton(menu, true);
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.ExitBackButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
 }
 
 public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param1, int param2)
@@ -1128,7 +1128,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 		case MenuAction_Select:
 		{
 			char sInfo[32];
-			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
+			menu.GetItem(param2, sInfo, sizeof(sInfo));
 
 			int entity = GetMenuCell(menu, "entity");
 
@@ -1329,33 +1329,33 @@ void OpenEditZoneStartPointAMenu(int client, int entity, bool whichpoint)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	Menu menu = CreateMenu(MenuHandle_ZoneEditStartPointMenu);
-	SetMenuTitle(menu, "Edit start point %s properties for zone '%s':", whichpoint ? "A" : "B", sName);
+	Menu menu = new Menu(MenuHandle_ZoneEditStartPointMenu);
+	menu.SetTitle("Edit start point %s properties for zone '%s':", whichpoint ? "A" : "B", sName);
 
 	if (whichpoint)
 	{
-		AddMenuItem(menu, "a_add_x", "Add to X");
-		AddMenuItem(menu, "a_add_y", "Add to Y");
-		AddMenuItem(menu, "a_add_z", "Add to Z");
-		AddMenuItem(menu, "a_remove_x", "Remove to X");
-		AddMenuItem(menu, "a_remove_y", "Remove to Y");
-		AddMenuItem(menu, "a_remove_z", "Remove to Z");
+		menu.AddItem("a_add_x", "Add to X");
+		menu.AddItem("a_add_y", "Add to Y");
+		menu.AddItem("a_add_z", "Add to Z");
+		menu.AddItem("a_remove_x", "Remove to X");
+		menu.AddItem("a_remove_y", "Remove to Y");
+		menu.AddItem("a_remove_z", "Remove to Z");
 	}
 	else
 	{
-		AddMenuItem(menu, "b_add_x", "Add to X");
-		AddMenuItem(menu, "b_add_y", "Add to Y");
-		AddMenuItem(menu, "b_add_z", "Add to Z");
-		AddMenuItem(menu, "b_remove_x", "Remove to X");
-		AddMenuItem(menu, "b_remove_y", "Remove to Y");
-		AddMenuItem(menu, "b_remove_z", "Remove to Z");
+		menu.AddItem("b_add_x", "Add to X");
+		menu.AddItem("b_add_y", "Add to Y");
+		menu.AddItem("b_add_z", "Add to Z");
+		menu.AddItem("b_remove_x", "Remove to X");
+		menu.AddItem("b_remove_y", "Remove to Y");
+		menu.AddItem("b_remove_z", "Remove to Z");
 	}
 
 	PushMenuCell(menu, "entity", entity);
 	PushMenuCell(menu, "whichpoint", whichpoint);
 
-	SetMenuExitBackButton(menu, true);
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.ExitBackButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
 }
 
 public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int param1, int param2)
@@ -1365,7 +1365,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 		case MenuAction_Select:
 		{
 			char sInfo[32];
-			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
+			menu.GetItem(param2, sInfo, sizeof(sInfo));
 
 			int entity = GetMenuCell(menu, "entity");
 			bool whichpoint = view_as<bool>(GetMenuCell(menu, "whichpoint"));
@@ -1645,8 +1645,8 @@ void OpenEditZoneTypeMenu(int client, int entity)
 	char sAddendum[256];
 	FormatEx(sAddendum, sizeof(sAddendum), " for %s", sName);
 
-	Menu menu = CreateMenu(MenuHandler_EditZoneTypeMenu);
-	SetMenuTitle(menu, "Choose a new zone type%s:", sAddendum);
+	Menu menu = new Menu(MenuHandler_EditZoneTypeMenu);
+	menu.SetTitle("Choose a new zone type%s:", sAddendum);
 
 	for (int i = 0; i < ZONE_TYPES; i++)
 	{
@@ -1656,13 +1656,13 @@ void OpenEditZoneTypeMenu(int client, int entity)
 		char sType[MAX_ZONE_TYPE_LENGTH];
 		GetZoneTypeName(i, sType, sizeof(sType));
 
-		AddMenuItem(menu, sID, sType);
+		menu.AddItem(sID, sType);
 	}
 
 	PushMenuCell(menu, "entity", entity);
 
-	SetMenuExitBackButton(menu, true);
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.ExitBackButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
 }
 
 public int MenuHandler_EditZoneTypeMenu(Menu menu, MenuAction action, int param1, int param2)
@@ -1672,7 +1672,7 @@ public int MenuHandler_EditZoneTypeMenu(Menu menu, MenuAction action, int param1
 		case MenuAction_Select:
 		{
 			char sID[12]; char sType[MAX_ZONE_TYPE_LENGTH];
-			GetMenuItem(menu, param2, sID, sizeof(sID), _, sType, sizeof(sType));
+			menu.GetItem(param2, sID, sizeof(sID), _, sType, sizeof(sType));
 			//int type = StringToInt(sID);
 
 			int entity = GetMenuCell(menu, "entity");
@@ -1707,8 +1707,8 @@ void OpenEditZoneColorMenu(int client, int entity)
 	char sAddendum[256];
 	FormatEx(sAddendum, sizeof(sAddendum), " for %s", sName);
 
-	Menu menu = CreateMenu(MenuHandler_EditZoneColorMenu);
-	SetMenuTitle(menu, "Choose a new zone color%s:", sAddendum);
+	Menu menu = new Menu(MenuHandler_EditZoneColorMenu);
+	menu.SetTitle("Choose a new zone color%s:", sAddendum);
 
 	for (int i = 0; i < g_aColors.Length; i++)
 	{
@@ -1721,13 +1721,13 @@ void OpenEditZoneColorMenu(int client, int entity)
 		char sVector[64];
 		FormatEx(sVector, sizeof(sVector), "%i %i %i %i", colors[0], colors[1], colors[2], colors[3]);
 
-		AddMenuItem(menu, sVector, sColor);
+		menu.AddItem(sVector, sColor);
 	}
 
 	PushMenuCell(menu, "entity", entity);
 
-	SetMenuExitBackButton(menu, true);
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.ExitBackButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
 }
 
 public int MenuHandler_EditZoneColorMenu(Menu menu, MenuAction action, int param1, int param2)
@@ -1737,7 +1737,7 @@ public int MenuHandler_EditZoneColorMenu(Menu menu, MenuAction action, int param
 		case MenuAction_Select:
 		{
 			char sVector[64]; char sColor[64];
-			GetMenuItem(menu, param2, sVector, sizeof(sVector), _, sColor, sizeof(sColor));
+			menu.GetItem(param2, sVector, sizeof(sVector), _, sColor, sizeof(sColor));
 
 			int entity = GetMenuCell(menu, "entity");
 
@@ -1770,16 +1770,16 @@ void DisplayConfirmDeleteZoneMenu(int client, int entity)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	Menu menu = CreateMenu(MenuHandle_ManageConfirmDeleteZoneMenu);
-	SetMenuTitle(menu, "Are you sure you want to delete '%s':", sName);
+	Menu menu = new Menu(MenuHandle_ManageConfirmDeleteZoneMenu);
+	menu.SetTitle("Are you sure you want to delete '%s':", sName);
 
-	AddMenuItem(menu, "yes", "Yes");
-	AddMenuItem(menu, "no", "No");
+	menu.AddItem("yes", "Yes");
+	menu.AddItem("no", "No");
 
 	PushMenuCell(menu, "entity", entity);
 
-	SetMenuExitBackButton(menu, true);
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.ExitBackButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
 }
 
 public int MenuHandle_ManageConfirmDeleteZoneMenu(Menu menu, MenuAction action, int param1, int param2)
@@ -1789,7 +1789,7 @@ public int MenuHandle_ManageConfirmDeleteZoneMenu(Menu menu, MenuAction action, 
 		case MenuAction_Select:
 		{
 			char sInfo[32];
-			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
+			menu.GetItem(param2, sInfo, sizeof(sInfo));
 
 			int entity = GetMenuCell(menu, "entity");
 
@@ -1842,11 +1842,11 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	char sType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneTypeName(g_iCreateZone_Type[client], sType, sizeof(sType));
 
-	Menu menu = CreateMenu(MenuHandle_CreateZonesMenu);
-	SetMenuTitle(menu, "Create a Zone:");
+	Menu menu = new Menu(MenuHandle_CreateZonesMenu);
+	menu.SetTitle("Create a Zone:");
 
-	AddMenuItem(menu, "create", "Create Zone", strlen(g_sCreateZone_Name[client]) > 0 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-	AddMenuItem(menu, "", "---", ITEMDRAW_DISABLED);
+	menu.AddItem("create", "Create Zone", strlen(g_sCreateZone_Name[client]) > 0 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+	menu.AddItem("", "---", ITEMDRAW_DISABLED);
 
 	AddMenuItemFormat(menu, "name", ITEMDRAW_DEFAULT, "Name: %s", strlen(g_sCreateZone_Name[client]) > 0 ? g_sCreateZone_Name[client] : "N/A");
 	AddMenuItemFormat(menu, "type", ITEMDRAW_DEFAULT, "Type: %s", sType);
@@ -1855,28 +1855,28 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	{
 		case ZONE_TYPE_BOX:
 		{
-			AddMenuItem(menu, "start", "Set Starting Point", ITEMDRAW_DEFAULT);
-			AddMenuItem(menu, "end", "Set Ending Point", ITEMDRAW_DEFAULT);
+			menu.AddItem("start", "Set Starting Point", ITEMDRAW_DEFAULT);
+			menu.AddItem("end", "Set Ending Point", ITEMDRAW_DEFAULT);
 		}
 
 		case ZONE_TYPE_CIRCLE:
 		{
-			AddMenuItem(menu, "start", "Set Starting Point", ITEMDRAW_DEFAULT);
+			menu.AddItem("start", "Set Starting Point", ITEMDRAW_DEFAULT);
 			AddMenuItemFormat(menu, "radius", ITEMDRAW_DEFAULT, "Set Radius: %.2f", g_fCreateZone_Radius[client]);
 		}
 
 		case ZONE_TYPE_POLY:
 		{
-			AddMenuItem(menu, "add", "Add Zone Point", ITEMDRAW_DEFAULT);
-			AddMenuItem(menu, "remove", "Remove Last Point", ITEMDRAW_DEFAULT);
-			AddMenuItem(menu, "clear", "Clear All Points", ITEMDRAW_DEFAULT);
+			menu.AddItem("add", "Add Zone Point", ITEMDRAW_DEFAULT);
+			menu.AddItem("remove", "Remove Last Point", ITEMDRAW_DEFAULT);
+			menu.AddItem("clear", "Clear All Points", ITEMDRAW_DEFAULT);
 		}
 	}
 
 	AddMenuItemFormat(menu, "view", ITEMDRAW_DEFAULT, "View Zone: %s", g_bIsViewingZone[client] ? "On" : "Off");
 
-	SetMenuExitBackButton(menu, true);
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.ExitBackButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
 }
 
 public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, int param2)
@@ -1886,7 +1886,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 		case MenuAction_Select:
 		{
 			char sInfo[32];
-			GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
+			menu.GetItem(param2, sInfo, sizeof(sInfo));
 
 			if (StrEqual(sInfo, "name"))
 			{
@@ -1998,8 +1998,8 @@ bool AddZoneEffectMenu(int client, int entity)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	Menu menu = CreateMenu(MenuHandler_AddZoneEffect);
-	SetMenuTitle(menu, "Add a zone effect to %s:", sName);
+	Menu menu = new Menu(MenuHandler_AddZoneEffect);
+	menu.SetTitle("Add a zone effect to %s:", sName);
 
 	for (int i = 0; i < g_aEffectsList.Length; i++)
 	{
@@ -2014,18 +2014,18 @@ bool AddZoneEffectMenu(int client, int entity)
 			draw = ITEMDRAW_DISABLED;
 		}
 
-		AddMenuItem(menu, sEffect, sEffect, draw);
+		menu.AddItem(sEffect, sEffect, draw);
 	}
 
-	if (GetMenuItemCount(menu) == 0)
+	if (menu.ItemCount == 0)
 	{
-		AddMenuItem(menu, "", "[No Effects]", ITEMDRAW_DISABLED);
+		menu.AddItem("", "[No Effects]", ITEMDRAW_DISABLED);
 	}
 
 	PushMenuCell(menu, "entity", entity);
 
-	SetMenuExitBackButton(menu, true);
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.ExitBackButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
 	return true;
 }
 
@@ -2036,7 +2036,7 @@ public int MenuHandler_AddZoneEffect(Menu menu, MenuAction action, int param1, i
 		case MenuAction_Select:
 		{
 			char sEffect[MAX_EFFECT_NAME_LENGTH];
-			GetMenuItem(menu, param2, sEffect, sizeof(sEffect));
+			menu.GetItem(param2, sEffect, sizeof(sEffect));
 
 			int entity = GetMenuCell(menu, "entity");
 
@@ -2065,8 +2065,8 @@ bool EditZoneEffectMenu(int client, int entity)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	Menu menu = CreateMenu(MenuHandler_EditZoneEffect);
-	SetMenuTitle(menu, "Pick a zone effect to edit for %s:", sName);
+	Menu menu = new Menu(MenuHandler_EditZoneEffect);
+	menu.SetTitle("Pick a zone effect to edit for %s:", sName);
 
 	for (int i = 0; i < g_aEffectsList.Length; i++)
 	{
@@ -2076,19 +2076,19 @@ bool EditZoneEffectMenu(int client, int entity)
 		StringMap values = null;
 		if (g_smZoneEffects[entity].GetValue(sEffect, values) && values != null)
 		{
-			AddMenuItem(menu, sEffect, sEffect);
+			menu.AddItem(sEffect, sEffect);
 		}
 	}
 
-	if (GetMenuItemCount(menu) == 0)
+	if (menu.ItemCount == 0)
 	{
-		AddMenuItem(menu, "", "[No Effects]", ITEMDRAW_DISABLED);
+		menu.AddItem("", "[No Effects]", ITEMDRAW_DISABLED);
 	}
 
 	PushMenuCell(menu, "entity", entity);
 
-	SetMenuExitBackButton(menu, true);
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.ExitBackButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
 	return true;
 }
 
@@ -2099,7 +2099,7 @@ public int MenuHandler_EditZoneEffect(Menu menu, MenuAction action, int param1, 
 		case MenuAction_Select:
 		{
 			char sEffect[MAX_EFFECT_NAME_LENGTH];
-			GetMenuItem(menu, param2, sEffect, sizeof(sEffect));
+			menu.GetItem(param2, sEffect, sizeof(sEffect));
 
 			int entity = GetMenuCell(menu, "entity");
 
@@ -2199,8 +2199,8 @@ bool RemoveZoneEffectMenu(int client, int entity)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	Menu menu = CreateMenu(MenuHandler_RemoveZoneEffect);
-	SetMenuTitle(menu, "Add a zone type to %s to remove:", sName);
+	Menu menu = new Menu(MenuHandler_RemoveZoneEffect);
+	menu.SetTitle("Add a zone type to %s to remove:", sName);
 
 	for (int i = 0; i < g_aEffectsList.Length; i++)
 	{
@@ -2215,13 +2215,13 @@ bool RemoveZoneEffectMenu(int client, int entity)
 			draw = ITEMDRAW_DISABLED;
 		}
 
-		AddMenuItem(menu, sEffect, sEffect, draw);
+		menu.AddItem(sEffect, sEffect, draw);
 	}
 
 	PushMenuCell(menu, "entity", entity);
 
-	SetMenuExitBackButton(menu, true);
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.ExitBackButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
 	return true;
 }
 
@@ -2232,7 +2232,7 @@ public int MenuHandler_RemoveZoneEffect(Menu menu, MenuAction action, int param1
 		case MenuAction_Select:
 		{
 			char sEffect[MAX_EFFECT_NAME_LENGTH];
-			GetMenuItem(menu, param2, sEffect, sizeof(sEffect));
+			menu.GetItem(param2, sEffect, sizeof(sEffect));
 
 			int entity = GetMenuCell(menu, "entity");
 
@@ -2289,8 +2289,8 @@ void OpenZoneTypeMenu(int client)
 	char sAddendum[256];
 	FormatEx(sAddendum, sizeof(sAddendum), " for %s", g_sCreateZone_Name[client]);
 
-	Menu menu = CreateMenu(MenuHandler_ZoneTypeMenu);
-	SetMenuTitle(menu, "Choose a zone type%s:", strlen(g_sCreateZone_Name[client]) > 0 ? sAddendum : "");
+	Menu menu = new Menu(MenuHandler_ZoneTypeMenu);
+	menu.SetTitle("Choose a zone type%s:", strlen(g_sCreateZone_Name[client]) > 0 ? sAddendum : "");
 
 	for (int i = 0; i < ZONE_TYPES; i++)
 	{
@@ -2300,10 +2300,10 @@ void OpenZoneTypeMenu(int client)
 		char sType[MAX_ZONE_TYPE_LENGTH];
 		GetZoneTypeName(i, sType, sizeof(sType));
 
-		AddMenuItem(menu, sID, sType);
+		menu.AddItem(sID, sType);
 	}
 
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	menu.Display(client, MENU_TIME_FOREVER);
 }
 
 public int MenuHandler_ZoneTypeMenu(Menu menu, MenuAction action, int param1, int param2)
@@ -2313,7 +2313,7 @@ public int MenuHandler_ZoneTypeMenu(Menu menu, MenuAction action, int param1, in
 		case MenuAction_Select:
 		{
 			char sID[12]; char sType[MAX_ZONE_TYPE_LENGTH];
-			GetMenuItem(menu, param2, sID, sizeof(sID), _, sType, sizeof(sType));
+			menu.GetItem(param2, sID, sizeof(sID), _, sType, sizeof(sType));
 			int type = StringToInt(sID);
 
 			char sAddendum[256];
