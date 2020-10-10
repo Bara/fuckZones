@@ -212,12 +212,12 @@ void ReparseMapZonesConfig(bool delete_config = false)
 	}
 
 	LogMessage("Creating keyvalues for the new map before pulling new map zones info.");
-	g_kvConfig = CreateKeyValues("zones_manager");
+	g_kvConfig = new KeyValues("zones_manager");
 
 	if (FileExists(sPath))
 	{
 		LogMessage("Config exists, retrieving the zones...");
-		FileToKeyValues(g_kvConfig, sPath);
+		g_kvConfig.ImportFromFile(sPath);
 	}
 	else
 	{
@@ -348,91 +348,91 @@ void SpawnAllZones()
 
 	LogMessage("Spawning all zones...");
 
-	KvRewind(g_kvConfig);
-	if (KvGotoFirstSubKey(g_kvConfig))
+	g_kvConfig.Rewind();
+	if (g_kvConfig.GotoFirstSubKey())
 	{
 		do
 		{
 			char sName[MAX_ZONE_NAME_LENGTH];
-			KvGetSectionName(g_kvConfig, sName, sizeof(sName));
+			g_kvConfig.GetSectionName(sName, sizeof(sName));
 
 			char sType[MAX_ZONE_TYPE_LENGTH];
-			KvGetString(g_kvConfig, "type", sType, sizeof(sType));
+			g_kvConfig.GetString("type", sType, sizeof(sType));
 			int type = GetZoneNameType(sType);
 
 			float vStartPosition[3];
-			KvGetVector(g_kvConfig, "start", vStartPosition);
+			g_kvConfig.GetVector("start", vStartPosition);
 
 			float vEndPosition[3];
-			KvGetVector(g_kvConfig, "end", vEndPosition);
+			g_kvConfig.GetVector("end", vEndPosition);
 
-			float fRadius = KvGetFloat(g_kvConfig, "radius");
+			float fRadius = g_kvConfig.GetFloat("radius");
 
 			int iColor[4] = {0, 255, 255, 255};
-			KvGetColor(g_kvConfig, "color", iColor[0], iColor[1], iColor[2], iColor[3]);
+			g_kvConfig.GetColor("color", iColor[0], iColor[1], iColor[2], iColor[3]);
 
-			float points_height = KvGetFloat(g_kvConfig, "points_height", 256.0);
+			float points_height = g_kvConfig.GetFloat("points_height", 256.0);
 
 			ArrayList points = new ArrayList(3);
-			if (KvJumpToKey(g_kvConfig, "points") && KvGotoFirstSubKey(g_kvConfig, false))
+			if (g_kvConfig.JumpToKey("points") && g_kvConfig.GotoFirstSubKey(false))
 			{
 				do
 				{
 					char sPointID[12];
-					KvGetSectionName(g_kvConfig, sPointID, sizeof(sPointID));
+					g_kvConfig.GetSectionName(sPointID, sizeof(sPointID));
 					int point_id = StringToInt(sPointID);
 
 					float coordinates[3];
-					KvGetVector(g_kvConfig, NULL_STRING, coordinates);
+					g_kvConfig.GetVector(NULL_STRING, coordinates);
 
-					ResizeArray(points, point_id + 1);
-					SetArrayCell(points, point_id, coordinates[0], 0);
-					SetArrayCell(points, point_id, coordinates[1], 1);
-					SetArrayCell(points, point_id, coordinates[2], 2);
+					points.Resize(point_id + 1);
+					points.Set(point_id, coordinates[0], 0);
+					points.Set(point_id, coordinates[1], 1);
+					points.Set(point_id, coordinates[2], 2);
 				}
-				while (KvGotoNextKey(g_kvConfig, false));
+				while (g_kvConfig.GotoNextKey(false));
 
-				KvGoBack(g_kvConfig);
+				g_kvConfig.GoBack();
 			}
 
 			StringMap effects = new StringMap();
-			if (KvJumpToKey(g_kvConfig, "effects") && KvGotoFirstSubKey(g_kvConfig))
+			if (g_kvConfig.JumpToKey("effects") && g_kvConfig.GotoFirstSubKey())
 			{
 				do
 				{
 					char sEffect[256];
-					KvGetSectionName(g_kvConfig, sEffect, sizeof(sEffect));
+					g_kvConfig.GetSectionName(sEffect, sizeof(sEffect));
 
 					StringMap effect_data = new StringMap();
 
-					if (KvGotoFirstSubKey(g_kvConfig, false))
+					if (g_kvConfig.GotoFirstSubKey(false))
 					{
 						do
 						{
 							char sKey[256];
-							KvGetSectionName(g_kvConfig, sKey, sizeof(sKey));
+							g_kvConfig.GetSectionName(sKey, sizeof(sKey));
 
 							char sValue[256];
-							KvGetString(g_kvConfig, NULL_STRING, sValue, sizeof(sValue));
+							g_kvConfig.GetString(NULL_STRING, sValue, sizeof(sValue));
 
 							effect_data.SetString(sKey, sValue);
 						}
-						while (KvGotoNextKey(g_kvConfig, false));
+						while (g_kvConfig.GotoNextKey(false));
 
-						KvGoBack(g_kvConfig);
+						g_kvConfig.GoBack();
 					}
 
 					effects.SetValue(sEffect, effect_data);
 				}
-				while (KvGotoNextKey(g_kvConfig));
+				while (g_kvConfig.GotoNextKey());
 
-				KvGoBack(g_kvConfig);
-				KvGoBack(g_kvConfig);
+				g_kvConfig.GoBack();
+				g_kvConfig.GoBack();
 			}
 
 			CreateZone(sName, type, vStartPosition, vEndPosition, fRadius, iColor, points, points_height, effects);
 		}
-		while(KvGotoNextKey(g_kvConfig));
+		while(g_kvConfig.GotoNextKey());
 	}
 
 	LogMessage("Zones have been spawned.");
@@ -445,85 +445,85 @@ int SpawnAZone(const char[] name)
 		return -1;
 	}
 
-	KvRewind(g_kvConfig);
-	if (KvJumpToKey(g_kvConfig, name))
+	g_kvConfig.Rewind();
+	if (g_kvConfig.JumpToKey(name))
 	{
 		char sType[MAX_ZONE_TYPE_LENGTH];
-		KvGetString(g_kvConfig, "type", sType, sizeof(sType));
+		g_kvConfig.GetString("type", sType, sizeof(sType));
 		int type = GetZoneNameType(sType);
 
 		float vStartPosition[3];
-		KvGetVector(g_kvConfig, "start", vStartPosition);
+		g_kvConfig.GetVector("start", vStartPosition);
 
 		float vEndPosition[3];
-		KvGetVector(g_kvConfig, "end", vEndPosition);
+		g_kvConfig.GetVector("end", vEndPosition);
 
-		float fRadius = KvGetFloat(g_kvConfig, "radius");
+		float fRadius = g_kvConfig.GetFloat("radius");
 
 		int iColor[4] = {0, 255, 255, 255};
-		KvGetColor(g_kvConfig, "color", iColor[0], iColor[1], iColor[2], iColor[3]);
+		g_kvConfig.GetColor("color", iColor[0], iColor[1], iColor[2], iColor[3]);
 
-		float points_height = KvGetFloat(g_kvConfig, "points_height", 256.0);
+		float points_height = g_kvConfig.GetFloat("points_height", 256.0);
 
 		ArrayList points = new ArrayList(3);
-		if (KvJumpToKey(g_kvConfig, "points") && KvGotoFirstSubKey(g_kvConfig))
+		if (g_kvConfig.JumpToKey("points") && g_kvConfig.GotoFirstSubKey())
 		{
 			do
 			{
 				char sPointID[12];
-				KvGetSectionName(g_kvConfig, sPointID, sizeof(sPointID));
+				g_kvConfig.GetSectionName(sPointID, sizeof(sPointID));
 				int point_id = StringToInt(sPointID);
 
 				float coordinates[3];
-				KvGetVector(g_kvConfig, NULL_STRING, coordinates);
+				g_kvConfig.GetVector(NULL_STRING, coordinates);
 
 				if (points.Length < point_id + 1)
 				{
-					ResizeArray(points, point_id);
+					points.Resize(point_id);
 				}
 
-				SetArrayCell(points, point_id, coordinates[0], 0);
-				SetArrayCell(points, point_id, coordinates[1], 1);
-				SetArrayCell(points, point_id, coordinates[2], 2);
+				points.Set(point_id, coordinates[0], 0);
+				points.Set(point_id, coordinates[1], 1);
+				points.Set(point_id, coordinates[2], 2);
 			}
-			while (KvGotoNextKey(g_kvConfig));
+			while (g_kvConfig.GotoNextKey());
 
-			KvGoBack(g_kvConfig);
+			g_kvConfig.GoBack();
 		}
 
 		StringMap effects = new StringMap();
-		if (KvJumpToKey(g_kvConfig, "effects") && KvGotoFirstSubKey(g_kvConfig))
+		if (g_kvConfig.JumpToKey("effects") && g_kvConfig.GotoFirstSubKey())
 		{
 			do
 			{
 				char sEffect[256];
-				KvGetSectionName(g_kvConfig, sEffect, sizeof(sEffect));
+				g_kvConfig.GetSectionName(sEffect, sizeof(sEffect));
 
 				StringMap effect_data = new StringMap();
 
-				if (KvGotoFirstSubKey(g_kvConfig, false))
+				if (g_kvConfig.GotoFirstSubKey(false))
 				{
 					do
 					{
 						char sKey[256];
-						KvGetSectionName(g_kvConfig, sKey, sizeof(sKey));
+						g_kvConfig.GetSectionName(sKey, sizeof(sKey));
 
 						char sValue[256];
-						KvGetString(g_kvConfig, NULL_STRING, sValue, sizeof(sValue));
+						g_kvConfig.GetString(NULL_STRING, sValue, sizeof(sValue));
 
 						effect_data.SetString(sKey, sValue);
 					}
-					while (KvGotoNextKey(g_kvConfig, false));
+					while (g_kvConfig.GotoNextKey(false));
 
-					KvGoBack(g_kvConfig);
+					g_kvConfig.GoBack();
 				}
 
 				effects.SetValue(sEffect, effect_data);
 			}
-			while (KvGotoNextKey(g_kvConfig));
+			while (g_kvConfig.GotoNextKey());
 
-			KvGoBack(g_kvConfig);
-			KvGoBack(g_kvConfig);
+			g_kvConfig.GoBack();
+			g_kvConfig.GoBack();
 		}
 
 		return CreateZone(name, type, vStartPosition, vEndPosition, fRadius, iColor, points, points_height, effects);
@@ -1577,12 +1577,12 @@ void GetZonesVectorData(int entity, const char[] name, float[3] vecdata)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	KvRewind(g_kvConfig);
+	g_kvConfig.Rewind();
 
-	if (KvJumpToKey(g_kvConfig, sName))
+	if (g_kvConfig.JumpToKey(sName))
 	{
-		KvGetVector(g_kvConfig, name, vecdata);
-		KvRewind(g_kvConfig);
+		g_kvConfig.GetVector(name, vecdata);
+		g_kvConfig.Rewind();
 	}
 }
 
@@ -1596,12 +1596,12 @@ void UpdateZonesSectionName(int entity, const char[] name)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	KvRewind(g_kvConfig);
+	g_kvConfig.Rewind();
 
-	if (KvJumpToKey(g_kvConfig, sName))
+	if (g_kvConfig.JumpToKey(sName))
 	{
-		KvSetSectionName(g_kvConfig, name);
-		KvRewind(g_kvConfig);
+		g_kvConfig.SetSectionName(name);
+		g_kvConfig.Rewind();
 	}
 
 	SaveMapConfig();
@@ -1619,12 +1619,12 @@ void UpdateZonesConfigKey(int entity, const char[] key, const char[] value)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	KvRewind(g_kvConfig);
+	g_kvConfig.Rewind();
 
-	if (KvJumpToKey(g_kvConfig, sName))
+	if (g_kvConfig.JumpToKey(sName))
 	{
-		KvSetString(g_kvConfig, key, value);
-		KvRewind(g_kvConfig);
+		g_kvConfig.SetString(key, value);
+		g_kvConfig.Rewind();
 	}
 
 	SaveMapConfig();
@@ -1640,12 +1640,12 @@ void UpdateZonesConfigKeyVector(int entity, const char[] key, float[3] value)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	KvRewind(g_kvConfig);
+	g_kvConfig.Rewind();
 
-	if (KvJumpToKey(g_kvConfig, sName))
+	if (g_kvConfig.JumpToKey(sName))
 	{
-		KvSetVector(g_kvConfig, key, value);
-		KvRewind(g_kvConfig);
+		g_kvConfig.SetVector(key, value);
+		g_kvConfig.Rewind();
 	}
 
 	SaveMapConfig();
@@ -1661,13 +1661,13 @@ void SaveZonePointsData(int entity)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	KvRewind(g_kvConfig);
+	g_kvConfig.Rewind();
 
-	if (KvJumpToKey(g_kvConfig, sName))
+	if (g_kvConfig.JumpToKey(sName))
 	{
-		KvDeleteKey(g_kvConfig, "points");
+		g_kvConfig.DeleteKey("points");
 
-		if (KvJumpToKey(g_kvConfig, "points", true))
+		if (g_kvConfig.JumpToKey("points", true))
 		{
 			for (int i = 0; i < g_aZonePointsData[entity].Length; i++)
 			{
@@ -1677,11 +1677,11 @@ void SaveZonePointsData(int entity)
 				float coordinates[3];
 				g_aZonePointsData[entity].GetArray(i, coordinates, sizeof(coordinates));
 
-				KvSetVector(g_kvConfig, sID, coordinates);
+				g_kvConfig.SetVector(sID, coordinates);
 			}
 		}
 
-		KvRewind(g_kvConfig);
+		g_kvConfig.Rewind();
 	}
 
 	SaveMapConfig();
@@ -2178,7 +2178,7 @@ void AddEffectToZone(int entity, const char[] effect)
 		return;
 	}
 
-	KvRewind(g_kvConfig);
+	g_kvConfig.Rewind();
 
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
@@ -2186,7 +2186,7 @@ void AddEffectToZone(int entity, const char[] effect)
 	StringMap keys = null;
 	g_smEffectKeys.GetValue(effect, keys);
 
-	if (KvJumpToKey(g_kvConfig, sName) && KvJumpToKey(g_kvConfig, "effects", true) && KvJumpToKey(g_kvConfig, effect, true))
+	if (g_kvConfig.JumpToKey(sName) && g_kvConfig.JumpToKey("effects", true) && g_kvConfig.JumpToKey(effect, true))
 	{
 		if (keys != null)
 		{
@@ -2202,13 +2202,13 @@ void AddEffectToZone(int entity, const char[] effect)
 				char sValue[MAX_KEY_VALUE_LENGTH];
 				keys.GetString(sKey, sValue, sizeof(sValue));
 
-				KvSetString(g_kvConfig, sKey, sValue);
+				g_kvConfig.SetString(sKey, sValue);
 			}
 
 			delete map;
 		}
 
-		KvRewind(g_kvConfig);
+		g_kvConfig.Rewind();
 	}
 
 	SaveMapConfig();
@@ -2222,12 +2222,12 @@ stock void UpdateZoneEffectKey(int entity, const char[] effect_name, const char[
 		return;
 	}
 
-	KvRewind(g_kvConfig);
+	g_kvConfig.Rewind();
 
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	if (KvJumpToKey(g_kvConfig, sName) && KvJumpToKey(g_kvConfig, "effects", true) && KvJumpToKey(g_kvConfig, effect_name, true))
+	if (g_kvConfig.JumpToKey(sName) && g_kvConfig.JumpToKey("effects", true) && g_kvConfig.JumpToKey(effect_name, true))
 	{
 		if (strlen(value) == 0)
 		{
@@ -2237,8 +2237,8 @@ stock void UpdateZoneEffectKey(int entity, const char[] effect_name, const char[
 			keys.GetString(key, value, MAX_KEY_VALUE_LENGTH);
 		}
 
-		KvSetString(g_kvConfig, key, value);
-		KvRewind(g_kvConfig);
+		g_kvConfig.SetString(key, value);
+		g_kvConfig.Rewind();
 	}
 
 	SaveMapConfig();
@@ -2313,7 +2313,7 @@ void RemoveEffectFromZone(int entity, const char[] effect)
 		return;
 	}
 
-	KvRewind(g_kvConfig);
+	g_kvConfig.Rewind();
 
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
@@ -2325,10 +2325,10 @@ void RemoveEffectFromZone(int entity, const char[] effect)
 		g_smZoneEffects[entity].Remove(effect);
 	}
 
-	if (KvJumpToKey(g_kvConfig, sName) && KvJumpToKey(g_kvConfig, "effects", true) && KvJumpToKey(g_kvConfig, effect))
+	if (g_kvConfig.JumpToKey(sName) && g_kvConfig.JumpToKey("effects", true) && g_kvConfig.JumpToKey(effect))
 	{
-		KvDeleteThis(g_kvConfig);
-		KvRewind(g_kvConfig);
+		g_kvConfig.DeleteThis();
+		g_kvConfig.Rewind();
 	}
 
 	SaveMapConfig();
@@ -2398,21 +2398,21 @@ void CreateNewZone(int client)
 		return;
 	}
 
-	KvRewind(g_kvConfig);
+	g_kvConfig.Rewind();
 
-	if (KvJumpToKey(g_kvConfig, g_sCreateZone_Name[client]))
+	if (g_kvConfig.JumpToKey(g_sCreateZone_Name[client]))
 	{
-		KvRewind(g_kvConfig);
+		g_kvConfig.Rewind();
 		CPrintToChat(client, "Zone already exists, please pick a different name.");
 		OpenCreateZonesMenu(client);
 		return;
 	}
 
-	KvJumpToKey(g_kvConfig, g_sCreateZone_Name[client], true);
+	g_kvConfig.JumpToKey(g_sCreateZone_Name[client], true);
 
 	char sType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneTypeName(g_iCreateZone_Type[client], sType, sizeof(sType));
-	KvSetString(g_kvConfig, "type", sType);
+	g_kvConfig.SetString("type", sType);
 
 	int iColor[4];
 	iColor[0] = 255;
@@ -2422,7 +2422,7 @@ void CreateNewZone(int client)
 
 	char sColor[64];
 	FormatEx(sColor, sizeof(sColor), "%i %i %i %i", iColor[0], iColor[1], iColor[2], iColor[3]);
-	KvSetString(g_kvConfig, "color", sColor);
+	g_kvConfig.SetString("color", sColor);
 
 	g_fCreateZone_PointsHeight[client] = 256.0;
 
@@ -2430,21 +2430,21 @@ void CreateNewZone(int client)
 	{
 		case ZONE_TYPE_BOX:
 		{
-			KvSetVector(g_kvConfig, "start", g_fCreateZone_Start[client]);
-			KvSetVector(g_kvConfig, "end", g_fCreateZone_End[client]);
+			g_kvConfig.SetVector("start", g_fCreateZone_Start[client]);
+			g_kvConfig.SetVector("end", g_fCreateZone_End[client]);
 		}
 
 		case ZONE_TYPE_CIRCLE:
 		{
-			KvSetVector(g_kvConfig, "start", g_fCreateZone_Start[client]);
-			KvSetFloat(g_kvConfig, "radius", g_fCreateZone_Radius[client]);
+			g_kvConfig.SetVector("start", g_fCreateZone_Start[client]);
+			g_kvConfig.SetFloat("radius", g_fCreateZone_Radius[client]);
 		}
 
 		case ZONE_TYPE_POLY:
 		{
-			KvSetFloat(g_kvConfig, "points_height", g_fCreateZone_PointsHeight[client]);
+			g_kvConfig.SetFloat("points_height", g_fCreateZone_PointsHeight[client]);
 
-			if (KvJumpToKey(g_kvConfig, "points", true))
+			if (g_kvConfig.JumpToKey("points", true))
 			{
 				for (int i = 0; i < g_aCreateZone_PointsData[client].Length; i++)
 				{
@@ -2453,7 +2453,7 @@ void CreateNewZone(int client)
 
 					float coordinates[3];
 					g_aCreateZone_PointsData[client].GetArray(i, coordinates, sizeof(coordinates));
-					KvSetVector(g_kvConfig, sID, coordinates);
+					g_kvConfig.SetVector(sID, coordinates);
 				}
 			}
 		}
@@ -2538,7 +2538,7 @@ void SaveMapConfig()
 	char sPath[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, sPath, sizeof(sPath), "data/zones/%s.cfg", sMap);
 
-	KvRewind(g_kvConfig);
+	g_kvConfig.Rewind();
 	KeyValuesToFile(g_kvConfig, sPath);
 }
 
@@ -3109,10 +3109,10 @@ void DeleteZone(int entity, bool permanent = false)
 
 	if (permanent)
 	{
-		KvRewind(g_kvConfig);
-		if (KvJumpToKey(g_kvConfig, sName))
+		g_kvConfig.Rewind();
+		if (g_kvConfig.JumpToKey(sName))
 		{
-			KvDeleteThis(g_kvConfig);
+			g_kvConfig.DeleteThis();
 		}
 
 		SaveMapConfig();
@@ -3323,26 +3323,26 @@ void ParseColorsData(const char[] config = "configs/zone_colors.cfg")
 	char sPath[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, sPath, sizeof(sPath), config);
 
-	KeyValues kv = CreateKeyValues("zone_colors");
+	KeyValues kv = new KeyValues("zone_colors");
 
 	int color[4];
 	char sBuffer[64];
 
 	if (FileExists(sPath))
 	{
-		if (FileToKeyValues(kv, sPath) && KvGotoFirstSubKey(kv, false))
+		if (kv.ImportFromFile(sPath) && kv.GotoFirstSubKey(false))
 		{
 			do
 			{
 				char sColor[64];
-				KvGetSectionName(kv, sColor, sizeof(sColor));
+				kv.GetSectionName(sColor, sizeof(sColor));
 
-				KvGetColor(kv, NULL_STRING, color[0], color[1], color[2], color[3]);
+				kv.GetColor(NULL_STRING, color[0], color[1], color[2], color[3]);
 
 				g_aColors.PushString(sColor);
 				g_smColorData.SetArray(sColor, color, sizeof(color));
 			}
-			while (KvGotoNextKey(kv, false));
+			while (kv.GotoNextKey(false));
 		}
 	}
 	else
@@ -3351,37 +3351,37 @@ void ParseColorsData(const char[] config = "configs/zone_colors.cfg")
 		color = {255, 255, 255, 0};
 		g_smColorData.SetArray("Clear", color, sizeof(color));
 		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
-		KvSetString(kv, "Clear", sBuffer);
+		kv.SetString("Clear", sBuffer);
 
 		g_aColors.PushString("Red");
 		color = {255, 0, 0, 255};
 		g_smColorData.SetArray("Red", color, sizeof(color));
 		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
-		KvSetString(kv, "Red", sBuffer);
+		kv.SetString("Red", sBuffer);
 
 		g_aColors.PushString("Green");
 		color = {0, 255, 0, 255};
 		g_smColorData.SetArray("Green", color, sizeof(color));
 		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
-		KvSetString(kv, "Green", sBuffer);
+		kv.SetString("Green", sBuffer);
 
 		g_aColors.PushString("Blue");
 		color = {0, 0, 255, 255};
 		g_smColorData.SetArray("Blue", color, sizeof(color));
 		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
-		KvSetString(kv, "Blue", sBuffer);
+		kv.SetString("Blue", sBuffer);
 
 		g_aColors.PushString("White");
 		color = {255, 255, 255, 255};
 		g_smColorData.SetArray("White", color, sizeof(color));
 		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
-		KvSetString(kv, "White", sBuffer);
+		kv.SetString("White", sBuffer);
 
 		g_aColors.PushString("Black");
 		color = {0, 0, 0, 255};
 		g_smColorData.SetArray("Black", color, sizeof(color));
 		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
-		KvSetString(kv, "Black", sBuffer);
+		kv.SetString("Black", sBuffer);
 
 		KeyValuesToFile(kv, sPath);
 	}
