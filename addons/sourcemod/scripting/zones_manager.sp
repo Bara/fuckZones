@@ -47,11 +47,11 @@ Handle g_coShowZones = null;
 
 bool g_bIsInZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 
-ArrayList g_aColors;
-StringMap g_smColorData;
+ArrayList g_aColors = null;
+StringMap g_smColorData = null;
 
-int g_iDefaultModelIndex;
-int g_iDefaultHaloIndex;
+int g_iDefaultModelIndex = -1;
+int g_iDefaultHaloIndex = -1;
 char g_sErrorModel[] = "models/error.mdl";
 
 //Entities Data
@@ -80,6 +80,7 @@ int g_iCreateZone_Type[MAXPLAYERS + 1];
 float g_fCreateZone_Start[MAXPLAYERS + 1][3];
 float g_fCreateZone_End[MAXPLAYERS + 1][3];
 float g_fCreateZone_Radius[MAXPLAYERS + 1];
+char g_sCreateZone_Color[MAXPLAYERS + 1][64];
 ArrayList g_aCreateZone_PointsData[MAXPLAYERS + 1];
 float g_fCreateZone_PointsHeight[MAXPLAYERS + 1];
 
@@ -1873,6 +1874,7 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 		}
 	}
 
+	AddMenuItemFormat(menu, "color", ITEMDRAW_DEFAULT, "Color: %s", (strlen(g_sCreateZone_Color[client]) > 0) ? g_sCreateZone_Color[client] : "Yellow");
 	AddMenuItemFormat(menu, "view", ITEMDRAW_DEFAULT, "View Zone: %s", g_bIsViewingZone[client] ? "On" : "Off");
 
 	menu.ExitBackButton = true;
@@ -1965,6 +1967,10 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 				g_aCreateZone_PointsData[param1].Clear();
 
 				OpenCreateZonesMenu(param1);
+			}
+			else if (StrEqual(sInfo, "color"))
+			{
+				OpenZonesColorMenu(param1);
 			}
 			else if (StrEqual(sInfo, "view"))
 			{
@@ -2339,6 +2345,49 @@ public int MenuHandler_ZoneTypeMenu(Menu menu, MenuAction action, int param1, in
 	}
 }
 
+void OpenZonesColorMenu(int client)
+{
+	Menu menu = new Menu(MenuHandler_ZoneColorMenu);
+	menu.SetTitle("Choose a color:");
+
+	for (int i = 0; i < g_aColors.Length; i++)
+	{
+		char sColor[64];
+		g_aColors.GetString(i, sColor, sizeof(sColor));
+		menu.AddItem(sColor, sColor);
+	}
+
+	menu.ExitBackButton = true;
+	menu.ExitButton = false;
+	menu.Display(client, MENU_TIME_FOREVER);
+}
+
+public int MenuHandler_ZoneColorMenu(Menu menu, MenuAction action, int param1, int param2)
+{
+	switch (action)
+	{
+		case MenuAction_Select:
+		{
+			menu.GetItem(param2, g_sCreateZone_Color[param1], sizeof(g_sCreateZone_Color[]));
+			CPrintToChat(param1, "Zone color set to %s.", g_sCreateZone_Color[param1]);
+			OpenCreateZonesMenu(param1);
+		}
+
+		case MenuAction_Cancel:
+		{
+			if (param2 == MenuCancel_ExitBack)
+			{
+				OpenCreateZonesMenu(param1);
+			}
+		}
+
+		case MenuAction_End:
+		{
+			delete menu;
+		}
+	}
+}
+
 void CreateNewZone(int client)
 {
 	if (strlen(g_sCreateZone_Name[client]) == 0)
@@ -2365,10 +2414,16 @@ void CreateNewZone(int client)
 	g_kvConfig.SetString("type", sType);
 
 	int iColor[4];
+
 	iColor[0] = 255;
 	iColor[1] = 255;
 	iColor[2] = 0;
 	iColor[3] = 255;
+
+	if (strlen(g_sCreateZone_Color[client]) > 0)
+	{
+		g_smColorData.GetArray(g_sCreateZone_Color[client], iColor, sizeof(iColor));
+	}
 
 	char sColor[64];
 	FormatEx(sColor, sizeof(sColor), "%i %i %i %i", iColor[0], iColor[1], iColor[2], iColor[3]);
@@ -2662,24 +2717,24 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 				// Have the mins always be negative
 				start[0] = start[0] - fMiddle[0];
 				if(start[0] > 0.0)
-				start[0] *= -1.0;
+					start[0] *= -1.0;
 				start[1] = start[1] - fMiddle[1];
 				if(start[1] > 0.0)
-				start[1] *= -1.0;
+					start[1] *= -1.0;
 				start[2] = start[2] - fMiddle[2];
 				if(start[2] > 0.0)
-				start[2] *= -1.0;
+					start[2] *= -1.0;
 
 				// And the maxs always be positive
 				end[0] = end[0] - fMiddle[0];
 				if(end[0] < 0.0)
-				end[0] *= -1.0;
+					end[0] *= -1.0;
 				end[1] = end[1] - fMiddle[1];
 				if(end[1] < 0.0)
-				end[1] *= -1.0;
+					end[1] *= -1.0;
 				end[2] = end[2] - fMiddle[2];
 				if(end[2] < 0.0)
-				end[2] *= -1.0;
+					end[2] *= -1.0;
 
 				SetEntPropVector(entity, Prop_Data, "m_vecMins", start);
 				SetEntPropVector(entity, Prop_Data, "m_vecMaxs", end);
@@ -3320,6 +3375,12 @@ void ParseColorsData(const char[] config = "configs/zone_colors.cfg")
 		g_smColorData.SetArray("Blue", color, sizeof(color));
 		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
 		kv.SetString("Blue", sBuffer);
+
+		g_aColors.PushString("Yellow");
+		color = {255, 255, 255, 255};
+		g_smColorData.SetArray("Yellow", color, sizeof(color));
+		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
+		kv.SetString("Yellow", sBuffer);
 
 		g_aColors.PushString("White");
 		color = {255, 255, 255, 255};
