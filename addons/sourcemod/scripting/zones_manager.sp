@@ -1010,7 +1010,52 @@ void OpenEditZoneMenu(int client, int entity)
 	menu.AddItem("delete", "Delete Zone");
 	menu.AddItem("", "---", ITEMDRAW_DISABLED);
 	menu.AddItem("effects_add", "Add Effect");
-	menu.AddItem("effects_edit", "Edit Effect", ITEMDRAW_DISABLED);
+
+	int draw = ITEMDRAW_DISABLED;
+	for (int i = 0; i < g_aEffectsList.Length; i++)
+	{
+		char sEffect[MAX_EFFECT_NAME_LENGTH];
+		g_aEffectsList.GetString(i, sEffect, sizeof(sEffect));
+
+		// Debug Start
+		StringMap temp;
+		g_smZoneEffects[entity].GetValue(sEffect, temp);
+
+		StringMapSnapshot snap1 = g_smZoneEffects[entity].Snapshot();
+		char sKey[128];
+		for (int j = 0; j < snap1.Length; j++)
+		{
+			snap1.GetKey(j, sKey, sizeof(sKey));
+			PrintToChat(client, "Zone: %s, Effect (Index: %d): %s", sName, j, sKey);
+
+			if (temp != null)
+			{
+				StringMapSnapshot snap2 = temp.Snapshot();
+				for (int x = 0; x < snap2.Length; x++)
+				{
+					snap2.GetKey(i, sKey, sizeof(sKey));
+
+					char sValue[MAX_KEY_VALUE_LENGTH];
+					temp.GetString(sKey, sValue, sizeof(sValue));
+					
+					PrintToChat(client, "Key (Index: %d): %s, Value: %s", x, sKey, sValue);
+				}
+				delete snap2;
+			}
+		}
+
+		delete snap1;
+		// Debug End
+
+		StringMap values = null;
+		if (g_smZoneEffects[entity].GetValue(sEffect, values) && values != null)
+		{
+			draw = ITEMDRAW_DEFAULT;
+			break;
+		}
+	}
+
+	menu.AddItem("effects_edit", "Edit Effect", draw);
 	menu.AddItem("effects_remove", "Remove Effect");
 
 	PushMenuCell(menu, "entity", entity);
@@ -2086,11 +2131,6 @@ bool EditZoneEffectMenu(int client, int entity)
 		}
 	}
 
-	if (menu.ItemCount == 0)
-	{
-		menu.AddItem("", "[No Effects]", ITEMDRAW_DISABLED);
-	}
-
 	PushMenuCell(menu, "entity", entity);
 
 	menu.ExitBackButton = true;
@@ -2109,7 +2149,9 @@ public int MenuHandler_EditZoneEffect(Menu menu, MenuAction action, int param1, 
 
 			int entity = GetMenuCell(menu, "entity");
 
-			OpenEditZoneMenu(param1, entity);
+			ListZoneEffectKeys(param1, entity, sEffect);
+
+			// OpenEditZoneMenu(param1, entity);
 		}
 
 		case MenuAction_Cancel:
@@ -2117,6 +2159,77 @@ public int MenuHandler_EditZoneEffect(Menu menu, MenuAction action, int param1, 
 			if (param2 == MenuCancel_ExitBack)
 			{
 				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
+			}
+		}
+
+		case MenuAction_End:
+		{
+			delete menu;
+		}
+	}
+}
+
+bool ListZoneEffectKeys(int client, int entity, const char[] effect)
+{
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	Menu menu = new Menu(MenuHandler_EditZoneEffectKeyVaue);
+	menu.SetTitle("Pick effect key to edit for %s:", sName);
+
+	StringMap smEffects;
+	g_smZoneEffects[entity].GetValue(effect, smEffects);
+
+	if (smEffects != null)
+	{
+		StringMapSnapshot keys = smEffects.Snapshot();
+		for (int i = 0; i < keys.Length; i++)
+		{
+			char sKey[MAX_KEY_NAME_LENGTH];
+			keys.GetKey(i, sKey, sizeof(sKey));
+
+			char sValue[MAX_KEY_VALUE_LENGTH];
+			smEffects.GetString(sKey, sValue, sizeof(sValue));
+			
+			AddMenuItemFormat(menu, sValue, ITEMDRAW_DEFAULT, "%s\nValue: %s", sKey, sValue);
+		}
+		delete keys;
+
+		if (menu.ItemCount == 0)
+		{
+			return false;
+		}
+	}
+	else
+	{
+		return false;
+	}
+
+	PushMenuCell(menu, "entity", entity);
+	PushMenuString(menu, "effect", effect);
+
+	menu.ExitBackButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
+
+	return true;
+}
+
+public int MenuHandler_EditZoneEffectKeyVaue(Menu menu, MenuAction action, int param1, int param2)
+{
+	switch (action)
+	{
+		case MenuAction_Select:
+		{
+			char sEffect[MAX_EFFECT_NAME_LENGTH];
+			GetMenuString(menu, "effect", sEffect, sizeof(sEffect));
+
+			ListZoneEffectKeys(param1, GetMenuCell(menu, "entity"), sEffect);
+		}
+		case MenuAction_Cancel:
+		{
+			if (param2 == MenuCancel_ExitBack)
+			{
+				EditZoneEffectMenu(param1, GetMenuCell(menu, "entity"));
 			}
 		}
 
@@ -2474,6 +2587,7 @@ void CreateNewZone(int client)
 void ResetCreateZoneVariables(int client)
 {
 	g_sCreateZone_Name[client][0] = '\0';
+	g_sCreateZone_Color[client][0] = '\0';
 	g_iCreateZone_Type[client] = ZONE_TYPE_BOX;
 	Array_Fill(g_fCreateZone_Start[client], 3, 0.0);
 	Array_Fill(g_fCreateZone_End[client], 3, 0.0);
@@ -3919,6 +4033,11 @@ void PushMenuCell(Menu hndl, const char[] id, int data)
 	hndl.AddItem(id, DataString, ITEMDRAW_IGNORE);
 }
 
+void PushMenuString(Menu hndl, const char[] id, const char[] data)
+{
+	hndl.AddItem(id, data, ITEMDRAW_IGNORE);
+}
+
 int GetMenuCell(Menu hndl, const char[] id, int DefaultValue = 0)
 {
 	int ItemCount = hndl.ItemCount;
@@ -3932,6 +4051,23 @@ int GetMenuCell(Menu hndl, const char[] id, int DefaultValue = 0)
 		}
 	}
 	return DefaultValue;
+}
+
+bool GetMenuString(Menu hndl, const char[] id, char[] Buffer, int size)
+{
+	int ItemCount = hndl.ItemCount;
+	char info[64]; char data[64];
+
+	for (int i = 0; i < ItemCount; i++) {
+		if (hndl.GetItem(i, info, sizeof(info), _, data, sizeof(data)))
+		{
+			if (StrEqual(info, id)) {
+				strcopy(Buffer, size, data);
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 any ClampCell(any value, any min, any max)
