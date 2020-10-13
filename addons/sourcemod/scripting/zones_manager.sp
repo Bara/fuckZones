@@ -86,6 +86,10 @@ float g_fCreateZone_PointsHeight[MAXPLAYERS + 1];
 
 bool g_bIsViewingZone[MAXPLAYERS + 1];
 bool g_bSettingName[MAXPLAYERS + 1];
+bool g_bEffectKeyValue[MAXPLAYERS + 1];
+int g_iEffectKeyValue_Entity[MAXPLAYERS + 1];
+char g_sEffectKeyValue_Effect[MAXPLAYERS + 1][MAX_EFFECT_NAME_LENGTH];
+char g_sEffectKeyValue_EffectKey[MAXPLAYERS + 1][MAX_KEY_NAME_LENGTH];
 int g_iEditingName[MAXPLAYERS + 1] = {INVALID_ENT_REFERENCE, ...};
 
 public Plugin myinfo =
@@ -525,6 +529,22 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 		strcopy(g_sCreateZone_Name[client], MAX_ZONE_NAME_LENGTH, sArgs);
 		g_bSettingName[client] = false;
 		OpenCreateZonesMenu(client);
+	}
+	else if (g_bEffectKeyValue[client])
+	{
+		g_bEffectKeyValue[client] = false;
+
+		char sValue[MAX_KEY_VALUE_LENGTH];
+		strcopy(sValue, sizeof(sValue), sArgs);
+
+		UpdateZoneEffectKey(g_iEffectKeyValue_Entity[client], g_sEffectKeyValue_Effect[client], g_sEffectKeyValue_EffectKey[client], sValue);
+
+		char sName[MAX_ZONE_NAME_LENGTH];
+		GetEntPropString(g_iEffectKeyValue_Entity[client], Prop_Data, "m_iName", sName, sizeof(sName));
+
+		CPrintToChat(client, "Effect '%s' key '%s' for zone '%s' has been successfully updated to '%s'.", g_sEffectKeyValue_Effect[client], g_sEffectKeyValue_EffectKey[client], sName, sValue);
+
+		ListZoneEffectKeys(client, g_iEffectKeyValue_Entity[client], g_sEffectKeyValue_Effect[client]);
 	}
 
 	if (g_iEditingName[client] != INVALID_ENT_REFERENCE)
@@ -2171,6 +2191,10 @@ public int MenuHandler_EditZoneEffect(Menu menu, MenuAction action, int param1, 
 
 bool ListZoneEffectKeys(int client, int entity, const char[] effect)
 {
+	g_iEffectKeyValue_Entity[client] = -1;
+	g_sEffectKeyValue_Effect[client][0] = '\0';
+	g_sEffectKeyValue_EffectKey[client][0] = '\0';
+
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
@@ -2191,17 +2215,19 @@ bool ListZoneEffectKeys(int client, int entity, const char[] effect)
 			char sValue[MAX_KEY_VALUE_LENGTH];
 			smEffects.GetString(sKey, sValue, sizeof(sValue));
 			
-			AddMenuItemFormat(menu, sValue, ITEMDRAW_DEFAULT, "%s\nValue: %s", sKey, sValue);
+			AddMenuItemFormat(menu, sKey, ITEMDRAW_DEFAULT, "%s\nValue: %s", sKey, sValue);
 		}
 		delete keys;
 
 		if (menu.ItemCount == 0)
 		{
+			delete menu;
 			return false;
 		}
 	}
 	else
 	{
+		delete menu;
 		return false;
 	}
 
@@ -2220,10 +2246,16 @@ public int MenuHandler_EditZoneEffectKeyVaue(Menu menu, MenuAction action, int p
 	{
 		case MenuAction_Select:
 		{
-			char sEffect[MAX_EFFECT_NAME_LENGTH];
-			GetMenuString(menu, "effect", sEffect, sizeof(sEffect));
+			g_iEffectKeyValue_Entity[param1] = GetMenuCell(menu, "entity");
+			GetMenuString(menu, "effect", g_sEffectKeyValue_Effect[param1], sizeof(g_sEffectKeyValue_Effect[]));
+			menu.GetItem(param2, g_sEffectKeyValue_EffectKey[param1], sizeof(g_sEffectKeyValue_EffectKey[]));
 
-			ListZoneEffectKeys(param1, GetMenuCell(menu, "entity"), sEffect);
+			char sName[MAX_ZONE_NAME_LENGTH];
+			GetEntPropString(g_iEffectKeyValue_Entity[param1], Prop_Data, "m_iName", sName, sizeof(sName));
+
+			g_bEffectKeyValue[param1] = true;
+
+			CPrintToChat(param1, "Type the new value for the effect '%s' key '%s' on zone '%s' in chat:", g_sEffectKeyValue_Effect[param1], g_sEffectKeyValue_EffectKey[param1], sName);
 		}
 		case MenuAction_Cancel:
 		{
@@ -2283,7 +2315,6 @@ void AddEffectToZone(int entity, const char[] effect)
 	SaveMapConfig();
 }
 
-// This is never used
 stock void UpdateZoneEffectKey(int entity, const char[] effect_name, const char[] key, char[] value)
 {
 	if (g_kvConfig == null)
@@ -2308,6 +2339,23 @@ stock void UpdateZoneEffectKey(int entity, const char[] effect_name, const char[
 
 		g_kvConfig.SetString(key, value);
 		g_kvConfig.Rewind();
+
+		StringMap smEffects = null;
+		g_smZoneEffects[entity].GetValue(effect_name, smEffects);
+
+		StringMapSnapshot keys = smEffects.Snapshot();
+		for (int i = 0; i < keys.Length; i++)
+		{
+			char sKey[MAX_KEY_NAME_LENGTH];
+			keys.GetKey(i, sKey, sizeof(sKey));
+
+			if (StrEqual(sKey, key, false))
+			{
+				smEffects.SetString(key, value);
+			}
+		}
+
+		delete keys;
 	}
 
 	SaveMapConfig();
