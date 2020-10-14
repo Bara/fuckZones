@@ -76,7 +76,7 @@ ArrayList g_aEffectsList = null;
 
 //Create Zones Data
 char g_sCreateZone_Name[MAXPLAYERS + 1][MAX_ZONE_NAME_LENGTH];
-int g_iCreateZone_Type[MAXPLAYERS + 1];
+int g_iCreateZone_Type[MAXPLAYERS + 1] = { -1, ...};
 float g_fCreateZone_Start[MAXPLAYERS + 1][3];
 float g_fCreateZone_End[MAXPLAYERS + 1][3];
 float g_fCreateZone_Radius[MAXPLAYERS + 1];
@@ -1908,7 +1908,7 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	Menu menu = new Menu(MenuHandle_CreateZonesMenu);
 	menu.SetTitle("Create a Zone:");
 
-	menu.AddItem("create", "Create Zone\n ", strlen(g_sCreateZone_Name[client]) > 0 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+	menu.AddItem("create", "Create Zone\n ", (g_iCreateZone_Type[client] > -1 && strlen(g_sCreateZone_Name[client]) > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 
 	AddMenuItemFormat(menu, "name", ITEMDRAW_DEFAULT, "Name: %s", strlen(g_sCreateZone_Name[client]) > 0 ? g_sCreateZone_Name[client] : "N/A");
 	AddMenuItemFormat(menu, "type", ITEMDRAW_DEFAULT, "Type: %s", sType);
@@ -2632,7 +2632,7 @@ void ResetCreateZoneVariables(int client)
 {
 	g_sCreateZone_Name[client][0] = '\0';
 	g_sCreateZone_Color[client][0] = '\0';
-	g_iCreateZone_Type[client] = ZONE_TYPE_BOX;
+	g_iCreateZone_Type[client] = -1;
 	g_fCreateZone_Start[client] = {0.0, 0.0, 0.0};
 	g_fCreateZone_End[client] = {0.0, 0.0, 0.0};
 	g_fCreateZone_Radius[client] = 0.0;
@@ -2647,6 +2647,7 @@ void GetZoneTypeName(int type, char[] buffer, int size)
 {
 	switch (type)
 	{
+		case -1: strcopy(buffer, size, "N/A");
 		case ZONE_TYPE_BOX: strcopy(buffer, size, "Standard");
 		case ZONE_TYPE_CIRCLE: strcopy(buffer, size, "Radius/Circle");
 		case ZONE_TYPE_POLY: strcopy(buffer, size, "Polygons");
