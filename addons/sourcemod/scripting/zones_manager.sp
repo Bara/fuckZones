@@ -799,8 +799,7 @@ void OpenZonesMenu(int client)
 	menu.SetTitle("Zones Manager");
 
 	menu.AddItem("manage", "Manage Zones");
-	menu.AddItem("create", "Create a Zone");
-	menu.AddItem("---", "---", ITEMDRAW_DISABLED);
+	menu.AddItem("create", "Create a Zone\n ");
 	AddMenuItemFormat(menu, "viewall", ITEMDRAW_DEFAULT, "Draw Zones: %s", g_bShowAllZones[client] ? "On" : "Off");
 	AddMenuItemFormat(menu, "regenerate", ITEMDRAW_DEFAULT, "Regenerate Zones");
 	AddMenuItemFormat(menu, "deleteall", ITEMDRAW_DEFAULT, "Delete all Zones");
@@ -929,9 +928,8 @@ void DeleteAllZones(int client = -1, bool confirmation = true)
 	Menu menu = new Menu(MenuHandle_ConfirmDeleteAllZones);
 	menu.SetTitle("Are you sure you want to delete all zones on this map?");
 
-	menu.AddItem("", "---", ITEMDRAW_DISABLED);
-	menu.AddItem("Yes", "Yes");
 	menu.AddItem("No", "No");
+	menu.AddItem("Yes", "Yes");
 
 	menu.Display(client, MENU_TIME_FOREVER);
 }
@@ -1027,8 +1025,7 @@ void OpenEditZoneMenu(int client, int entity)
 	menu.SetTitle("Manage Zone '%s':", sName);
 
 	menu.AddItem("edit", "Edit Zone");
-	menu.AddItem("delete", "Delete Zone");
-	menu.AddItem("", "---", ITEMDRAW_DISABLED);
+	menu.AddItem("delete", "Delete Zone\n ");
 	menu.AddItem("effects_add", "Add Effect");
 
 	int draw = ITEMDRAW_DISABLED;
@@ -1911,8 +1908,7 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	Menu menu = new Menu(MenuHandle_CreateZonesMenu);
 	menu.SetTitle("Create a Zone:");
 
-	menu.AddItem("create", "Create Zone", strlen(g_sCreateZone_Name[client]) > 0 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-	menu.AddItem("", "---", ITEMDRAW_DISABLED);
+	menu.AddItem("create", "Create Zone\n ", strlen(g_sCreateZone_Name[client]) > 0 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 
 	AddMenuItemFormat(menu, "name", ITEMDRAW_DEFAULT, "Name: %s", strlen(g_sCreateZone_Name[client]) > 0 ? g_sCreateZone_Name[client] : "N/A");
 	AddMenuItemFormat(menu, "type", ITEMDRAW_DEFAULT, "Type: %s", sType);
