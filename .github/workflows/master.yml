@@ -6,6 +6,10 @@ on:
   push:
     branches: master
 
+env:
+  SOURCEMOD_PATH: $GITHUB_WORKSPACE
+  SCRIPTS_PAT: $SOURCEMOD_PATH/addons/sourcemod/scripting
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,12 +20,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      - name: Set environment variables
-        run: |
-          SOURCEMOD_PATH=$GITHUB_WORKSPACE
-          echo "SOURCEMOD_PATH=$SOURCEMOD_PATH" >> $SOURCEMOD_PATH
-          echo "SCRIPTS_PATH=$SOURCEMOD_PATH/addons/sourcemod/scripting" >> $SCRIPTS_PATH
 
       - name: Setup SourcePawn Compiler ${{ matrix.SM_VERSION }}
         uses: rumblefrog/setup-sp@master
