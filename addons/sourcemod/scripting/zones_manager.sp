@@ -2187,10 +2187,6 @@ public int MenuHandler_EditZoneEffect(Menu menu, MenuAction action, int param1, 
 
 bool ListZoneEffectKeys(int client, int entity, const char[] effect)
 {
-	g_iEffectKeyValue_Entity[client] = -1;
-	g_sEffectKeyValue_Effect[client][0] = '\0';
-	g_sEffectKeyValue_EffectKey[client][0] = '\0';
-
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
@@ -2229,6 +2225,10 @@ bool ListZoneEffectKeys(int client, int entity, const char[] effect)
 
 	PushMenuCell(menu, "entity", entity);
 	PushMenuString(menu, "effect", effect);
+
+	g_iEffectKeyValue_Entity[client] = -1;
+	g_sEffectKeyValue_Effect[client][0] = '\0';
+	g_sEffectKeyValue_EffectKey[client][0] = '\0';
 
 	menu.ExitBackButton = true;
 	menu.Display(client, MENU_TIME_FOREVER);
