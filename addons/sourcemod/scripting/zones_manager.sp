@@ -2633,8 +2633,8 @@ void ResetCreateZoneVariables(int client)
 	g_sCreateZone_Name[client][0] = '\0';
 	g_sCreateZone_Color[client][0] = '\0';
 	g_iCreateZone_Type[client] = ZONE_TYPE_BOX;
-	Array_Fill(g_fCreateZone_Start[client], 3, 0.0);
-	Array_Fill(g_fCreateZone_End[client], 3, 0.0);
+	g_fCreateZone_Start[client] = NULL_VECTOR;
+	g_fCreateZone_End[client] = NULL_VECTOR;
 	g_fCreateZone_Radius[client] = 0.0;
 	delete g_aCreateZone_PointsData[client];
 	g_fCreateZone_PointsHeight[client] = 0.0;
@@ -2709,7 +2709,7 @@ public Action Timer_DisplayZones(Handle timer)
 {
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (IsClientInGame(i) && g_bIsViewingZone[i])
+		if (IsClientInGame(i) && g_bIsViewingZone[i] && !IsNullVector(g_fCreateZone_Start[i]) && !IsNullVector(g_fCreateZone_End[i]))
 		{
 			int iColor[4];
 
@@ -3392,7 +3392,7 @@ bool GetClientLookPoint(int client, float lookposition[3], bool beam = false)
 
 	delete hTrace;
 
-	if (beam)
+	if (beam && !IsNullVector(lookposition) && !IsNullVector(vEyePos))
 	{
 		int iColor[4];
 
@@ -3416,19 +3416,6 @@ bool GetClientLookPoint(int client, float lookposition[3], bool beam = false)
 public bool TraceEntityFilter_NoPlayers(int entity, int contentsMask)
 {
 	return false;
-}
-
-void Array_Fill(any[] array, int size, any value, int start = 0)
-{
-	if (start < 0)
-	{
-		start = 0;
-	}
-
-	for (int i = start; i < size; i++)
-	{
-		array[i] = value;
-	}
 }
 
 void Array_Copy(const any[] array, any[] newArray, int size)
