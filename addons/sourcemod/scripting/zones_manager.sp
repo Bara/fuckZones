@@ -1972,7 +1972,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
 				Array_Copy(vLookPoint, g_fCreateZone_Start[param1], 3);
-				//CPrintToChat(param1, "Starting point: %.2f/%.2f/%.2f", g_fCreateZone_Start[param1][0], g_fCreateZone_Start[param1][1], g_fCreateZone_Start[param1][2]);
+				CPrintToChat(param1, "Starting point: %.2f/%.2f/%.2f", g_fCreateZone_Start[param1][0], g_fCreateZone_Start[param1][1], g_fCreateZone_Start[param1][2]);
 
 				OpenCreateZonesMenu(param1);
 			}
@@ -1981,7 +1981,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
 				Array_Copy(vLookPoint, g_fCreateZone_End[param1], 3);
-				//CPrintToChat(param1, "Ending point: %.2f/%.2f/%.2f", g_fCreateZone_End[param1][0], g_fCreateZone_End[param1][1], g_fCreateZone_End[param1][2]);
+				CPrintToChat(param1, "Ending point: %.2f/%.2f/%.2f", g_fCreateZone_End[param1][0], g_fCreateZone_End[param1][1], g_fCreateZone_End[param1][2]);
 
 				OpenCreateZonesMenu(param1);
 			}
@@ -2633,8 +2633,8 @@ void ResetCreateZoneVariables(int client)
 	g_sCreateZone_Name[client][0] = '\0';
 	g_sCreateZone_Color[client][0] = '\0';
 	g_iCreateZone_Type[client] = ZONE_TYPE_BOX;
-	g_fCreateZone_Start[client] = NULL_VECTOR;
-	g_fCreateZone_End[client] = NULL_VECTOR;
+	g_fCreateZone_Start[client] = {0.0, 0.0, 0.0};
+	g_fCreateZone_End[client] = {0.0, 0.0, 0.0};
 	g_fCreateZone_Radius[client] = 0.0;
 	delete g_aCreateZone_PointsData[client];
 	g_fCreateZone_PointsHeight[client] = 0.0;
@@ -2709,7 +2709,7 @@ public Action Timer_DisplayZones(Handle timer)
 {
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (IsClientInGame(i) && g_bIsViewingZone[i] && !IsNullVector(g_fCreateZone_Start[i]) && !IsNullVector(g_fCreateZone_End[i]))
+		if (IsClientInGame(i) && g_bIsViewingZone[i] && !IsPositionNull(g_fCreateZone_Start[i]) && !IsPositionNull(g_fCreateZone_End[i]))
 		{
 			int iColor[4];
 
@@ -4145,4 +4145,14 @@ any ClampCell(any value, any min, any max)
 	}
 
 	return value;
+}
+
+bool IsPositionNull(float position[3])
+{
+	if (position[0] == 0.0 && position[1] == 0.0 && position[2] == 0.0)
+	{
+		return true;
+	}
+
+	return false;
 }
