@@ -799,8 +799,8 @@ void OpenZonesMenu(int client)
 	Menu menu = new Menu(MenuHandle_ZonesMenu);
 	menu.SetTitle("Zones Manager");
 
-	menu.AddItem("manage", "Manage Zones");
-	menu.AddItem("create", "Create Zones\n ");
+	menu.AddItem("create", "Create Zones");
+	menu.AddItem("manage", "Manage Zones\n ");
 	AddMenuItemFormat(menu, "viewall", ITEMDRAW_DEFAULT, "Draw Zones: %s", g_bShowAllZones[client] ? "On" : "Off");
 	AddMenuItemFormat(menu, "regenerate", ITEMDRAW_DEFAULT, "Regenerate Zones");
 	AddMenuItemFormat(menu, "deleteall", ITEMDRAW_DEFAULT, "Delete all Zones");
