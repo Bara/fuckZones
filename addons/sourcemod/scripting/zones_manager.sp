@@ -1050,7 +1050,7 @@ void OpenEditZoneMenu(int client, int entity)
 				StringMapSnapshot snap2 = temp.Snapshot();
 				for (int x = 0; x < snap2.Length; x++)
 				{
-					snap2.GetKey(i, sKey, sizeof(sKey));
+					snap2.GetKey(x, sKey, sizeof(sKey));
 
 					char sValue[MAX_KEY_VALUE_LENGTH];
 					temp.GetString(sKey, sValue, sizeof(sValue));
