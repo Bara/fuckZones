@@ -1935,7 +1935,7 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 		}
 	}
 
-	AddMenuItemFormat(menu, "color", ITEMDRAW_DEFAULT, "Color: %s", (strlen(g_sCreateZone_Color[client]) > 0) ? g_sCreateZone_Color[client] : "Yellow");
+	AddMenuItemFormat(menu, "color", ITEMDRAW_DEFAULT, "Color: %s", (strlen(g_sCreateZone_Color[client]) > 0) ? g_sCreateZone_Color[client] : "Pink");
 	AddMenuItemFormat(menu, "view", ITEMDRAW_DEFAULT, "View Zone: %s", g_bIsViewingZone[client] ? "On" : "Off");
 
 	menu.ExitBackButton = true;
@@ -2573,8 +2573,8 @@ void CreateNewZone(int client)
 	int iColor[4];
 
 	iColor[0] = 255;
-	iColor[1] = 255;
-	iColor[2] = 0;
+	iColor[1] = 20;
+	iColor[2] = 147;
 	iColor[3] = 255;
 
 	if (strlen(g_sCreateZone_Color[client]) > 0)
@@ -2711,16 +2711,29 @@ public Action Timer_DisplayZones(Handle timer)
 	{
 		if (IsClientInGame(i) && g_bIsViewingZone[i])
 		{
+			int iColor[4];
+
+			iColor[0] = 255;
+			iColor[1] = 20;
+			iColor[2] = 147;
+			iColor[3] = 255;
+
+			if (strlen(g_sCreateZone_Color[i]) > 0)
+			{
+				g_smColorData.GetArray(g_sCreateZone_Color[i], iColor, sizeof(iColor));
+			}
+			
 			switch (g_iCreateZone_Type[i])
 			{
+
 				case ZONE_TYPE_BOX:
 				{
-					Effect_DrawBeamBoxToClient(i, g_fCreateZone_Start[i], g_fCreateZone_End[i], g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, {255, 0, 0, 255}, 0);
+					Effect_DrawBeamBoxToClient(i, g_fCreateZone_Start[i], g_fCreateZone_End[i], g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, iColor, 0);
 				}
 
 				case ZONE_TYPE_CIRCLE:
 				{
-					TE_SetupBeamRingPoint(g_fCreateZone_Start[i], g_fCreateZone_Radius[i], g_fCreateZone_Radius[i] + 4.0, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, {255, 0, 0, 255}, 0, 0);
+					TE_SetupBeamRingPoint(g_fCreateZone_Start[i], g_fCreateZone_Radius[i], g_fCreateZone_Radius[i] + 4.0, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, iColor, 0, 0);
 					TE_SendToClient(i, 0.0);
 				}
 
@@ -2752,7 +2765,7 @@ public Action Timer_DisplayZones(Handle timer)
 						float nextpoint[3];
 						g_aCreateZone_PointsData[i].GetArray(index, nextpoint, sizeof(nextpoint));
 
-						TE_SetupBeamPoints(coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 2.0, 3.0, 3.0, 0, 0.0, {255, 0, 0, 255}, 10);
+						TE_SetupBeamPoints(coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 2.0, 3.0, 3.0, 0, 0.0, iColor, 10);
 						TE_SendToClient(i);
 					}
 				}
@@ -3381,7 +3394,19 @@ bool GetClientLookPoint(int client, float lookposition[3], bool beam = false)
 
 	if (beam)
 	{
-		TE_SetupBeamPoints(vEyePos, lookposition, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 5.0, 5.0, 5.0, 0, 0.0, {255, 0, 0, 255}, 10);
+		int iColor[4];
+
+		iColor[0] = 255;
+		iColor[1] = 20;
+		iColor[2] = 147;
+		iColor[3] = 255;
+
+		if (strlen(g_sCreateZone_Color[client]) > 0)
+		{
+			g_smColorData.GetArray(g_sCreateZone_Color[client], iColor, sizeof(iColor));
+		}
+		
+		TE_SetupBeamPoints(vEyePos, lookposition, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 5.0, 5.0, 5.0, 0, 0.0, iColor, 10);
 		TE_SendToClient(client);
 	}
 
@@ -3414,7 +3439,7 @@ void Array_Copy(const any[] array, any[] newArray, int size)
 	}
 }
 
-void Effect_DrawBeamBoxToClient(int client, const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame = 0, int frameRate = 30, float life = 5.0, float width = 5.0, float endWidth = 5.0, int fadeLength = 2, float amplitude = 1.0, const color[4] = {255, 0, 0, 255}, int speed = 0)
+void Effect_DrawBeamBoxToClient(int client, const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame = 0, int frameRate = 30, float life = 5.0, float width = 5.0, float endWidth = 5.0, int fadeLength = 2, float amplitude = 1.0, const color[4] = {255, 20, 147, 255}, int speed = 0)
 {
 	int clients[1];
 	clients[0] = client;
@@ -3422,7 +3447,7 @@ void Effect_DrawBeamBoxToClient(int client, const float bottomCorner[3], const f
 }
 
 // This is never used
-stock void Effect_DrawBeamBoxToAll(const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame = 0, int frameRate = 30, float life = 5.0, float width = 5.0, float endWidth = 5.0, int fadeLength = 2, float amplitude = 1.0, const color[4] = {255, 0, 0, 255}, int speed = 0)
+stock void Effect_DrawBeamBoxToAll(const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame = 0, int frameRate = 30, float life = 5.0, float width = 5.0, float endWidth = 5.0, int fadeLength = 2, float amplitude = 1.0, const color[4] = {255, 20, 147, 255}, int speed = 0)
 {
 	int clients[MaxClients];
 	int numClients;
@@ -3438,7 +3463,7 @@ stock void Effect_DrawBeamBoxToAll(const float bottomCorner[3], const float uppe
 	Effect_DrawBeamBox(clients, numClients, bottomCorner, upperCorner, modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
 }
 
-void Effect_DrawBeamBox(int[] clients,int numClients, const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame = 0, int frameRate = 30, float life = 5.0, float width = 5.0, float endWidth = 5.0, int fadeLength = 2, float amplitude = 1.0, const color[4] = {255, 0, 0, 255}, int speed = 0)
+void Effect_DrawBeamBox(int[] clients,int numClients, const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame = 0, int frameRate = 30, float life = 5.0, float width = 5.0, float endWidth = 5.0, int fadeLength = 2, float amplitude = 1.0, const color[4] = {255, 20, 147, 255}, int speed = 0)
 {
 	float corners[8][3];
 
@@ -3551,6 +3576,12 @@ void ParseColorsData(const char[] config = "configs/zone_colors.cfg")
 		g_smColorData.SetArray("Black", color, sizeof(color));
 		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
 		kv.SetString("Black", sBuffer);
+
+		g_aColors.PushString("Pink");
+		color = {255, 20, 147, 255};
+		g_smColorData.SetArray("Pink", color, sizeof(color));
+		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
+		kv.SetString("Pink", sBuffer);
 
 		KeyValuesToFile(kv, sPath);
 	}
