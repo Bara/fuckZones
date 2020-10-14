@@ -2659,13 +2659,14 @@ void ResetCreateZoneVariables(int client)
 	g_sCreateZone_Name[client][0] = '\0';
 	g_sCreateZone_Color[client][0] = '\0';
 	g_iCreateZone_Type[client] = ZONE_TYPE_NONE;
-	g_fCreateZone_Start[client] = {0.0, 0.0, 0.0};
-	g_fCreateZone_End[client] = {0.0, 0.0, 0.0};
+	g_fCreateZone_Start[client][0] = 0.0;
+	g_fCreateZone_Start[client][1] = 0.0;
+	g_fCreateZone_Start[client][2] = 0.0;
+	g_fCreateZone_End[client][0] = 0.0;
+	g_fCreateZone_End[client][1] = 0.0;
+	g_fCreateZone_End[client][2] = 0.0;
 	g_fCreateZone_Radius[client] = 0.0;
-	if (g_aCreateZone_PointsData[client] != null)
-	{
-		delete g_aCreateZone_PointsData[client];
-	}
+	// delete g_aCreateZone_PointsData[client]; // TODO: Find a solution without error
 	g_fCreateZone_PointsHeight[client] = 0.0;
 
 	g_bIsViewingZone[client] = true;
