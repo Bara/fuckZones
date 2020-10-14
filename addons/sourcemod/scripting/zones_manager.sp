@@ -3577,7 +3577,7 @@ void ParseColorsData(const char[] config = "configs/zone_colors.cfg")
 		kv.SetString("Blue", sBuffer);
 
 		g_aColors.PushString("Yellow");
-		color = {255, 255, 255, 255};
+		color = {255, 255, 0, 255};
 		g_smColorData.SetArray("Yellow", color, sizeof(color));
 		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
 		kv.SetString("Yellow", sBuffer);
