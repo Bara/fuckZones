@@ -18,6 +18,7 @@
 #define DEFAULT_HALOINDEX "materials/sprites/halo.vmt"
 
 #define ZONE_TYPES 3
+#define ZONE_TYPE_NONE -1
 #define ZONE_TYPE_BOX 0
 #define ZONE_TYPE_CIRCLE 1
 #define ZONE_TYPE_POLY 2
@@ -76,7 +77,7 @@ ArrayList g_aEffectsList = null;
 
 //Create Zones Data
 char g_sCreateZone_Name[MAXPLAYERS + 1][MAX_ZONE_NAME_LENGTH];
-int g_iCreateZone_Type[MAXPLAYERS + 1] = { -1, ...};
+int g_iCreateZone_Type[MAXPLAYERS + 1] = { ZONE_TYPE_NONE, ...};
 float g_fCreateZone_Start[MAXPLAYERS + 1][3];
 float g_fCreateZone_End[MAXPLAYERS + 1][3];
 float g_fCreateZone_Radius[MAXPLAYERS + 1];
@@ -799,7 +800,7 @@ void OpenZonesMenu(int client)
 	menu.SetTitle("Zones Manager");
 
 	menu.AddItem("manage", "Manage Zones");
-	menu.AddItem("create", "Create a Zone\n ");
+	menu.AddItem("create", "Create Zones\n ");
 	AddMenuItemFormat(menu, "viewall", ITEMDRAW_DEFAULT, "Draw Zones: %s", g_bShowAllZones[client] ? "On" : "Off");
 	AddMenuItemFormat(menu, "regenerate", ITEMDRAW_DEFAULT, "Regenerate Zones");
 	AddMenuItemFormat(menu, "deleteall", ITEMDRAW_DEFAULT, "Delete all Zones");
@@ -1902,13 +1903,37 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 		delete g_aCreateZone_PointsData[client];
 	}
 
+	bool bValidPoints = false;
+
+	if (g_iCreateZone_Type[client] == ZONE_TYPE_POLY && g_aCreateZone_PointsData[client] != null)
+	{
+		if (g_aCreateZone_PointsData[client].Length > 2)
+		{
+			bValidPoints = true;
+		}
+	}
+	else if (g_iCreateZone_Type[client] == ZONE_TYPE_BOX)
+	{
+		if (!IsPositionNull(g_fCreateZone_Start[client]) && !IsPositionNull(g_fCreateZone_End[client]))
+		{
+			bValidPoints = true;
+		}
+	}
+	else if (g_iCreateZone_Type[client] == ZONE_TYPE_CIRCLE)
+	{
+		if (!IsPositionNull(g_fCreateZone_Start[client]))
+		{
+			bValidPoints = true;
+		}
+	}
+
 	char sType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneTypeName(g_iCreateZone_Type[client], sType, sizeof(sType));
 
 	Menu menu = new Menu(MenuHandle_CreateZonesMenu);
 	menu.SetTitle("Create a Zone:");
 
-	menu.AddItem("create", "Create Zone\n ", (g_iCreateZone_Type[client] > -1 && strlen(g_sCreateZone_Name[client]) > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+	menu.AddItem("create", "Create Zone\n ", (bValidPoints && g_iCreateZone_Type[client] > ZONE_TYPE_NONE && strlen(g_sCreateZone_Name[client]) > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 
 	AddMenuItemFormat(menu, "name", ITEMDRAW_DEFAULT, "Name: %s", strlen(g_sCreateZone_Name[client]) > 0 ? g_sCreateZone_Name[client] : "N/A");
 	AddMenuItemFormat(menu, "type", ITEMDRAW_DEFAULT, "Type: %s", sType);
@@ -2049,6 +2074,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 		{
 			if (param2 == MenuCancel_ExitBack)
 			{
+				ResetCreateZoneVariables(param1);
 				OpenZonesMenu(param1);
 			}
 		}
@@ -2632,7 +2658,7 @@ void ResetCreateZoneVariables(int client)
 {
 	g_sCreateZone_Name[client][0] = '\0';
 	g_sCreateZone_Color[client][0] = '\0';
-	g_iCreateZone_Type[client] = -1;
+	g_iCreateZone_Type[client] = ZONE_TYPE_NONE;
 	g_fCreateZone_Start[client] = {0.0, 0.0, 0.0};
 	g_fCreateZone_End[client] = {0.0, 0.0, 0.0};
 	g_fCreateZone_Radius[client] = 0.0;
@@ -2647,7 +2673,7 @@ void GetZoneTypeName(int type, char[] buffer, int size)
 {
 	switch (type)
 	{
-		case -1: strcopy(buffer, size, "N/A");
+		case ZONE_TYPE_NONE: strcopy(buffer, size, "N/A");
 		case ZONE_TYPE_BOX: strcopy(buffer, size, "Standard");
 		case ZONE_TYPE_CIRCLE: strcopy(buffer, size, "Radius/Circle");
 		case ZONE_TYPE_POLY: strcopy(buffer, size, "Polygons");
