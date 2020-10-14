@@ -28,14 +28,9 @@ jobs:
 
       - name: Compile plugins
         run: |
-          echo -e "\nCompiling zones_effect_hidehud.sp..."
-          spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include zones_effect_hidehud.sp
-          echo -e "\nCompiling zones_effect_meleeonly.sp..."
-          spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include zones_effect_meleeonly.sp
-          echo -e "\nCompiling zones_effect_template.sp..."
-          spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include zones_effect_template.sp
-          echo -e "\nCompiling zones_effect_testzones.sp..."
-          spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include zones_effect_testzones.sp
-          echo -e "\nCompiling zones_manager_core.sp..."
-          spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include zones_manager.sp
+          for file in zones_*.sp
+          do
+            echo -e "\nCompiling $file..."
+            spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include $file
+          done
         working-directory: ${{ env.SCRIPTS_PATH }}/
