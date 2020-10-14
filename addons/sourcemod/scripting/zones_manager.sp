@@ -84,7 +84,7 @@ char g_sCreateZone_Color[MAXPLAYERS + 1][64];
 ArrayList g_aCreateZone_PointsData[MAXPLAYERS + 1];
 float g_fCreateZone_PointsHeight[MAXPLAYERS + 1];
 
-bool g_bIsViewingZone[MAXPLAYERS + 1];
+bool g_bIsViewingZone[MAXPLAYERS + 1] = { true, ... };
 bool g_bSettingName[MAXPLAYERS + 1];
 bool g_bEffectKeyValue[MAXPLAYERS + 1];
 int g_iEffectKeyValue_Entity[MAXPLAYERS + 1];
@@ -2625,7 +2625,7 @@ void CreateNewZone(int client)
 
 	CreateZone(g_sCreateZone_Name[client], g_iCreateZone_Type[client], g_fCreateZone_Start[client], g_fCreateZone_End[client], g_fCreateZone_Radius[client], iColor, g_aCreateZone_PointsData[client], g_fCreateZone_PointsHeight[client]);
 	CPrintToChat(client, "Zone '%s' has been created successfully.", g_sCreateZone_Name[client]);
-	g_bIsViewingZone[client] = false;
+	g_bIsViewingZone[client] = true;
 }
 
 void ResetCreateZoneVariables(int client)
@@ -2639,7 +2639,7 @@ void ResetCreateZoneVariables(int client)
 	delete g_aCreateZone_PointsData[client];
 	g_fCreateZone_PointsHeight[client] = 0.0;
 
-	g_bIsViewingZone[client] = false;
+	g_bIsViewingZone[client] = true;
 	g_bSettingName[client] = false;
 }
 
