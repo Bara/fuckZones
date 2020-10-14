@@ -5,6 +5,8 @@
 #include <sourcemod>
 #include <zones_manager>
 
+#define EFFECT_NAME "Timer"
+
 float g_fTime[MAXPLAYERS + 1] = 0.0;
 
 public Plugin myinfo =
@@ -15,6 +17,28 @@ public Plugin myinfo =
 	version = "1.1.0",
 	url = "github.com/Bara"
 };
+
+public void ZonesManager_OnQueueEffects_Post()
+{
+	ZonesManager_Register_Effect(EFFECT_NAME, INVALID_FUNCTION, INVALID_FUNCTION, INVALID_FUNCTION);
+
+	/*
+		Start/End Zone: 0 = Disabled, 1 = 1st Start Zone, 2 = 2nd Start Zone (for Bonus)
+		Misc Zone: 0 = Disabled, 1 = Type X, 2 = Type Y, ...
+		Stage/Checkpoint Zone: 0 = Disabled, 1 = Stage/Checkpoint 1, 2 = Stage/Checkpoint 2, ...
+		Bonus: 0 = Disabled, 1 = Enabled
+	*/
+
+	ZonesManager_Register_Effect_Key(EFFECT_NAME, "Start Zone", "1");
+	ZonesManager_Register_Effect_Key(EFFECT_NAME, "End Zone", "1");
+
+	ZonesManager_Register_Effect_Key(EFFECT_NAME, "Misc Zone", "0");
+
+	ZonesManager_Register_Effect_Key(EFFECT_NAME, "Stage", "0");
+	ZonesManager_Register_Effect_Key(EFFECT_NAME, "Checkpoint", "0");
+
+	ZonesManager_Register_Effect_Key(EFFECT_NAME, "Bonus", "0");
+}
 
 public Action ZonesManager_OnStartTouchZone(int client, int entity, const char[] zone_name, int type)
 {
