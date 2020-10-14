@@ -2662,7 +2662,10 @@ void ResetCreateZoneVariables(int client)
 	g_fCreateZone_Start[client] = {0.0, 0.0, 0.0};
 	g_fCreateZone_End[client] = {0.0, 0.0, 0.0};
 	g_fCreateZone_Radius[client] = 0.0;
-	delete g_aCreateZone_PointsData[client];
+	if (g_aCreateZone_PointsData[client] != null)
+	{
+		delete g_aCreateZone_PointsData[client];
+	}
 	g_fCreateZone_PointsHeight[client] = 0.0;
 
 	g_bIsViewingZone[client] = true;
