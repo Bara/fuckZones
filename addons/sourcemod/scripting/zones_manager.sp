@@ -2642,8 +2642,7 @@ void ResetCreateZoneVariables(int client)
 	g_fCreateZone_End[client][1] = 0.0;
 	g_fCreateZone_End[client][2] = 0.0;
 	g_fCreateZone_Radius[client] = 0.0;
-	PrintToChat(client, "Is Arraylist null: %d, %d", (g_aCreateZone_PointsData[client] == null), g_aCreateZone_PointsData[client]);
-	// delete g_aCreateZone_PointsData[client]; // TODO: Find a solution without error
+	delete g_aCreateZone_PointsData[client];
 	g_fCreateZone_PointsHeight[client] = 0.0;
 
 	g_bIsViewingZone[client] = true;
