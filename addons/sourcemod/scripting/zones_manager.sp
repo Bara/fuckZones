@@ -76,17 +76,22 @@ StringMap g_smEffectKeys = null;
 ArrayList g_aEffectsList = null;
 
 //Create Zones Data
-char g_sCreateZone_Name[MAXPLAYERS + 1][MAX_ZONE_NAME_LENGTH];
-int g_iCreateZone_Type[MAXPLAYERS + 1] = { ZONE_TYPE_NONE, ...};
-float g_fCreateZone_Start[MAXPLAYERS + 1][3];
-float g_fCreateZone_End[MAXPLAYERS + 1][3];
-float g_fCreateZone_Radius[MAXPLAYERS + 1];
-char g_sCreateZone_Color[MAXPLAYERS + 1][64];
-ArrayList g_aCreateZone_PointsData[MAXPLAYERS + 1] = { null, ...};
-float g_fCreateZone_PointsHeight[MAXPLAYERS + 1];
+enum struct eCreateZone
+{
+	char Name[MAX_ZONE_NAME_LENGTH];
+	int Type;
+	float Start[3];
+	float End[3];
+	float Radius;
+	char Color[64];
+	ArrayList PointsData;
+	float PointsHeight;
+	bool ShowZone;
+	bool SetName;
+}
 
-bool g_bIsViewingZone[MAXPLAYERS + 1] = { true, ... };
-bool g_bSettingName[MAXPLAYERS + 1];
+eCreateZone CZone[MAXPLAYERS + 1];
+
 bool g_bEffectKeyValue[MAXPLAYERS + 1];
 int g_iEffectKeyValue_Entity[MAXPLAYERS + 1];
 char g_sEffectKeyValue_Effect[MAXPLAYERS + 1][MAX_EFFECT_NAME_LENGTH];
@@ -507,10 +512,10 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 		return;
 	}
 
-	if (g_bSettingName[client])
+	if (CZone[client].SetName)
 	{
-		strcopy(g_sCreateZone_Name[client], MAX_ZONE_NAME_LENGTH, sArgs);
-		g_bSettingName[client] = false;
+		strcopy(CZone[client].Name, MAX_ZONE_NAME_LENGTH, sArgs);
+		CZone[client].SetName = false;
 		OpenCreateZonesMenu(client);
 	}
 	else if (g_bEffectKeyValue[client])
@@ -1874,51 +1879,51 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 		ResetCreateZoneVariables(client);
 	}
 
-	if (g_iCreateZone_Type[client] == ZONE_TYPE_POLY && g_aCreateZone_PointsData[client] == null)
+	if (CZone[client].Type == ZONE_TYPE_POLY && CZone[client].PointsData == null)
 	{
-		g_aCreateZone_PointsData[client] = new ArrayList(3);
+		CZone[client].PointsData = new ArrayList(3);
 	}
-	else if (g_iCreateZone_Type[client] != ZONE_TYPE_POLY)
+	else if (CZone[client].Type != ZONE_TYPE_POLY)
 	{
-		delete g_aCreateZone_PointsData[client];
+		delete CZone[client].PointsData;
 	}
 
 	bool bValidPoints = false;
 
-	if (g_iCreateZone_Type[client] == ZONE_TYPE_POLY && g_aCreateZone_PointsData[client] != null)
+	if (CZone[client].Type == ZONE_TYPE_POLY && CZone[client].PointsData != null)
 	{
-		if (g_aCreateZone_PointsData[client].Length > 2)
+		if (CZone[client].PointsData.Length > 2)
 		{
 			bValidPoints = true;
 		}
 	}
-	else if (g_iCreateZone_Type[client] == ZONE_TYPE_BOX)
+	else if (CZone[client].Type == ZONE_TYPE_BOX)
 	{
-		if (!IsPositionNull(g_fCreateZone_Start[client]) && !IsPositionNull(g_fCreateZone_End[client]))
+		if (!IsPositionNull(CZone[client].Start) && !IsPositionNull(CZone[client].End))
 		{
 			bValidPoints = true;
 		}
 	}
-	else if (g_iCreateZone_Type[client] == ZONE_TYPE_CIRCLE)
+	else if (CZone[client].Type == ZONE_TYPE_CIRCLE)
 	{
-		if (!IsPositionNull(g_fCreateZone_Start[client]))
+		if (!IsPositionNull(CZone[client].Start))
 		{
 			bValidPoints = true;
 		}
 	}
 
 	char sType[MAX_ZONE_TYPE_LENGTH];
-	GetZoneTypeName(g_iCreateZone_Type[client], sType, sizeof(sType));
+	GetZoneTypeName(CZone[client].Type, sType, sizeof(sType));
 
 	Menu menu = new Menu(MenuHandle_CreateZonesMenu);
 	menu.SetTitle("Create a Zone:");
 
-	menu.AddItem("create", "Create Zone\n ", (bValidPoints && g_iCreateZone_Type[client] > ZONE_TYPE_NONE && strlen(g_sCreateZone_Name[client]) > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+	menu.AddItem("create", "Create Zone\n ", (bValidPoints && CZone[client].Type > ZONE_TYPE_NONE && strlen(CZone[client].Name) > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 
-	AddMenuItemFormat(menu, "name", ITEMDRAW_DEFAULT, "Name: %s", strlen(g_sCreateZone_Name[client]) > 0 ? g_sCreateZone_Name[client] : "N/A");
+	AddMenuItemFormat(menu, "name", ITEMDRAW_DEFAULT, "Name: %s", strlen(CZone[client].Name) > 0 ? CZone[client].Name : "N/A");
 	AddMenuItemFormat(menu, "type", ITEMDRAW_DEFAULT, "Type: %s", sType);
 
-	switch (g_iCreateZone_Type[client])
+	switch (CZone[client].Type)
 	{
 		case ZONE_TYPE_BOX:
 		{
@@ -1929,13 +1934,13 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 		case ZONE_TYPE_CIRCLE:
 		{
 			menu.AddItem("start", "Set Starting Point", ITEMDRAW_DEFAULT);
-			AddMenuItemFormat(menu, "radius", ITEMDRAW_DEFAULT, "Set Radius: %.2f", g_fCreateZone_Radius[client]);
+			AddMenuItemFormat(menu, "radius", ITEMDRAW_DEFAULT, "Set Radius: %.2f", CZone[client].Radius);
 			// TODO: Add cvar for default radius
 		}
 
 		case ZONE_TYPE_POLY:
 		{
-			AddMenuItemFormat(menu, "", ITEMDRAW_DISABLED, "Points: %d", g_aCreateZone_PointsData[client].Length);
+			AddMenuItemFormat(menu, "", ITEMDRAW_DISABLED, "Points: %d", CZone[client].PointsData.Length);
 			menu.AddItem("add", "Add Zone Point", ITEMDRAW_DEFAULT);
 			menu.AddItem("remove", "Remove Last Point", ITEMDRAW_DEFAULT);
 			menu.AddItem("clear", "Clear All Points", ITEMDRAW_DEFAULT);
@@ -1943,8 +1948,8 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 		}
 	}
 
-	AddMenuItemFormat(menu, "color", ITEMDRAW_DEFAULT, "Color: %s", (strlen(g_sCreateZone_Color[client]) > 0) ? g_sCreateZone_Color[client] : "Pink");
-	AddMenuItemFormat(menu, "view", ITEMDRAW_DEFAULT, "View Zone: %s", g_bIsViewingZone[client] ? "On" : "Off");
+	AddMenuItemFormat(menu, "color", ITEMDRAW_DEFAULT, "Color: %s", (strlen(CZone[client].Color) > 0) ? CZone[client].Color : "Pink");
+	AddMenuItemFormat(menu, "view", ITEMDRAW_DEFAULT, "View Zone: %s", CZone[client].ShowZone ? "On" : "Off");
 
 	menu.ExitBackButton = true;
 	menu.Display(client, MENU_TIME_FOREVER);
@@ -1961,16 +1966,16 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 
 			if (StrEqual(sInfo, "name"))
 			{
-				g_bSettingName[param1] = true;
+				CZone[param1].SetName = true;
 				CPrintToChat(param1, "Type the name of this new zone in chat:");
 			}
 			else if (StrEqual(sInfo, "type"))
 			{
-				g_iCreateZone_Type[param1]++;
+				CZone[param1].Type++;
 
-				if (g_iCreateZone_Type[param1] > ZONE_TYPES)
+				if (CZone[param1].Type > ZONE_TYPES)
 				{
-					g_iCreateZone_Type[param1] = ZONE_TYPE_BOX;
+					CZone[param1].Type = ZONE_TYPE_BOX;
 				}
 
 				OpenZoneTypeMenu(param1);
@@ -1979,8 +1984,8 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			{
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
-				Array_Copy(vLookPoint, g_fCreateZone_Start[param1], 3);
-				CPrintToChat(param1, "Starting point: %.2f/%.2f/%.2f", g_fCreateZone_Start[param1][0], g_fCreateZone_Start[param1][1], g_fCreateZone_Start[param1][2]);
+				Array_Copy(vLookPoint, CZone[param1].Start, 3);
+				CPrintToChat(param1, "Starting point: %.2f/%.2f/%.2f", CZone[param1].Start[0], CZone[param1].Start[1], CZone[param1].Start[2]);
 
 				OpenCreateZonesMenu(param1);
 			}
@@ -1988,18 +1993,18 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			{
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
-				Array_Copy(vLookPoint, g_fCreateZone_End[param1], 3);
-				CPrintToChat(param1, "Ending point: %.2f/%.2f/%.2f", g_fCreateZone_End[param1][0], g_fCreateZone_End[param1][1], g_fCreateZone_End[param1][2]);
+				Array_Copy(vLookPoint, CZone[param1].End, 3);
+				CPrintToChat(param1, "Ending point: %.2f/%.2f/%.2f", CZone[param1].End[0], CZone[param1].End[1], CZone[param1].End[2]);
 
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "radius"))
 			{
-				g_fCreateZone_Radius[param1] += 5.0;
+				CZone[param1].Radius += 5.0;
 
-				if (g_fCreateZone_Radius[param1] > 430.0)
+				if (CZone[param1].Radius > 430.0)
 				{
-					g_fCreateZone_Radius[param1] = 0.0;
+					CZone[param1].Radius = 0.0;
 				}
 
 				OpenCreateZonesMenu(param1);
@@ -2009,24 +2014,24 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
 
-				g_aCreateZone_PointsData[param1].PushArray(vLookPoint, 3);
+				CZone[param1].PointsData.PushArray(vLookPoint, 3);
 
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "remove"))
 			{
-				int size = g_aCreateZone_PointsData[param1].Length;
+				int size = CZone[param1].PointsData.Length;
 
 				if (size > 0)
 				{
-					g_aCreateZone_PointsData[param1].Erase(size-1);
+					CZone[param1].PointsData.Erase(size-1);
 				}
 
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "clear"))
 			{
-				g_aCreateZone_PointsData[param1].Clear();
+				CZone[param1].PointsData.Clear();
 
 				OpenCreateZonesMenu(param1);
 			}
@@ -2036,7 +2041,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			}
 			else if (StrEqual(sInfo, "view"))
 			{
-				g_bIsViewingZone[param1] = !g_bIsViewingZone[param1];
+				CZone[param1].ShowZone = !CZone[param1].ShowZone;
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "create"))
@@ -2452,10 +2457,10 @@ void RemoveEffectFromZone(int entity, const char[] effect)
 void OpenZoneTypeMenu(int client)
 {
 	char sAddendum[256];
-	FormatEx(sAddendum, sizeof(sAddendum), " for %s", g_sCreateZone_Name[client]);
+	FormatEx(sAddendum, sizeof(sAddendum), " for %s", CZone[client].Name);
 
 	Menu menu = new Menu(MenuHandler_ZoneTypeMenu);
-	menu.SetTitle("Choose a zone type%s:", strlen(g_sCreateZone_Name[client]) > 0 ? sAddendum : "");
+	menu.SetTitle("Choose a zone type%s:", strlen(CZone[client].Name) > 0 ? sAddendum : "");
 
 	for (int i = 0; i < ZONE_TYPES; i++)
 	{
@@ -2482,9 +2487,9 @@ public int MenuHandler_ZoneTypeMenu(Menu menu, MenuAction action, int param1, in
 			int type = StringToInt(sID);
 
 			char sAddendum[256];
-			FormatEx(sAddendum, sizeof(sAddendum), " for %s", g_sCreateZone_Name[param1]);
+			FormatEx(sAddendum, sizeof(sAddendum), " for %s", CZone[param1].Name);
 
-			g_iCreateZone_Type[param1] = type;
+			CZone[param1].Type = type;
 			CPrintToChat(param1, "Zone type%s set to %s.", sAddendum, sType);
 			OpenCreateZonesMenu(param1);
 		}
@@ -2527,8 +2532,8 @@ public int MenuHandler_ZoneColorMenu(Menu menu, MenuAction action, int param1, i
 	{
 		case MenuAction_Select:
 		{
-			menu.GetItem(param2, g_sCreateZone_Color[param1], sizeof(g_sCreateZone_Color[]));
-			CPrintToChat(param1, "Zone color set to %s.", g_sCreateZone_Color[param1]);
+			menu.GetItem(param2, CZone[param1].Color, sizeof(eCreateZone::Color));
+			CPrintToChat(param1, "Zone color set to %s.", CZone[param1].Color);
 			OpenCreateZonesMenu(param1);
 		}
 
@@ -2549,7 +2554,7 @@ public int MenuHandler_ZoneColorMenu(Menu menu, MenuAction action, int param1, i
 
 void CreateNewZone(int client)
 {
-	if (strlen(g_sCreateZone_Name[client]) == 0)
+	if (strlen(CZone[client].Name) == 0)
 	{
 		CPrintToChat(client, "You must set a zone name in order to create it.");
 		OpenCreateZonesMenu(client);
@@ -2558,7 +2563,7 @@ void CreateNewZone(int client)
 
 	g_kvConfig.Rewind();
 
-	if (g_kvConfig.JumpToKey(g_sCreateZone_Name[client]))
+	if (g_kvConfig.JumpToKey(CZone[client].Name))
 	{
 		g_kvConfig.Rewind();
 		CPrintToChat(client, "Zone already exists, please pick a different name.");
@@ -2566,10 +2571,10 @@ void CreateNewZone(int client)
 		return;
 	}
 
-	g_kvConfig.JumpToKey(g_sCreateZone_Name[client], true);
+	g_kvConfig.JumpToKey(CZone[client].Name, true);
 
 	char sType[MAX_ZONE_TYPE_LENGTH];
-	GetZoneTypeName(g_iCreateZone_Type[client], sType, sizeof(sType));
+	GetZoneTypeName(CZone[client].Type, sType, sizeof(sType));
 	g_kvConfig.SetString("type", sType);
 
 	int iColor[4];
@@ -2579,44 +2584,44 @@ void CreateNewZone(int client)
 	iColor[2] = 147;
 	iColor[3] = 255;
 
-	if (strlen(g_sCreateZone_Color[client]) > 0)
+	if (strlen(CZone[client].Color) > 0)
 	{
-		g_smColorData.GetArray(g_sCreateZone_Color[client], iColor, sizeof(iColor));
+		g_smColorData.GetArray(CZone[client].Color, iColor, sizeof(iColor));
 	}
 
 	char sColor[64];
 	FormatEx(sColor, sizeof(sColor), "%i %i %i %i", iColor[0], iColor[1], iColor[2], iColor[3]);
 	g_kvConfig.SetString("color", sColor);
 
-	g_fCreateZone_PointsHeight[client] = 256.0;
+	CZone[client].PointsHeight = 256.0;
 
-	switch (g_iCreateZone_Type[client])
+	switch (CZone[client].Type)
 	{
 		case ZONE_TYPE_BOX:
 		{
-			g_kvConfig.SetVector("start", g_fCreateZone_Start[client]);
-			g_kvConfig.SetVector("end", g_fCreateZone_End[client]);
+			g_kvConfig.SetVector("start", CZone[client].Start);
+			g_kvConfig.SetVector("end", CZone[client].End);
 		}
 
 		case ZONE_TYPE_CIRCLE:
 		{
-			g_kvConfig.SetVector("start", g_fCreateZone_Start[client]);
-			g_kvConfig.SetFloat("radius", g_fCreateZone_Radius[client]);
+			g_kvConfig.SetVector("start", CZone[client].Start);
+			g_kvConfig.SetFloat("radius", CZone[client].Radius);
 		}
 
 		case ZONE_TYPE_POLY:
 		{
-			g_kvConfig.SetFloat("points_height", g_fCreateZone_PointsHeight[client]);
+			g_kvConfig.SetFloat("points_height", CZone[client].PointsHeight);
 
 			if (g_kvConfig.JumpToKey("points", true))
 			{
-				for (int i = 0; i < g_aCreateZone_PointsData[client].Length; i++)
+				for (int i = 0; i < CZone[client].PointsData.Length; i++)
 				{
 					char sID[12];
 					IntToString(i, sID, sizeof(sID));
 
 					float coordinates[3];
-					g_aCreateZone_PointsData[client].GetArray(i, coordinates, sizeof(coordinates));
+					CZone[client].PointsData.GetArray(i, coordinates, sizeof(coordinates));
 					g_kvConfig.SetVector(sID, coordinates);
 				}
 			}
@@ -2625,28 +2630,28 @@ void CreateNewZone(int client)
 
 	SaveMapConfig();
 
-	CreateZone(g_sCreateZone_Name[client], g_iCreateZone_Type[client], g_fCreateZone_Start[client], g_fCreateZone_End[client], g_fCreateZone_Radius[client], iColor, g_aCreateZone_PointsData[client], g_fCreateZone_PointsHeight[client]);
-	CPrintToChat(client, "Zone '%s' has been created successfully.", g_sCreateZone_Name[client]);
-	g_bIsViewingZone[client] = true;
+	CreateZone(CZone[client].Name, CZone[client].Type, CZone[client].Start, CZone[client].End, CZone[client].Radius, iColor, CZone[client].PointsData, CZone[client].PointsHeight);
+	CPrintToChat(client, "Zone '%s' has been created successfully.", CZone[client].Name);
+	CZone[client].ShowZone = true;
 }
 
 void ResetCreateZoneVariables(int client)
 {
-	g_sCreateZone_Name[client][0] = '\0';
-	g_sCreateZone_Color[client][0] = '\0';
-	g_iCreateZone_Type[client] = ZONE_TYPE_NONE;
-	g_fCreateZone_Start[client][0] = 0.0;
-	g_fCreateZone_Start[client][1] = 0.0;
-	g_fCreateZone_Start[client][2] = 0.0;
-	g_fCreateZone_End[client][0] = 0.0;
-	g_fCreateZone_End[client][1] = 0.0;
-	g_fCreateZone_End[client][2] = 0.0;
-	g_fCreateZone_Radius[client] = 0.0;
-	delete g_aCreateZone_PointsData[client];
-	g_fCreateZone_PointsHeight[client] = 0.0;
+	CZone[client].Name[0] = '\0';
+	CZone[client].Color[0] = '\0';
+	CZone[client].Type = ZONE_TYPE_NONE;
+	CZone[client].Start[0] = 0.0;
+	CZone[client].Start[1] = 0.0;
+	CZone[client].Start[2] = 0.0;
+	CZone[client].End[0] = 0.0;
+	CZone[client].End[1] = 0.0;
+	CZone[client].End[2] = 0.0;
+	CZone[client].Radius = 0.0;
+	delete CZone[client].PointsData;
+	CZone[client].PointsHeight = 0.0;
 
-	g_bIsViewingZone[client] = true;
-	g_bSettingName[client] = false;
+	CZone[client].ShowZone = true;
+	CZone[client].SetName = false;
 }
 
 void GetZoneTypeName(int type, char[] buffer, int size)
@@ -2716,7 +2721,7 @@ public Action Timer_DisplayZones(Handle timer)
 {
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (IsClientInGame(i) && g_bIsViewingZone[i] && !IsPositionNull(g_fCreateZone_Start[i]) && !IsPositionNull(g_fCreateZone_End[i]))
+		if (IsClientInGame(i) && CZone[i].ShowZone && !IsPositionNull(CZone[i].Start) && !IsPositionNull(CZone[i].End))
 		{
 			int iColor[4];
 
@@ -2725,28 +2730,28 @@ public Action Timer_DisplayZones(Handle timer)
 			iColor[2] = 147;
 			iColor[3] = 255;
 
-			if (strlen(g_sCreateZone_Color[i]) > 0)
+			if (strlen(CZone[i].Color) > 0)
 			{
-				g_smColorData.GetArray(g_sCreateZone_Color[i], iColor, sizeof(iColor));
+				g_smColorData.GetArray(CZone[i].Color, iColor, sizeof(iColor));
 			}
 			
-			switch (g_iCreateZone_Type[i])
+			switch (CZone[i].Type)
 			{
 
 				case ZONE_TYPE_BOX:
 				{
-					Effect_DrawBeamBoxToClient(i, g_fCreateZone_Start[i], g_fCreateZone_End[i], g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, iColor, 0);
+					Effect_DrawBeamBoxToClient(i, CZone[i].Start, CZone[i].End, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, iColor, 0);
 				}
 
 				case ZONE_TYPE_CIRCLE:
 				{
-					TE_SetupBeamRingPoint(g_fCreateZone_Start[i], g_fCreateZone_Radius[i], g_fCreateZone_Radius[i] + 4.0, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, iColor, 0, 0);
+					TE_SetupBeamRingPoint(CZone[i].Start, CZone[i].Radius, CZone[i].Radius + 4.0, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, iColor, 0, 0);
 					TE_SendToClient(i, 0.0);
 				}
 
 				case ZONE_TYPE_POLY:
 				{
-					int size = g_aCreateZone_PointsData[i].Length;
+					int size = CZone[i].PointsData.Length;
 
 					if (size < 1)
 					{
@@ -2756,7 +2761,7 @@ public Action Timer_DisplayZones(Handle timer)
 					for (int x = 0; x < size; x++)
 					{
 						float coordinates[3];
-						g_aCreateZone_PointsData[i].GetArray(x, coordinates, sizeof(coordinates));
+						CZone[i].PointsData.GetArray(x, coordinates, sizeof(coordinates));
 
 						int index;
 
@@ -2770,7 +2775,7 @@ public Action Timer_DisplayZones(Handle timer)
 						}
 
 						float nextpoint[3];
-						g_aCreateZone_PointsData[i].GetArray(index, nextpoint, sizeof(nextpoint));
+						CZone[i].PointsData.GetArray(index, nextpoint, sizeof(nextpoint));
 
 						TE_SetupBeamPoints(coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 2.0, 3.0, 3.0, 0, 0.0, iColor, 10);
 						TE_SendToClient(i);
@@ -3408,9 +3413,9 @@ bool GetClientLookPoint(int client, float lookposition[3], bool beam = false)
 		iColor[2] = 147;
 		iColor[3] = 255;
 
-		if (strlen(g_sCreateZone_Color[client]) > 0)
+		if (strlen(CZone[client].Color) > 0)
 		{
-			g_smColorData.GetArray(g_sCreateZone_Color[client], iColor, sizeof(iColor));
+			g_smColorData.GetArray(CZone[client].Color, iColor, sizeof(iColor));
 		}
 		
 		TE_SetupBeamPoints(vEyePos, lookposition, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 5.0, 5.0, 5.0, 0, 0.0, iColor, 10);
