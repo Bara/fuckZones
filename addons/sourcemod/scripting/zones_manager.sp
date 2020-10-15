@@ -1933,8 +1933,9 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 
 		case ZONE_TYPE_CIRCLE:
 		{
-			menu.AddItem("start", "Set Starting Point", ITEMDRAW_DEFAULT);
-			AddMenuItemFormat(menu, "radius", ITEMDRAW_DEFAULT, "Set Radius: %.2f", CZone[client].Radius);
+			menu.AddItem("start", "Set Center Point", ITEMDRAW_DEFAULT);
+			AddMenuItemFormat(menu, "add_radius", ITEMDRAW_DEFAULT, "Set Radius (+%.0f): %.2f", g_cPrecisionValue.FloatValue, CZone[client].Radius);
+			AddMenuItemFormat(menu, "rem_radius", ITEMDRAW_DEFAULT, "Set Radius (-%.0f): %.2f", g_cPrecisionValue.FloatValue, CZone[client].Radius);
 			// TODO: Add cvar for default radius
 		}
 
@@ -1998,9 +1999,20 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 
 				OpenCreateZonesMenu(param1);
 			}
-			else if (StrEqual(sInfo, "radius"))
+			else if (StrEqual(sInfo, "add_radius"))
 			{
-				CZone[param1].Radius += 5.0;
+				CZone[param1].Radius += g_cPrecisionValue.FloatValue;
+
+				if (CZone[param1].Radius > 430.0)
+				{
+					CZone[param1].Radius = 0.0;
+				}
+
+				OpenCreateZonesMenu(param1);
+			}
+			else if (StrEqual(sInfo, "rem_radius"))
+			{
+				CZone[param1].Radius -= g_cPrecisionValue.FloatValue;
 
 				if (CZone[param1].Radius > 430.0)
 				{
