@@ -2723,7 +2723,7 @@ public Action Timer_DisplayZones(Handle timer)
 {
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (IsClientInGame(i) && CZone[i].ShowZone && !IsPositionNull(CZone[i].Start) && !IsPositionNull(CZone[i].End))
+		if (IsClientInGame(i) && CZone[i].ShowZone)
 		{
 			int iColor[4];
 
@@ -2742,17 +2742,28 @@ public Action Timer_DisplayZones(Handle timer)
 
 				case ZONE_TYPE_BOX:
 				{
-					Effect_DrawBeamBoxToClient(i, CZone[i].Start, CZone[i].End, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, iColor, 0);
+					if (!IsPositionNull(CZone[i].Start) && !IsPositionNull(CZone[i].End))
+					{
+						Effect_DrawBeamBoxToClient(i, CZone[i].Start, CZone[i].End, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, iColor, 0);
+					}
 				}
 
 				case ZONE_TYPE_CIRCLE:
 				{
-					TE_SetupBeamRingPoint(CZone[i].Start, CZone[i].Radius, CZone[i].Radius + 4.0, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, iColor, 0, 0);
-					TE_SendToClient(i, 0.0);
+					if (!IsPositionNull(CZone[i].Start))
+					{
+						TE_SetupBeamRingPoint(CZone[i].Start, CZone[i].Radius, CZone[i].Radius + 4.0, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, iColor, 0, 0);
+						TE_SendToClient(i, 0.0);
+					}
 				}
 
 				case ZONE_TYPE_POLY:
 				{
+					if (CZone[i].PointsData == null)
+					{
+						continue;
+					}
+					
 					int size = CZone[i].PointsData.Length;
 
 					if (size < 1)
