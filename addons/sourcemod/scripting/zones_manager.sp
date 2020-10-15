@@ -82,7 +82,7 @@ float g_fCreateZone_Start[MAXPLAYERS + 1][3];
 float g_fCreateZone_End[MAXPLAYERS + 1][3];
 float g_fCreateZone_Radius[MAXPLAYERS + 1];
 char g_sCreateZone_Color[MAXPLAYERS + 1][64];
-ArrayList g_aCreateZone_PointsData[MAXPLAYERS + 1];
+ArrayList g_aCreateZone_PointsData[MAXPLAYERS + 1] = { null, ...};
 float g_fCreateZone_PointsHeight[MAXPLAYERS + 1];
 
 bool g_bIsViewingZone[MAXPLAYERS + 1] = { true, ... };
@@ -364,17 +364,10 @@ void SpawnAllZones()
 			{
 				do
 				{
-					char sPointID[12];
-					g_kvConfig.GetSectionName(sPointID, sizeof(sPointID));
-					int point_id = StringToInt(sPointID);
-
 					float coordinates[3];
 					g_kvConfig.GetVector(NULL_STRING, coordinates);
 
-					points.Resize(point_id + 1);
-					points.Set(point_id, coordinates[0], 0);
-					points.Set(point_id, coordinates[1], 1);
-					points.Set(point_id, coordinates[2], 2);
+					points.PushArray(coordinates, 3);
 				}
 				while (g_kvConfig.GotoNextKey(false));
 
@@ -456,21 +449,10 @@ int SpawnAZone(const char[] name)
 		{
 			do
 			{
-				char sPointID[12];
-				g_kvConfig.GetSectionName(sPointID, sizeof(sPointID));
-				int point_id = StringToInt(sPointID);
-
 				float coordinates[3];
 				g_kvConfig.GetVector(NULL_STRING, coordinates);
 
-				if (points.Length < point_id + 1)
-				{
-					points.Resize(point_id);
-				}
-
-				points.Set(point_id, coordinates[0], 0);
-				points.Set(point_id, coordinates[1], 1);
-				points.Set(point_id, coordinates[2], 2);
+				points.PushArray(coordinates, 3);
 			}
 			while (g_kvConfig.GotoNextKey());
 
@@ -1339,9 +1321,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 				int actual = size + 1;
 
 				g_aZonePointsData[entity].Resize(actual);
-				g_aZonePointsData[entity].Set(size, vLookPoint[0], 0);
-				g_aZonePointsData[entity].Set(size, vLookPoint[1], 1);
-				g_aZonePointsData[entity].Set(size, vLookPoint[2], 2);
+				g_aZonePointsData[entity].SetArray(size, vLookPoint, 3);
 
 				SaveZonePointsData(entity);
 
@@ -1950,13 +1930,16 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 		{
 			menu.AddItem("start", "Set Starting Point", ITEMDRAW_DEFAULT);
 			AddMenuItemFormat(menu, "radius", ITEMDRAW_DEFAULT, "Set Radius: %.2f", g_fCreateZone_Radius[client]);
+			// TODO: Add cvar for default radius
 		}
 
 		case ZONE_TYPE_POLY:
 		{
+			AddMenuItemFormat(menu, "", ITEMDRAW_DISABLED, "Points: %d", g_aCreateZone_PointsData[client].Length);
 			menu.AddItem("add", "Add Zone Point", ITEMDRAW_DEFAULT);
 			menu.AddItem("remove", "Remove Last Point", ITEMDRAW_DEFAULT);
 			menu.AddItem("clear", "Clear All Points", ITEMDRAW_DEFAULT);
+			// TODO: Add customizable points height
 		}
 	}
 
@@ -2026,24 +2009,17 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
 
-				int size = g_aCreateZone_PointsData[param1].Length;
-				int actual = size + 1;
-
-				g_aCreateZone_PointsData[param1].Resize(actual);
-				g_aCreateZone_PointsData[param1].Set(size, vLookPoint[0], 0);
-				g_aCreateZone_PointsData[param1].Set(size, vLookPoint[1], 1);
-				g_aCreateZone_PointsData[param1].Set(size, vLookPoint[2], 2);
+				g_aCreateZone_PointsData[param1].PushArray(vLookPoint, 3);
 
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "remove"))
 			{
 				int size = g_aCreateZone_PointsData[param1].Length;
-				int actual = size - 1;
 
 				if (size > 0)
 				{
-					g_aCreateZone_PointsData[param1].Resize(actual);
+					g_aCreateZone_PointsData[param1].Erase(size-1);
 				}
 
 				OpenCreateZonesMenu(param1);
@@ -2666,6 +2642,7 @@ void ResetCreateZoneVariables(int client)
 	g_fCreateZone_End[client][1] = 0.0;
 	g_fCreateZone_End[client][2] = 0.0;
 	g_fCreateZone_Radius[client] = 0.0;
+	PrintToChat(client, "Is Arraylist null: %d, %d", (g_aCreateZone_PointsData[client] == null), g_aCreateZone_PointsData[client]);
 	// delete g_aCreateZone_PointsData[client]; // TODO: Find a solution without error
 	g_fCreateZone_PointsHeight[client] = 0.0;
 
@@ -2887,7 +2864,7 @@ void GetAbsBoundingBox(int ent, float mins[3], float maxs[3])
 	maxs[2] += origin[2];
 }
 
-int CreateZone(const char[] sName, int type, float start[3], float end[3], float radius, int color[4], ArrayList points = null, float points_height = 256.0, StringMap effects = null)
+int CreateZone(const char[] sName, int type, float start[3], float end[3], float radius, int color[4], ArrayList &points, float points_height = 256.0, StringMap &effects = null)
 {
 	char sType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneTypeName(type, sType, sizeof(sType));
