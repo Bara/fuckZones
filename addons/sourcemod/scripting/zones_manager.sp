@@ -1165,8 +1165,8 @@ void OpenZonePropertiesMenu(int client, int entity)
 		case ZONE_TYPE_CIRCLE:
 		{
 			menu.AddItem("edit_startpoint", "StartPoint");
-			menu.AddItem("edit_add_radius", "Add to Radius");
-			menu.AddItem("edit_remove_radius", "Remove from Radius");
+			menu.AddItem("edit_add_radius", "Radius +");
+			menu.AddItem("edit_remove_radius", "Radius -");
 		}
 
 		case ZONE_TYPE_POLY:
@@ -1394,21 +1394,21 @@ void OpenEditZoneStartPointAMenu(int client, int entity, bool whichpoint)
 
 	if (whichpoint)
 	{
-		menu.AddItem("a_add_x", "Add to X");
-		menu.AddItem("a_add_y", "Add to Y");
-		menu.AddItem("a_add_z", "Add to Z");
-		menu.AddItem("a_remove_x", "Remove to X");
-		menu.AddItem("a_remove_y", "Remove to Y");
-		menu.AddItem("a_remove_z", "Remove to Z");
+		menu.AddItem("a_add_x", "X +");
+		menu.AddItem("a_add_y", "Y +");
+		menu.AddItem("a_add_z", "Z +");
+		menu.AddItem("a_remove_x", "X -");
+		menu.AddItem("a_remove_y", "Y -");
+		menu.AddItem("a_remove_z", "Z -");
 	}
 	else
 	{
-		menu.AddItem("b_add_x", "Add to X");
-		menu.AddItem("b_add_y", "Add to Y");
-		menu.AddItem("b_add_z", "Add to Z");
-		menu.AddItem("b_remove_x", "Remove to X");
-		menu.AddItem("b_remove_y", "Remove to Y");
-		menu.AddItem("b_remove_z", "Remove to Z");
+		menu.AddItem("b_add_x", "X +");
+		menu.AddItem("b_add_y", "Y +");
+		menu.AddItem("b_add_z", "Z +");
+		menu.AddItem("b_remove_x", "X -");
+		menu.AddItem("b_remove_y", "Y -");
+		menu.AddItem("b_remove_z", "Z -");
 	}
 
 	PushMenuCell(menu, "entity", entity);
