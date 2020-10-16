@@ -1557,7 +1557,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 		{
 			if (param2 == MenuCancel_ExitBack)
 			{
-				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
+				OpenZonePropertiesMenu(param1, GetMenuCell(menu, "entity"));
 			}
 		}
 
