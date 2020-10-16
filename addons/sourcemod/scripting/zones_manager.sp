@@ -423,6 +423,11 @@ void SpawnAllZones()
 			}
 
 			CreateZone(sName, type, vStartPosition, vEndPosition, fRadius, iColor, points, points_height, effects);
+
+			if (type == ZONE_TYPE_POLY)
+			{
+				g_kvConfig.GoBack();
+			}
 		}
 		while(g_kvConfig.GotoNextKey());
 	}
