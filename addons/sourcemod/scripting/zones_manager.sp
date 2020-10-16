@@ -2807,39 +2807,32 @@ public Action Timer_DisplayZones(Handle timer)
 
 				case ZONE_TYPE_POLY:
 				{
-					if (CZone[i].PointsData == null)
-					{
-						continue;
-					}
-					
 					int size = CZone[i].PointsData.Length;
-
-					if (size < 1)
+					
+					if (CZone[i].PointsData != null && size >= 1)
 					{
-						continue;
-					}
-
-					for (int x = 0; x < size; x++)
-					{
-						float coordinates[3];
-						CZone[i].PointsData.GetArray(x, coordinates, sizeof(coordinates));
-
-						int index;
-
-						if (x + 1 == size)
+						for (int x = 0; x < size; x++)
 						{
-							index = 0;
-						}
-						else
-						{
-							index = x + 1;
-						}
+							float coordinates[3];
+							CZone[i].PointsData.GetArray(x, coordinates, sizeof(coordinates));
 
-						float nextpoint[3];
-						CZone[i].PointsData.GetArray(index, nextpoint, sizeof(nextpoint));
+							int index;
 
-						TE_SetupBeamPoints(coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 2.0, 3.0, 3.0, 0, 0.0, iColor, 10);
-						TE_SendToClient(i);
+							if (x + 1 == size)
+							{
+								index = 0;
+							}
+							else
+							{
+								index = x + 1;
+							}
+
+							float nextpoint[3];
+							CZone[i].PointsData.GetArray(index, nextpoint, sizeof(nextpoint));
+
+							TE_SetupBeamPoints(coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 2.0, 3.0, 3.0, 0, 0.0, iColor, 10);
+							TE_SendToClient(i);
+						}
 					}
 				}
 			}
