@@ -330,16 +330,17 @@ void ClearAllZones()
 
 		if (IsValidEntity(zone))
 		{
-			for (int j = 0; j < g_aEffectsList.Length; j++)
+			StringMapSnapshot snap1 = g_smZoneEffects[zone].Snapshot();
+			char sKey[128];
+			for (int j = 0; j < snap1.Length; j++)
 			{
-				char sEffect[MAX_EFFECT_NAME_LENGTH];
-				g_aEffectsList.GetString(j, sEffect, sizeof(sEffect));
+				snap1.GetKey(j, sKey, sizeof(sKey));
 
 				StringMap temp;
-				g_smZoneEffects[zone].GetValue(sEffect, temp);
+				g_smZoneEffects[zone].GetValue(sKey, temp);
 				delete temp;
 			}
-
+			delete snap1;
 			delete g_smZoneEffects[zone];
 			delete g_aZonePointsData[zone];
 
@@ -483,6 +484,7 @@ int SpawnAZone(const char[] name)
 			}
 			while (g_kvConfig.GotoNextKey());
 
+			g_kvConfig.GoBack();
 			g_kvConfig.GoBack();
 		}
 
@@ -1389,11 +1391,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
 
-				int size = g_aZonePointsData[entity].Length;
-				int actual = size + 1;
-
-				g_aZonePointsData[entity].Resize(actual);
-				g_aZonePointsData[entity].SetArray(size, vLookPoint, 3);
+				g_aZonePointsData[entity].PushArray(vLookPoint, 3);
 
 				SaveZonePointsData(entity);
 
@@ -3071,15 +3069,17 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 
 		if (g_smZoneEffects[entity] != null)
 		{
-			for (int j = 0; j < g_aEffectsList.Length; j++)
+			StringMapSnapshot snap1 = g_smZoneEffects[entity].Snapshot();
+			char sKey[128];
+			for (int j = 0; j < snap1.Length; j++)
 			{
-				char sEffect[MAX_EFFECT_NAME_LENGTH];
-				g_aEffectsList.GetString(j, sEffect, sizeof(sEffect));
+				snap1.GetKey(j, sKey, sizeof(sKey));
 
 				StringMap temp;
-				g_smZoneEffects[entity].GetValue(sEffect, temp);
+				g_smZoneEffects[entity].GetValue(sKey, temp);
 				delete temp;
 			}
+			delete snap1;
 		}
 
 		delete g_smZoneEffects[entity];
@@ -3373,15 +3373,17 @@ void DeleteZone(int entity, bool permanent = false)
 	int index = g_aZoneEntities.FindValue(EntIndexToEntRef(entity));
 	g_aZoneEntities.Erase(index);
 
-	for (int j = 0; j < g_aEffectsList.Length; j++)
+	StringMapSnapshot snap1 = g_smZoneEffects[entity].Snapshot();
+	char sKey[128];
+	for (int j = 0; j < snap1.Length; j++)
 	{
-		char sEffect[MAX_EFFECT_NAME_LENGTH];
-		g_aEffectsList.GetString(j, sEffect, sizeof(sEffect));
+		snap1.GetKey(j, sKey, sizeof(sKey));
 
 		StringMap temp;
-		g_smZoneEffects[entity].GetValue(sEffect, temp);
+		g_smZoneEffects[entity].GetValue(sKey, temp);
 		delete temp;
 	}
+	delete snap1;
 
 	delete g_smZoneEffects[entity];
 	delete g_aZonePointsData[entity];
