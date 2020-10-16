@@ -32,6 +32,7 @@
 #include <multicolors>
 
 ConVar g_cPrecisionValue = null;
+ConVar g_cRegenerateSpam = null;
 
 GlobalForward g_fwQueueEffects_Post = null;
 GlobalForward g_fwStartTouchZone = null;
@@ -97,6 +98,7 @@ int g_iEffectKeyValue_Entity[MAXPLAYERS + 1];
 char g_sEffectKeyValue_Effect[MAXPLAYERS + 1][MAX_EFFECT_NAME_LENGTH];
 char g_sEffectKeyValue_EffectKey[MAXPLAYERS + 1][MAX_KEY_NAME_LENGTH];
 int g_iEditingName[MAXPLAYERS + 1] = {INVALID_ENT_REFERENCE, ...};
+int g_iRegenerationTime[MAXPLAYERS + 1] = { -1, ... };
 
 public Plugin myinfo =
 {
@@ -134,7 +136,8 @@ public void OnPluginStart()
 	LoadTranslations("common.phrases");
 	LoadTranslations("zonesmanager.phrases");
 
-	g_cPrecisionValue = CreateConVar("sm_zonesmanager_precision_value", "10.0", "Default value to use when setting a zones precision area.", FCVAR_NOTIFY, true, 0.0);
+	g_cPrecisionValue = CreateConVar("zones_manager_precision_offset", "10.0", "Default value to use when setting a zones precision area.", FCVAR_NOTIFY, true, 0.0);
+	g_cRegenerateSpam = CreateConVar("zones_manager_regenerate_spam", "10", "How long should zone regenerations restricted after zone regeneation? (0 to disable this feature)", _, true, 0.0);
 
 	HookEventEx("teamplay_round_start", Event_OnRoundStart);
 	HookEventEx("round_start", Event_OnRoundStart);
@@ -920,6 +923,18 @@ public int MenuHandle_TeleportToZoneMenu(Menu menu, MenuAction action, int param
 
 void RegenerateZones(int client = -1)
 {
+	if (g_iRegenerationTime[client] > 0 && GetTime() < (g_iRegenerationTime[client] + g_cRegenerateSpam.IntValue))
+	{
+		if (IsClientValid(client))
+		{
+			CReplyToCommand(client, "Spam Protection active, you can not regenerate the zones yet.");
+		}
+		
+		return;
+	}
+
+	g_iRegenerationTime[client] = GetTime();
+
 	ClearAllZones();
 	SpawnAllZones();
 
