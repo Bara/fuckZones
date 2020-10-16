@@ -202,26 +202,26 @@ void ReparseMapZonesConfig(bool delete_config = false)
 	char sMap[32];
 	GetCurrentMap(sMap, sizeof(sMap));
 
-	char sPath[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, sPath, sizeof(sPath), "data/zones/%s.cfg", sMap);
+	char sFile[PLATFORM_MAX_PATH];
+	Format(sFile, sizeof(sFile), "%s%s.cfg", sFolder, sMap);
 
 	if (delete_config)
 	{
-		DeleteFile(sPath);
+		DeleteFile(sFile);
 	}
 
 	LogMessage("Creating keyvalues for the new map before pulling new map zones info.");
 	g_kvConfig = new KeyValues("zones_manager");
 
-	if (FileExists(sPath))
+	if (FileExists(sFile))
 	{
 		LogMessage("Config exists, retrieving the zones...");
-		g_kvConfig.ImportFromFile(sPath);
+		g_kvConfig.ImportFromFile(sFile);
 	}
 	else
 	{
 		LogMessage("Config doesn't exist, creating new zones config for the map: %s", sMap);
-		KeyValuesToFile(g_kvConfig, sPath);
+		KeyValuesToFile(g_kvConfig, sFile);
 	}
 
 	LogMessage("New config successfully loaded.");
