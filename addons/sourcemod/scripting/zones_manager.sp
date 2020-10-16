@@ -174,7 +174,6 @@ public void OnMapStart()
 
 	LogMessage("Deleting current zones map configuration from memory.");
 
-	SaveMapConfig();
 	ReparseMapZonesConfig();
 
 	for (int i = 1; i <= MaxClients; i++)
@@ -184,6 +183,12 @@ public void OnMapStart()
 			g_bIsInZone[i][x] = false;
 		}
 	}
+}
+
+public void OnMapEnd()
+{
+	SaveMapConfig();
+	delete g_kvConfig;
 }
 
 void ReparseMapZonesConfig(bool delete_config = false)
