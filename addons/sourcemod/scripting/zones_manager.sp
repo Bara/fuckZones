@@ -98,7 +98,7 @@ int g_iEffectKeyValue_Entity[MAXPLAYERS + 1];
 char g_sEffectKeyValue_Effect[MAXPLAYERS + 1][MAX_EFFECT_NAME_LENGTH];
 char g_sEffectKeyValue_EffectKey[MAXPLAYERS + 1][MAX_KEY_NAME_LENGTH];
 int g_iEditingName[MAXPLAYERS + 1] = {INVALID_ENT_REFERENCE, ...};
-int g_iRegenerationTime[MAXPLAYERS + 1] = { -1, ... };
+int g_iRegenerationTime = 1;
 
 public Plugin myinfo =
 {
@@ -923,7 +923,7 @@ public int MenuHandle_TeleportToZoneMenu(Menu menu, MenuAction action, int param
 
 void RegenerateZones(int client = -1)
 {
-	if (g_iRegenerationTime[client] > 0 && GetTime() < (g_iRegenerationTime[client] + g_cRegenerateSpam.IntValue))
+	if (g_iRegenerationTime > 0 && GetTime() < (g_iRegenerationTime + g_cRegenerateSpam.IntValue))
 	{
 		if (IsClientValid(client))
 		{
@@ -933,7 +933,7 @@ void RegenerateZones(int client = -1)
 		return;
 	}
 
-	g_iRegenerationTime[client] = GetTime();
+	g_iRegenerationTime = GetTime();
 
 	ClearAllZones();
 	SpawnAllZones();
