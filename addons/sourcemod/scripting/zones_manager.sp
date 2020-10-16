@@ -373,6 +373,7 @@ void SpawnAllZones()
 			float points_height = g_kvConfig.GetFloat("points_height", 256.0);
 
 			ArrayList points = new ArrayList(3);
+
 			if (g_kvConfig.JumpToKey("points") && g_kvConfig.GotoFirstSubKey(false))
 			{
 				do
@@ -384,6 +385,7 @@ void SpawnAllZones()
 				}
 				while (g_kvConfig.GotoNextKey(false));
 
+				g_kvConfig.GoBack();
 				g_kvConfig.GoBack();
 			}
 
@@ -423,11 +425,6 @@ void SpawnAllZones()
 			}
 
 			CreateZone(sName, type, vStartPosition, vEndPosition, fRadius, iColor, points, points_height, effects);
-
-			if (type == ZONE_TYPE_POLY)
-			{
-				g_kvConfig.GoBack();
-			}
 		}
 		while(g_kvConfig.GotoNextKey());
 	}
