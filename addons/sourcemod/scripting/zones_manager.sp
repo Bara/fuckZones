@@ -357,7 +357,7 @@ void SpawnAllZones()
 
 			char sType[MAX_ZONE_TYPE_LENGTH];
 			g_kvConfig.GetString("type", sType, sizeof(sType));
-			int type = GetZoneNameType(sType);
+			int type = GetZoneTypeByName(sType);
 
 			float vStartPosition[3];
 			g_kvConfig.GetVector("start", vStartPosition);
@@ -442,7 +442,7 @@ int SpawnAZone(const char[] name)
 	{
 		char sType[MAX_ZONE_TYPE_LENGTH];
 		g_kvConfig.GetString("type", sType, sizeof(sType));
-		int type = GetZoneNameType(sType);
+		int type = GetZoneTypeByName(sType);
 
 		float vStartPosition[3];
 		g_kvConfig.GetVector("start", vStartPosition);
@@ -611,7 +611,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 
 			if (IsValidEntity(zone))
 			{
-				switch (GetZoneType(zone))
+				switch (GetZoneTypeByIndex(zone))
 				{
 					case ZONE_TYPE_CIRCLE:
 					{
@@ -1188,13 +1188,13 @@ void OpenZonePropertiesMenu(int client, int entity)
 	FormatEx(sRadiusAmount, sizeof(sRadiusAmount), "\nRadius is currently: %.2f", g_fZoneRadius[entity]);
 
 	Menu menu = new Menu(MenuHandle_ZonePropertiesMenu);
-	menu.SetTitle("Edit properties for zone '%s':%s", sName, GetZoneType(entity) == ZONE_TYPE_CIRCLE ? sRadiusAmount : "");
+	menu.SetTitle("Edit properties for zone '%s':%s", sName, GetZoneTypeByIndex(entity) == ZONE_TYPE_CIRCLE ? sRadiusAmount : "");
 
 	menu.AddItem("edit_name", "Name");
 	menu.AddItem("edit_type", "Type");
 	menu.AddItem("edit_color", "Color");
 
-	switch (GetZoneType(entity))
+	switch (GetZoneTypeByIndex(entity))
 	{
 		case ZONE_TYPE_BOX:
 		{
@@ -1756,7 +1756,7 @@ void OpenEditZoneTypeMenu(int client, int entity)
 		IntToString(i, sID, sizeof(sID));
 
 		char sType[MAX_ZONE_TYPE_LENGTH];
-		GetZoneTypeName(i, sType, sizeof(sType));
+		GetZoneNameByType(i, sType, sizeof(sType));
 
 		menu.AddItem(sID, sType);
 	}
@@ -1966,7 +1966,7 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	}
 
 	char sType[MAX_ZONE_TYPE_LENGTH];
-	GetZoneTypeName(CZone[client].Type, sType, sizeof(sType));
+	GetZoneNameByType(CZone[client].Type, sType, sizeof(sType));
 
 	Menu menu = new Menu(MenuHandle_CreateZonesMenu);
 	menu.SetTitle("Create a Zone:");
@@ -2523,7 +2523,7 @@ void OpenZoneTypeMenu(int client)
 		IntToString(i, sID, sizeof(sID));
 
 		char sType[MAX_ZONE_TYPE_LENGTH];
-		GetZoneTypeName(i, sType, sizeof(sType));
+		GetZoneNameByType(i, sType, sizeof(sType));
 
 		menu.AddItem(sID, sType);
 	}
@@ -2629,7 +2629,7 @@ void CreateNewZone(int client)
 	g_kvConfig.JumpToKey(CZone[client].Name, true);
 
 	char sType[MAX_ZONE_TYPE_LENGTH];
-	GetZoneTypeName(CZone[client].Type, sType, sizeof(sType));
+	GetZoneNameByType(CZone[client].Type, sType, sizeof(sType));
 	g_kvConfig.SetString("type", sType);
 
 	int iColor[4];
@@ -2709,7 +2709,7 @@ void ResetCreateZoneVariables(int client)
 	CZone[client].SetName = false;
 }
 
-void GetZoneTypeName(int type, char[] buffer, int size)
+void GetZoneNameByType(int type, char[] buffer, int size)
 {
 	switch (type)
 	{
@@ -2720,7 +2720,7 @@ void GetZoneTypeName(int type, char[] buffer, int size)
 	}
 }
 
-int GetZoneType(int entity)
+int GetZoneTypeByIndex(int entity)
 {
 	char sClassname[64];
 	GetEntityClassname(entity, sClassname, sizeof(sClassname));
@@ -2737,7 +2737,7 @@ int GetZoneType(int entity)
 	return ZONE_TYPE_BOX;
 }
 
-int GetZoneNameType(const char[] sType)
+int GetZoneTypeByName(const char[] sType)
 {
 	if (StrEqual(sType, "Standard"))
 	{
@@ -2812,18 +2812,16 @@ public Action Timer_DisplayZones(Handle timer)
 
 				case ZONE_TYPE_POLY:
 				{
-					int size = CZone[i].PointsData.Length;
-
-					if (CZone[i].PointsData != null && size > 0)
+					if (CZone[i].PointsData != null && CZone[i].PointsData.Length > 0)
 					{
-						for (int x = 0; x < size; x++)
+						for (int x = 0; x < CZone[i].PointsData.Length; x++)
 						{
 							float coordinates[3];
 							CZone[i].PointsData.GetArray(x, coordinates, sizeof(coordinates));
 
 							int index;
 
-							if (x + 1 == size)
+							if (x + 1 == CZone[i].PointsData.Length)
 							{
 								index = 0;
 							}
@@ -2857,7 +2855,7 @@ public Action Timer_DisplayZones(Handle timer)
 				{
 					GetEntPropVector(zone, Prop_Data, "m_vecOrigin", vecOrigin);
 
-					switch (GetZoneType(zone))
+					switch (GetZoneTypeByIndex(zone))
 					{
 						case ZONE_TYPE_BOX:
 						{
@@ -2873,18 +2871,16 @@ public Action Timer_DisplayZones(Handle timer)
 
 						case ZONE_TYPE_POLY:
 						{
-							int size = g_aZonePointsData[zone].Length;
-
-							if (g_aZonePointsData[zone] != null && size > 0)
+							if (g_aZonePointsData[zone] != null && g_aZonePointsData[zone].Length > 0)
 							{
-								for (int y = 0; y < size; y++)
+								for (int y = 0; y < g_aZonePointsData[zone].Length; y++)
 								{
 									float coordinates[3];
 									g_aZonePointsData[zone].GetArray(y, coordinates, sizeof(coordinates));
 
 									int index;
 
-									if (y + 1 == size)
+									if (y + 1 == g_aZonePointsData[zone].Length)
 									{
 										index = 0;
 									}
@@ -2928,7 +2924,7 @@ void GetAbsBoundingBox(int ent, float mins[3], float maxs[3])
 int CreateZone(const char[] sName, int type, float start[3], float end[3], float radius, int color[4], ArrayList &points, float points_height = 256.0, StringMap &effects = null)
 {
 	char sType[MAX_ZONE_TYPE_LENGTH];
-	GetZoneTypeName(type, sType, sizeof(sType));
+	GetZoneNameByType(type, sType, sizeof(sType));
 
 	LogMessage("Spawning Zone: %s - %s - %.2f/%.2f/%.2f - %.2f/%.2f/%.2f - %.2f", sName, sType, start[0], start[1], start[2], end[0], end[1], end[2], radius);
 
@@ -3671,7 +3667,7 @@ bool TeleportToZone(int client, const char[] zone)
 	}
 
 	float fMiddle[3];
-	switch (GetZoneType(entity))
+	switch (GetZoneTypeByIndex(entity))
 	{
 		case ZONE_TYPE_BOX:
 		{
