@@ -512,6 +512,28 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 		return;
 	}
 
+	if (StrContains(sArgs, "!cancel", true) != -1)
+	{
+		if (CZone[client].SetName)
+		{
+			CZone[client].SetName = false;
+			OpenCreateZonesMenu(client);
+		}
+		else if (g_bEffectKeyValue[client])
+		{
+			g_bEffectKeyValue[client] = false;
+			ListZoneEffectKeys(client, g_iEffectKeyValue_Entity[client], g_sEffectKeyValue_Effect[client]);
+		}
+		else if (g_iEditingName[client] != INVALID_ENT_REFERENCE)
+		{
+			int entity = EntRefToEntIndex(g_iEditingName[client]);
+			g_iEditingName[client] = INVALID_ENT_REFERENCE;
+			OpenZonePropertiesMenu(client, entity);
+		}
+
+		return;
+	}
+
 	if (CZone[client].SetName)
 	{
 		g_kvConfig.Rewind();
@@ -1200,7 +1222,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			if (StrEqual(sInfo, "edit_name"))
 			{
 				g_iEditingName[param1] = EntIndexToEntRef(entity);
-				CPrintToChat(param1, "Type the new name for the zone '%s' in chat:", sName);
+				CPrintToChat(param1, "Type the new name for the zone '%s' in chat. Type \"!cancel\" to cancel this process.", sName);
 			}
 			else if (StrEqual(sInfo, "edit_type"))
 			{
@@ -1979,7 +2001,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			if (StrEqual(sInfo, "name"))
 			{
 				CZone[param1].SetName = true;
-				CPrintToChat(param1, "Type the name of this new zone in chat:");
+				CPrintToChat(param1, "Type the name of this new zone in chat. Type \"!cancel\" to cancel this process.");
 			}
 			else if (StrEqual(sInfo, "type"))
 			{
@@ -2271,7 +2293,7 @@ public int MenuHandler_EditZoneEffectKeyVaue(Menu menu, MenuAction action, int p
 
 			g_bEffectKeyValue[param1] = true;
 
-			CPrintToChat(param1, "Type the new value for the effect '%s' key '%s' on zone '%s' in chat:", g_sEffectKeyValue_Effect[param1], g_sEffectKeyValue_EffectKey[param1], sName);
+			CPrintToChat(param1, "Type the new value for the effect '%s' key '%s' on zone '%s' in chat. Type \"!cancel\" to cancel this process.", g_sEffectKeyValue_Effect[param1], g_sEffectKeyValue_EffectKey[param1], sName);
 		}
 		case MenuAction_Cancel:
 		{
