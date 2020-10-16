@@ -2808,8 +2808,8 @@ public Action Timer_DisplayZones(Handle timer)
 				case ZONE_TYPE_POLY:
 				{
 					int size = CZone[i].PointsData.Length;
-					
-					if (CZone[i].PointsData != null && size >= 1)
+
+					if (CZone[i].PointsData != null && size > 0)
 					{
 						for (int x = 0; x < size; x++)
 						{
@@ -2870,32 +2870,30 @@ public Action Timer_DisplayZones(Handle timer)
 						{
 							int size = g_aZonePointsData[zone].Length;
 
-							if (size < 1)
+							if (g_aZonePointsData[zone] != null && size > 0)
 							{
-								continue;
-							}
-
-							for (int y = 0; y < size; y++)
-							{
-								float coordinates[3];
-								g_aZonePointsData[zone].GetArray(y, coordinates, sizeof(coordinates));
-
-								int index;
-
-								if (y + 1 == size)
+								for (int y = 0; y < size; y++)
 								{
-									index = 0;
-								}
-								else
-								{
-									index = y + 1;
-								}
+									float coordinates[3];
+									g_aZonePointsData[zone].GetArray(y, coordinates, sizeof(coordinates));
 
-								float nextpoint[3];
-								g_aZonePointsData[zone].GetArray(index, nextpoint, sizeof(nextpoint));
+									int index;
 
-								TE_SetupBeamPoints(coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 2.0, 3.0, 3.0, 0, 0.0, g_iZoneColor[zone], 10);
-								TE_SendToClient(i);
+									if (y + 1 == size)
+									{
+										index = 0;
+									}
+									else
+									{
+										index = y + 1;
+									}
+
+									float nextpoint[3];
+									g_aZonePointsData[zone].GetArray(index, nextpoint, sizeof(nextpoint));
+
+									TE_SetupBeamPoints(coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 2.0, 3.0, 3.0, 0, 0.0, g_iZoneColor[zone], 10);
+									TE_SendToClient(i);
+								}
 							}
 						}
 					}
