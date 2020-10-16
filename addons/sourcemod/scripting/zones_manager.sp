@@ -514,6 +514,17 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 
 	if (CZone[client].SetName)
 	{
+		g_kvConfig.Rewind();
+
+		if (g_kvConfig.JumpToKey(sArgs))
+		{
+			g_kvConfig.Rewind();
+			CPrintToChat(client, "Zone name already exists, please pick a different name.");
+			CZone[client].SetName = false;
+			OpenCreateZonesMenu(client);
+			return;
+		}
+		
 		strcopy(CZone[client].Name, MAX_ZONE_NAME_LENGTH, sArgs);
 		CZone[client].SetName = false;
 		OpenCreateZonesMenu(client);
