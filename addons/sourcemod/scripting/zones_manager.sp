@@ -330,7 +330,19 @@ void ClearAllZones()
 
 		if (IsValidEntity(zone))
 		{
+			for (int j = 0; j < g_aEffectsList.Length; j++)
+			{
+				char sEffect[MAX_EFFECT_NAME_LENGTH];
+				g_aEffectsList.GetString(j, sEffect, sizeof(sEffect));
+
+				StringMap temp;
+				g_smZoneEffects[zone].GetValue(sEffect, temp);
+				delete temp;
+			}
+
 			delete g_smZoneEffects[zone];
+			delete g_aZonePointsData[zone];
+
 			AcceptEntityInput(zone, "Kill");
 		}
 	}
@@ -3008,6 +3020,8 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 				DispatchKeyValueVector(entity, "origin", start);
 				DispatchSpawn(entity);
 
+				delete g_aZonePointsData[entity];
+
 				g_aZonePointsData[entity] = points != null ? view_as<ArrayList>(CloneHandle(points)) : new ArrayList(3);
 				g_fZonePointsHeight[entity] = points_height;
 
@@ -3054,6 +3068,19 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 	{
 		g_aZoneEntities.Push(EntIndexToEntRef(entity));
 		g_fZoneRadius[entity] = radius;
+
+		if (g_smZoneEffects[entity] != null)
+		{
+			for (int j = 0; j < g_aEffectsList.Length; j++)
+			{
+				char sEffect[MAX_EFFECT_NAME_LENGTH];
+				g_aEffectsList.GetString(j, sEffect, sizeof(sEffect));
+
+				StringMap temp;
+				g_smZoneEffects[entity].GetValue(sEffect, temp);
+				delete temp;
+			}
+		}
 
 		delete g_smZoneEffects[entity];
 		g_smZoneEffects[entity] = effects != null ? view_as<StringMap>(CloneHandle(effects)) : new StringMap();
@@ -3346,7 +3373,18 @@ void DeleteZone(int entity, bool permanent = false)
 	int index = g_aZoneEntities.FindValue(EntIndexToEntRef(entity));
 	g_aZoneEntities.Erase(index);
 
+	for (int j = 0; j < g_aEffectsList.Length; j++)
+	{
+		char sEffect[MAX_EFFECT_NAME_LENGTH];
+		g_aEffectsList.GetString(j, sEffect, sizeof(sEffect));
+
+		StringMap temp;
+		g_smZoneEffects[entity].GetValue(sEffect, temp);
+		delete temp;
+	}
+
 	delete g_smZoneEffects[entity];
+	delete g_aZonePointsData[entity];
 
 	AcceptEntityInput(entity, "Kill");
 
