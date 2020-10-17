@@ -2704,7 +2704,7 @@ void CreateNewZone(int client)
 
 	CreateZone(CZone[client].Name, CZone[client].Type, CZone[client].Start, CZone[client].End, CZone[client].Radius, iColor, CZone[client].PointsData, CZone[client].PointsHeight);
 	CPrintToChat(client, "Zone '%s' has been created successfully.", CZone[client].Name);
-	CZone[client].ShowZone = true;
+	CZone[client].ShowZone = false;
 }
 
 void ResetCreateZoneVariables(int client)
