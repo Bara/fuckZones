@@ -60,8 +60,8 @@ char g_sErrorModel[] = "models/error.mdl";
 ArrayList g_aZoneEntities = null;
 float g_fZoneRadius[MAX_ENTITY_LIMIT];
 int g_iZoneColor[MAX_ENTITY_LIMIT][4];
-StringMap g_smZoneEffects[MAX_ENTITY_LIMIT];
-ArrayList g_aZonePointsData[MAX_ENTITY_LIMIT];
+StringMap g_smZoneEffects[MAX_ENTITY_LIMIT] = { null, ... };
+ArrayList g_aZonePointsData[MAX_ENTITY_LIMIT] = { null, ... };
 float g_fZonePointsHeight[MAX_ENTITY_LIMIT];
 float g_fZonePointsDistance[MAX_ENTITY_LIMIT];
 float g_fZonePointsMin[MAX_ENTITY_LIMIT][3];
@@ -98,7 +98,7 @@ int g_iEffectKeyValue_Entity[MAXPLAYERS + 1];
 char g_sEffectKeyValue_Effect[MAXPLAYERS + 1][MAX_EFFECT_NAME_LENGTH];
 char g_sEffectKeyValue_EffectKey[MAXPLAYERS + 1][MAX_KEY_NAME_LENGTH];
 int g_iEditingName[MAXPLAYERS + 1] = {INVALID_ENT_REFERENCE, ...};
-int g_iRegenerationTime = 1;
+int g_iRegenerationTime = -1;
 
 public Plugin myinfo =
 {
@@ -336,7 +336,7 @@ void ClearAllZones()
 			{
 				snap1.GetKey(j, sKey, sizeof(sKey));
 
-				StringMap temp;
+				StringMap temp = null;
 				g_smZoneEffects[zone].GetValue(sKey, temp);
 				delete temp;
 			}
@@ -344,7 +344,7 @@ void ClearAllZones()
 			delete g_smZoneEffects[zone];
 			delete g_aZonePointsData[zone];
 
-			AcceptEntityInput(zone, "Kill");
+			RemoveEntity(zone);
 		}
 	}
 
@@ -385,10 +385,12 @@ void SpawnAllZones()
 
 			float points_height = g_kvConfig.GetFloat("points_height", 256.0);
 
-			ArrayList points = new ArrayList(3);
+			ArrayList points = null;
 
 			if (g_kvConfig.JumpToKey("points") && g_kvConfig.GotoFirstSubKey(false))
 			{
+				points = new ArrayList(3);
+
 				do
 				{
 					float coordinates[3];
@@ -402,9 +404,11 @@ void SpawnAllZones()
 				g_kvConfig.GoBack();
 			}
 
-			StringMap effects = new StringMap();
+			StringMap effects = null;
 			if (g_kvConfig.JumpToKey("effects") && g_kvConfig.GotoFirstSubKey())
 			{
+				effects = new StringMap();
+
 				do
 				{
 					char sEffect[256];
@@ -950,6 +954,10 @@ void RegenerateZones(int client = -1)
 		{
 			CReplyToCommand(client, "Spam Protection active, you can not regenerate the zones yet.");
 		}
+		else
+		{
+			PrintToServer("Spam Protection active, you can not regenerate the zones yet.");
+		}
 		
 		return;
 	}
@@ -1092,7 +1100,7 @@ void OpenEditZoneMenu(int client, int entity)
 		g_aEffectsList.GetString(i, sEffect, sizeof(sEffect));
 
 		// Debug Start
-		StringMap temp;
+		StringMap temp = null;
 		g_smZoneEffects[entity].GetValue(sEffect, temp);
 
 		StringMapSnapshot snap1 = g_smZoneEffects[entity].Snapshot();
@@ -2267,7 +2275,7 @@ bool ListZoneEffectKeys(int client, int entity, const char[] effect)
 	Menu menu = new Menu(MenuHandler_EditZoneEffectKeyVaue);
 	menu.SetTitle("Pick effect key to edit for %s:", sName);
 
-	StringMap smEffects;
+	StringMap smEffects = null;
 	g_smZoneEffects[entity].GetValue(effect, smEffects);
 
 	if (smEffects != null)
@@ -2446,7 +2454,7 @@ bool RemoveZoneEffectMenu(int client, int entity)
 
 		int draw = ITEMDRAW_DEFAULT;
 
-		StringMap values;
+		StringMap values = null;
 		if (!g_smZoneEffects[entity].GetValue(sEffect, values))
 		{
 			draw = ITEMDRAW_DISABLED;
@@ -2505,7 +2513,7 @@ void RemoveEffectFromZone(int entity, const char[] effect)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	StringMap values;
+	StringMap values = null;
 	if (g_smZoneEffects[entity].GetValue(effect, values))
 	{
 		delete values;
@@ -2933,7 +2941,7 @@ void GetAbsBoundingBox(int ent, float mins[3], float maxs[3])
 	maxs[2] += origin[2];
 }
 
-int CreateZone(const char[] sName, int type, float start[3], float end[3], float radius, int color[4], ArrayList &points, float points_height = 256.0, StringMap &effects = null)
+int CreateZone(const char[] sName, int type, float start[3], float end[3], float radius, int color[4], ArrayList &points = null, float points_height = 256.0, StringMap &effects = null)
 {
 	char sType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneNameByType(type, sType, sizeof(sType));
@@ -3020,7 +3028,15 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 
 				delete g_aZonePointsData[entity];
 
-				g_aZonePointsData[entity] = points != null ? view_as<ArrayList>(CloneHandle(points)) : new ArrayList(3);
+				if (points != null)
+				{
+					g_aZonePointsData[entity] = view_as<ArrayList>(CloneHandle(points));
+				}
+				else
+				{
+					g_aZonePointsData[entity] = new ArrayList(3);
+				}
+
 				g_fZonePointsHeight[entity] = points_height;
 
 				float tempMin[3];
@@ -3075,7 +3091,7 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 			{
 				snap1.GetKey(j, sKey, sizeof(sKey));
 
-				StringMap temp;
+				StringMap temp = null;
 				g_smZoneEffects[entity].GetValue(sKey, temp);
 				delete temp;
 			}
@@ -3083,7 +3099,15 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 		}
 
 		delete g_smZoneEffects[entity];
-		g_smZoneEffects[entity] = effects != null ? view_as<StringMap>(CloneHandle(effects)) : new StringMap();
+
+		if (effects != null)
+		{
+			g_smZoneEffects[entity] = view_as<StringMap>(CloneHandle(effects));
+		}
+		else
+		{
+			g_smZoneEffects[entity] = new StringMap();
+		}
 
 		g_iZoneColor[entity] = color;
 	}
@@ -3092,6 +3116,7 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 
 	delete points;
 	delete effects;
+	
 	return entity;
 }
 
@@ -3379,7 +3404,7 @@ void DeleteZone(int entity, bool permanent = false)
 	{
 		snap1.GetKey(j, sKey, sizeof(sKey));
 
-		StringMap temp;
+		StringMap temp = null;
 		g_smZoneEffects[entity].GetValue(sKey, temp);
 		delete temp;
 	}
@@ -3388,7 +3413,7 @@ void DeleteZone(int entity, bool permanent = false)
 	delete g_smZoneEffects[entity];
 	delete g_aZonePointsData[entity];
 
-	AcceptEntityInput(entity, "Kill");
+	RemoveEntity(entity);
 
 	if (permanent)
 	{
@@ -3451,7 +3476,7 @@ void RegisterNewEffect(Handle plugin, const char[] effect_name, Function functio
 
 void RegisterNewEffectKey(const char[] effect_name, const char[] key, const char[] defaultvalue)
 {
-	StringMap keys;
+	StringMap keys = null;
 
 	if (!g_smEffectKeys.GetValue(effect_name, keys) || keys == null)
 	{
@@ -3464,7 +3489,7 @@ void RegisterNewEffectKey(const char[] effect_name, const char[] key, const char
 
 void ClearKeys(const char[] effect_name)
 {
-	StringMap keys;
+	StringMap keys = null;
 	if (g_smEffectKeys.GetValue(effect_name, keys))
 	{
 		delete keys;
