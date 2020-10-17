@@ -1457,19 +1457,19 @@ void OpenEditZoneStartPointAMenu(int client, int entity, bool whichpoint)
 	if (whichpoint)
 	{
 		menu.AddItem("a_add_x", "X +");
-		menu.AddItem("a_add_y", "Y +");
-		menu.AddItem("a_add_z", "Z +");
 		menu.AddItem("a_remove_x", "X -");
+		menu.AddItem("a_add_y", "Y +");
 		menu.AddItem("a_remove_y", "Y -");
+		menu.AddItem("a_add_z", "Z +");
 		menu.AddItem("a_remove_z", "Z -");
 	}
 	else
 	{
 		menu.AddItem("b_add_x", "X +");
-		menu.AddItem("b_add_y", "Y +");
-		menu.AddItem("b_add_z", "Z +");
 		menu.AddItem("b_remove_x", "X -");
+		menu.AddItem("b_add_y", "Y +");
 		menu.AddItem("b_remove_y", "Y -");
+		menu.AddItem("b_add_z", "Z +");
 		menu.AddItem("b_remove_z", "Z -");
 	}
 
