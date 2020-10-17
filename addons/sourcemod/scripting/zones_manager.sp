@@ -99,6 +99,7 @@ char g_sEffectKeyValue_Effect[MAXPLAYERS + 1][MAX_EFFECT_NAME_LENGTH];
 char g_sEffectKeyValue_EffectKey[MAXPLAYERS + 1][MAX_KEY_NAME_LENGTH];
 int g_iEditingName[MAXPLAYERS + 1] = {INVALID_ENT_REFERENCE, ...};
 int g_iRegenerationTime = -1;
+int g_iTime[MAXPLAYERS + 1] = { -1, ... };
 
 public Plugin myinfo =
 {
@@ -385,12 +386,10 @@ void SpawnAllZones()
 
 			float points_height = g_kvConfig.GetFloat("points_height", 256.0);
 
-			ArrayList points = null;
+			ArrayList points = new ArrayList(3);
 
 			if (g_kvConfig.JumpToKey("points") && g_kvConfig.GotoFirstSubKey(false))
 			{
-				points = new ArrayList(3);
-
 				do
 				{
 					float coordinates[3];
@@ -404,11 +403,9 @@ void SpawnAllZones()
 				g_kvConfig.GoBack();
 			}
 
-			StringMap effects = null;
+			StringMap effects = new StringMap();
 			if (g_kvConfig.JumpToKey("effects") && g_kvConfig.GotoFirstSubKey())
 			{
-				effects = new StringMap();
-
 				do
 				{
 					char sEffect[256];
@@ -2796,7 +2793,20 @@ public Action Timer_DisplayZones(Handle timer)
 {
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (IsClientInGame(i) && CZone[i].ShowZone)
+		if (!IsClientInGame(i))
+		{
+			continue;
+		}
+
+		bool bWrite = false;
+
+		if (g_iTime[i] < 0 || g_iTime[i] <= (GetTime()-3))
+		{
+			bWrite = true;
+			g_iTime[i] = GetTime();
+		}
+
+		if (CZone[i].ShowZone)
 		{
 			int iColor[4];
 
@@ -2812,9 +2822,9 @@ public Action Timer_DisplayZones(Handle timer)
 			
 			switch (CZone[i].Type)
 			{
-
 				case ZONE_TYPE_BOX:
 				{
+					if (bWrite) PrintToChat(i, "1.1");
 					if (!IsPositionNull(CZone[i].Start) && !IsPositionNull(CZone[i].End))
 					{
 						Effect_DrawBeamBoxToClient(i, CZone[i].Start, CZone[i].End, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, iColor, 0);
@@ -2823,6 +2833,7 @@ public Action Timer_DisplayZones(Handle timer)
 
 				case ZONE_TYPE_CIRCLE:
 				{
+					if (bWrite) PrintToChat(i, "1.2");
 					if (!IsPositionNull(CZone[i].Start))
 					{
 						TE_SetupBeamRingPoint(CZone[i].Start, CZone[i].Radius, CZone[i].Radius + 4.0, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, iColor, 0, 0);
@@ -2832,6 +2843,7 @@ public Action Timer_DisplayZones(Handle timer)
 
 				case ZONE_TYPE_POLY:
 				{
+					if (bWrite) PrintToChat(i, "1.3");
 					if (CZone[i].PointsData != null && CZone[i].PointsData.Length > 0)
 					{
 						for (int x = 0; x < CZone[i].PointsData.Length; x++)
@@ -2861,8 +2873,9 @@ public Action Timer_DisplayZones(Handle timer)
 			}
 		}
 
-		if (IsClientInGame(i) && g_bShowAllZones[i])
+		if (g_bShowAllZones[i])
 		{
+			if (bWrite) PrintToChat(i, "2");
 			float vecOrigin[3];
 			float vecStart[3];
 			float vecEnd[3];
@@ -2881,18 +2894,21 @@ public Action Timer_DisplayZones(Handle timer)
 						{
 							GetAbsBoundingBox(zone, vecStart, vecEnd);
 							Effect_DrawBeamBoxToClient(i, vecStart, vecEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, g_iZoneColor[zone], 0);
+							if (bWrite) PrintToChat(i, "2.1");
 						}
 
 						case ZONE_TYPE_CIRCLE:
 						{
 							TE_SetupBeamRingPoint(vecOrigin, g_fZoneRadius[zone], g_fZoneRadius[zone] + 4.0, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, g_iZoneColor[zone], 0, 0);
 							TE_SendToClient(i, 0.0);
+							if (bWrite) PrintToChat(i, "2.2");
 						}
 
 						case ZONE_TYPE_POLY:
 						{
 							if (g_aZonePointsData[zone] != null && g_aZonePointsData[zone].Length > 0)
 							{
+								if (bWrite) PrintToChat(i, "2.3");
 								for (int y = 0; y < g_aZonePointsData[zone].Length; y++)
 								{
 									float coordinates[3];
