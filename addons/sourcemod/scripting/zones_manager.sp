@@ -689,7 +689,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 						bool IsInZone;
 						for (int x = 0; x < 4; x++)
 						{
-							if (IsPointInZone(clientpoints[i], zone))
+							if (IsPointInZone(clientpoints[x], zone))
 							{
 								IsInZone = true;
 								break;
