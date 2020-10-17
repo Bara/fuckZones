@@ -2827,7 +2827,7 @@ public Action Timer_DisplayZones(Handle timer)
 					if (bWrite) PrintToChat(i, "1.1");
 					if (!IsPositionNull(CZone[i].Start) && !IsPositionNull(CZone[i].End))
 					{
-						Effect_DrawBeamBoxToClient(i, CZone[i].Start, CZone[i].End, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, iColor, 0);
+						TE_DrawBeamBoxToClient(i, CZone[i].Start, CZone[i].End, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, iColor, 0);
 					}
 				}
 
@@ -2836,8 +2836,7 @@ public Action Timer_DisplayZones(Handle timer)
 					if (bWrite) PrintToChat(i, "1.2");
 					if (!IsPositionNull(CZone[i].Start))
 					{
-						TE_SetupBeamRingPoint(CZone[i].Start, CZone[i].Radius, CZone[i].Radius + 4.0, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, iColor, 0, 0);
-						TE_SendToClient(i, 0.0);
+						TE_SetupBeamRingPointToClient(i, CZone[i].Start, CZone[i].Radius, CZone[i].Radius + 4.0, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, iColor, 0, 0);
 					}
 				}
 
@@ -2865,8 +2864,7 @@ public Action Timer_DisplayZones(Handle timer)
 							float nextpoint[3];
 							CZone[i].PointsData.GetArray(index, nextpoint, sizeof(nextpoint));
 
-							TE_SetupBeamPoints(coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 2.0, 3.0, 3.0, 0, 0.0, iColor, 10);
-							TE_SendToClient(i);
+							TE_SetupBeamPointsToClient(i, coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 2.0, 3.0, 3.0, 0, 0.0, iColor, 10);
 						}
 					}
 				}
@@ -2893,14 +2891,13 @@ public Action Timer_DisplayZones(Handle timer)
 						case ZONE_TYPE_BOX:
 						{
 							GetAbsBoundingBox(zone, vecStart, vecEnd);
-							Effect_DrawBeamBoxToClient(i, vecStart, vecEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, g_iZoneColor[zone], 0);
+							TE_DrawBeamBoxToClient(i, vecStart, vecEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 5.0, 2, 1.0, g_iZoneColor[zone], 0);
 							if (bWrite) PrintToChat(i, "2.1");
 						}
 
 						case ZONE_TYPE_CIRCLE:
 						{
-							TE_SetupBeamRingPoint(vecOrigin, g_fZoneRadius[zone], g_fZoneRadius[zone] + 4.0, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, g_iZoneColor[zone], 0, 0);
-							TE_SendToClient(i, 0.0);
+							TE_SetupBeamRingPointToClient(i, vecOrigin, g_fZoneRadius[zone], g_fZoneRadius[zone] + 4.0, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 0.2, 5.0, 0.0, g_iZoneColor[zone], 0, 0);
 							if (bWrite) PrintToChat(i, "2.2");
 						}
 
@@ -2928,8 +2925,7 @@ public Action Timer_DisplayZones(Handle timer)
 									float nextpoint[3];
 									g_aZonePointsData[zone].GetArray(index, nextpoint, sizeof(nextpoint));
 
-									TE_SetupBeamPoints(coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 2.0, 3.0, 3.0, 0, 0.0, g_iZoneColor[zone], 10);
-									TE_SendToClient(i);
+									TE_SetupBeamPointsToClient(i, coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 2.0, 3.0, 3.0, 0, 0.0, g_iZoneColor[zone], 10);
 								}
 							}
 						}
@@ -2975,8 +2971,6 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 			{
 				DispatchKeyValue(entity, "targetname", sName);
 				DispatchKeyValue(entity, "spawnflags", "64");
-				DispatchSpawn(entity);
-
 				SetEntProp(entity, Prop_Data, "m_spawnflags", 64);
 				SetEntProp(entity, Prop_Send, "m_nSolidType", 2);
 				SetEntityModel(entity, g_sErrorModel);
@@ -2985,6 +2979,8 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 				GetMiddleOfABox(start, end, fMiddle);
 
 				TeleportEntity(entity, fMiddle, NULL_VECTOR, NULL_VECTOR);
+
+				DispatchSpawn(entity);
 
 				// Have the mins always be negative
 				start[0] = start[0] - fMiddle[0];
@@ -3554,8 +3550,7 @@ bool GetClientLookPoint(int client, float lookposition[3], bool beam = false)
 			g_smColorData.GetArray(CZone[client].Color, iColor, sizeof(iColor));
 		}
 		
-		TE_SetupBeamPoints(vEyePos, lookposition, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 5.0, 5.0, 5.0, 0, 0.0, iColor, 10);
-		TE_SendToClient(client);
+		TE_SetupBeamPointsToClient(client, vEyePos, lookposition, g_iDefaultModelIndex, g_iDefaultHaloIndex, 0, 30, 5.0, 5.0, 5.0, 0, 0.0, iColor, 10);
 	}
 
 	return bHit;
@@ -3574,15 +3569,15 @@ void Array_Copy(const any[] array, any[] newArray, int size)
 	}
 }
 
-void Effect_DrawBeamBoxToClient(int client, const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame = 0, int frameRate = 30, float life = 5.0, float width = 5.0, float endWidth = 5.0, int fadeLength = 2, float amplitude = 1.0, const color[4] = {255, 20, 147, 255}, int speed = 0)
+void TE_DrawBeamBoxToClient(int client, const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame = 0, int frameRate = 30, float life = 5.0, float width = 5.0, float endWidth = 5.0, int fadeLength = 2, float amplitude = 1.0, const color[4] = {255, 20, 147, 255}, int speed = 0)
 {
 	int clients[1];
 	clients[0] = client;
-	Effect_DrawBeamBox(clients, 1, bottomCorner, upperCorner, modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
+	TE_DrawBeamBox(clients, 1, bottomCorner, upperCorner, modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
 }
 
 // This is never used
-stock void Effect_DrawBeamBoxToAll(const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame = 0, int frameRate = 30, float life = 5.0, float width = 5.0, float endWidth = 5.0, int fadeLength = 2, float amplitude = 1.0, const color[4] = {255, 20, 147, 255}, int speed = 0)
+stock void TE_DrawBeamBoxToAll(const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame = 0, int frameRate = 30, float life = 5.0, float width = 5.0, float endWidth = 5.0, int fadeLength = 2, float amplitude = 1.0, const color[4] = {255, 20, 147, 255}, int speed = 0)
 {
 	int clients[MaxClients];
 	int numClients;
@@ -3595,10 +3590,10 @@ stock void Effect_DrawBeamBoxToAll(const float bottomCorner[3], const float uppe
 		}
 	}
 
-	Effect_DrawBeamBox(clients, numClients, bottomCorner, upperCorner, modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
+	TE_DrawBeamBox(clients, numClients, bottomCorner, upperCorner, modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
 }
 
-void Effect_DrawBeamBox(int[] clients,int numClients, const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame = 0, int frameRate = 30, float life = 5.0, float width = 5.0, float endWidth = 5.0, int fadeLength = 2, float amplitude = 1.0, const color[4] = {255, 20, 147, 255}, int speed = 0)
+void TE_DrawBeamBox(int[] clients,int numClients, const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame = 0, int frameRate = 30, float life = 5.0, float width = 5.0, float endWidth = 5.0, int fadeLength = 2, float amplitude = 1.0, const color[4] = {255, 20, 147, 255}, int speed = 0)
 {
 	float corners[8][3];
 
@@ -3636,6 +3631,19 @@ void Effect_DrawBeamBox(int[] clients,int numClients, const float bottomCorner[3
 		TE_SetupBeamPoints(corners[i], corners[i+4], modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
 		TE_Send(clients, numClients);
 	}
+}
+
+
+void TE_SetupBeamRingPointToClient(int client, const float center[3], float Start_Radius, float End_Radius, int ModelIndex, int HaloIndex, int StartFrame, int FrameRate, float Life, float Width, float Amplitude, const int Color[4], int Speed, int Flags)
+{
+	TE_SetupBeamRingPoint(center, Start_Radius, End_Radius, ModelIndex, HaloIndex, StartFrame, FrameRate, Life, Width, Amplitude, Color, Speed, Flags);
+	TE_SendToClient(client);
+}
+
+void TE_SetupBeamPointsToClient(int client, const float start[3], const float end[3], int ModelIndex, int HaloIndex, int StartFrame, int FrameRate, float Life, float Width, float EndWidth, int FadeLength, float Amplitude, const int Color[4], int Speed)
+{
+	TE_SetupBeamPoints(start, end, ModelIndex, HaloIndex, StartFrame, FrameRate, Life, Width, EndWidth, FadeLength, Amplitude, Color, Speed);
+	TE_SendToClient(client);
 }
 
 void ParseColorsData(const char[] config = "configs/zone_colors.cfg")
