@@ -3646,13 +3646,13 @@ void TE_SetupBeamPointsToClient(int client, const float start[3], const float en
 	TE_SendToClient(client);
 }
 
-void ParseColorsData(const char[] config = "configs/zone_colors.cfg")
+void ParseColorsData()
 {
 	g_aColors.Clear();
 	g_smColorData.Clear();
 
 	char sPath[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, sPath, sizeof(sPath), config);
+	BuildPath(Path_SM, sPath, sizeof(sPath), "configs/zone_colors.cfg");
 
 	KeyValues kv = new KeyValues("zone_colors");
 
