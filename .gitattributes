@@ -1,2 +1,3 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# SourcePawn linguist file
+*.sp linguist-language=SourcePawn
+*.inc linguist-language=SourcePawn
