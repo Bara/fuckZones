@@ -16,6 +16,7 @@
 
 #define DEFAULT_MODELINDEX "sprites/laserbeam.vmt"
 #define DEFAULT_HALOINDEX "materials/sprites/halo.vmt"
+#define ZONE_MODEL "models/error.mdl"
 
 #define ZONE_TYPES 3
 #define ZONE_TYPE_NONE -1
@@ -31,7 +32,7 @@
 #define TE_FRAMERATE 0
 #define TE_FADELENGTH 0
 #define TE_AMPLITUDE 0.0
-#define TE_WIDTH 2.0
+#define TE_WIDTH 1.0
 #define TE_SPEED 0
 #define TE_FLAGS 0
 
@@ -64,7 +65,6 @@ StringMap g_smColorData = null;
 
 int g_iDefaultModelIndex = -1;
 int g_iDefaultHaloIndex = -1;
-char g_sErrorModel[] = "models/error.mdl";
 
 //Entities Data
 ArrayList g_aZoneEntities = null;
@@ -179,9 +179,9 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
-	g_iDefaultModelIndex = PrecacheModel(DEFAULT_MODELINDEX);
-	g_iDefaultHaloIndex = PrecacheModel(DEFAULT_HALOINDEX);
-	PrecacheModel(g_sErrorModel);
+	g_iDefaultModelIndex = PrecacheModel(DEFAULT_MODELINDEX, true);
+	g_iDefaultHaloIndex = PrecacheModel(DEFAULT_HALOINDEX, true);
+	PrecacheModel(ZONE_MODEL, true);
 
 	LogMessage("Deleting current zones map configuration from memory.");
 
@@ -2979,18 +2979,22 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 
 			if (IsValidEntity(entity))
 			{
+				SetEntityModel(entity, ZONE_MODEL);
+
 				DispatchKeyValue(entity, "targetname", sName);
-				DispatchKeyValue(entity, "spawnflags", "64");
-				SetEntProp(entity, Prop_Data, "m_spawnflags", 64);
+				DispatchKeyValue(entity, "spawnflags", "257");
+				DispatchKeyValue(entity, "StartDisabled", "0");
+				DispatchKeyValue(entity, "wait", "0");
+
+				DispatchSpawn(entity);
+
+				SetEntProp(entity, Prop_Send, "m_spawnflags", 257);
 				SetEntProp(entity, Prop_Send, "m_nSolidType", 2);
-				SetEntityModel(entity, g_sErrorModel);
+				SetEntProp(entity, Prop_Send, "m_fEffects", 32);
 
 				float fMiddle[3];
 				GetMiddleOfABox(start, end, fMiddle);
-
 				TeleportEntity(entity, fMiddle, NULL_VECTOR, NULL_VECTOR);
-
-				DispatchSpawn(entity);
 
 				// Have the mins always be negative
 				start[0] = start[0] - fMiddle[0];
@@ -3642,7 +3646,6 @@ void TE_DrawBeamBox(int[] clients,int numClients, const float bottomCorner[3], c
 		TE_Send(clients, numClients);
 	}
 }
-
 
 void TE_SetupBeamRingPointToClient(int client, const float center[3], float Start_Radius, float End_Radius, int ModelIndex, int HaloIndex, int StartFrame, int FrameRate, float Life, float Width, float Amplitude, const int Color[4], int Speed, int Flags)
 {
