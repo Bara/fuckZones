@@ -33,6 +33,7 @@
 #define TE_FADELENGTH 0
 #define TE_AMPLITUDE 0.0
 #define TE_WIDTH 1.0
+#define TE_ENDWIDTH TE_WIDTH
 #define TE_SPEED 0
 #define TE_FLAGS 0
 
@@ -1145,7 +1146,7 @@ void OpenEditZoneMenu(int client, int entity)
 	}
 
 	menu.AddItem("effects_edit", "Edit Effect", draw);
-	menu.AddItem("effects_remove", "Remove Effect");
+	menu.AddItem("effects_remove", "Remove Effect", draw);
 
 	PushMenuCell(menu, "entity", entity);
 
@@ -2837,7 +2838,7 @@ public Action Timer_DisplayZones(Handle timer)
 					if (bWrite) PrintToChat(i, "1.1");
 					if (!IsPositionNull(CZone[i].Start) && !IsPositionNull(CZone[i].End))
 					{
-						TE_DrawBeamBoxToClient(i, CZone[i].Start, CZone[i].End, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_WIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+						TE_DrawBeamBoxToClient(i, CZone[i].Start, CZone[i].End, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 					}
 				}
 
@@ -2874,7 +2875,7 @@ public Action Timer_DisplayZones(Handle timer)
 							float nextpoint[3];
 							CZone[i].PointsData.GetArray(index, nextpoint, sizeof(nextpoint));
 
-							TE_SetupBeamPointsToClient(i, coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_WIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							TE_SetupBeamPointsToClient(i, coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 						}
 					}
 				}
@@ -2901,7 +2902,7 @@ public Action Timer_DisplayZones(Handle timer)
 						case ZONE_TYPE_BOX:
 						{
 							GetAbsBoundingBox(zone, vecStart, vecEnd);
-							TE_DrawBeamBoxToClient(i, vecStart, vecEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_WIDTH, TE_FADELENGTH, TE_AMPLITUDE, g_iZoneColor[zone], TE_SPEED);
+							TE_DrawBeamBoxToClient(i, vecStart, vecEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, g_iZoneColor[zone], TE_SPEED);
 							if (bWrite) PrintToChat(i, "2.1");
 						}
 
@@ -2935,7 +2936,7 @@ public Action Timer_DisplayZones(Handle timer)
 									float nextpoint[3];
 									g_aZonePointsData[zone].GetArray(index, nextpoint, sizeof(nextpoint));
 
-									TE_SetupBeamPointsToClient(i, coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_WIDTH, TE_FADELENGTH, TE_AMPLITUDE, g_iZoneColor[zone], TE_SPEED);
+									TE_SetupBeamPointsToClient(i, coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, g_iZoneColor[zone], TE_SPEED);
 								}
 							}
 						}
@@ -3564,7 +3565,7 @@ bool GetClientLookPoint(int client, float lookposition[3], bool beam = false)
 			g_smColorData.GetArray(CZone[client].Color, iColor, sizeof(iColor));
 		}
 		
-		TE_SetupBeamPointsToClient(client, vEyePos, lookposition, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_WIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+		TE_SetupBeamPointsToClient(client, vEyePos, lookposition, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 	}
 
 	return bHit;
