@@ -25,13 +25,13 @@
 
 #define MAX_ENTITY_LIMIT 4096
 
-#define TIMER_INTERVAL 0.5
-#define TE_LIFE TIMER_INTERVAL
+#define TIMER_INTERVAL 0.1
+#define TE_LIFE TIMER_INTERVAL+0.1
 #define TE_STARTFRAME 0
 #define TE_FRAMERATE 0
 #define TE_FADELENGTH 0
 #define TE_AMPLITUDE 0.0
-#define TE_WIDTH 2.5
+#define TE_WIDTH 2.0
 #define TE_SPEED 0
 #define TE_FLAGS 0
 
