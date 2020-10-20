@@ -69,14 +69,20 @@ int g_iDefaultHaloIndex = -1;
 
 //Entities Data
 ArrayList g_aZoneEntities = null;
-float g_fZoneRadius[MAX_ENTITY_LIMIT];
-int g_iZoneColor[MAX_ENTITY_LIMIT][4];
-StringMap g_smZoneEffects[MAX_ENTITY_LIMIT] = { null, ... };
-ArrayList g_aZonePointsData[MAX_ENTITY_LIMIT] = { null, ... };
-float g_fZonePointsHeight[MAX_ENTITY_LIMIT];
-float g_fZonePointsDistance[MAX_ENTITY_LIMIT];
-float g_fZonePointsMin[MAX_ENTITY_LIMIT][3];
-float g_fZonePointsMax[MAX_ENTITY_LIMIT][3];
+
+enum struct EntityData
+{
+	float Radius;
+	int Color[4];
+	StringMap Effects;
+	ArrayList PointsData;
+	float PointsHeight;
+	float PointsDistance;
+	float PointsMin[3];
+	float PointsMax[3];
+}
+
+EntityData Zone[MAX_ENTITY_LIMIT];
 
 //Not Box Type Zones Management
 bool g_bIsInsideZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
@@ -342,19 +348,19 @@ void ClearAllZones()
 
 		if (IsValidEntity(zone))
 		{
-			StringMapSnapshot snap1 = g_smZoneEffects[zone].Snapshot();
+			StringMapSnapshot snap1 = Zone[zone].Effects.Snapshot();
 			char sKey[128];
 			for (int j = 0; j < snap1.Length; j++)
 			{
 				snap1.GetKey(j, sKey, sizeof(sKey));
 
 				StringMap temp = null;
-				g_smZoneEffects[zone].GetValue(sKey, temp);
+				Zone[zone].Effects.GetValue(sKey, temp);
 				delete temp;
 			}
 			delete snap1;
-			delete g_smZoneEffects[zone];
-			delete g_aZonePointsData[zone];
+			delete Zone[zone].Effects;
+			delete Zone[zone].PointsData;
 
 			RemoveEntity(zone);
 		}
@@ -646,7 +652,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 						GetEntPropVector(zone, Prop_Data, "m_vecOrigin", vecOrigin);
 						float distance = GetVectorDistance(vecOrigin, vecPosition);
 
-						if (distance <= (g_fZoneRadius[zone] / 2.0))
+						if (distance <= (Zone[zone].Radius / 2.0))
 						{
 							Action action = IsNearExternalZone(client, zone, ZONE_TYPE_CIRCLE);
 
@@ -1109,9 +1115,9 @@ void OpenEditZoneMenu(int client, int entity)
 
 		// Debug Start
 		StringMap temp = null;
-		g_smZoneEffects[entity].GetValue(sEffect, temp);
+		Zone[entity].Effects.GetValue(sEffect, temp);
 
-		StringMapSnapshot snap1 = g_smZoneEffects[entity].Snapshot();
+		StringMapSnapshot snap1 = Zone[entity].Effects.Snapshot();
 		char sKey[128];
 		for (int j = 0; j < snap1.Length; j++)
 		{
@@ -1138,7 +1144,7 @@ void OpenEditZoneMenu(int client, int entity)
 		// Debug End
 
 		StringMap values = null;
-		if (g_smZoneEffects[entity].GetValue(sEffect, values) && values != null)
+		if (Zone[entity].Effects.GetValue(sEffect, values) && values != null)
 		{
 			draw = ITEMDRAW_DEFAULT;
 			break;
@@ -1217,7 +1223,7 @@ void OpenZonePropertiesMenu(int client, int entity)
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	char sRadiusAmount[64];
-	FormatEx(sRadiusAmount, sizeof(sRadiusAmount), "\nRadius is currently: %.2f", g_fZoneRadius[entity]);
+	FormatEx(sRadiusAmount, sizeof(sRadiusAmount), "\nRadius is currently: %.2f", Zone[entity].Radius);
 
 	Menu menu = new Menu(MenuHandle_ZonePropertiesMenu);
 	menu.SetTitle("Edit properties for zone '%s':%s", sName, GetZoneTypeByIndex(entity) == ZONE_TYPE_CIRCLE ? sRadiusAmount : "");
@@ -1382,22 +1388,22 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			}
 			else if (StrEqual(sInfo, "edit_add_radius"))
 			{
-				g_fZoneRadius[entity] += 5.0;
-				g_fZoneRadius[entity] = ClampCell(g_fZoneRadius[entity], 0.0, 430.0);
+				Zone[entity].Radius += 5.0;
+				Zone[entity].Radius = ClampCell(Zone[entity].Radius, 0.0, 430.0);
 
 				char sValue[64];
-				FloatToString(g_fZoneRadius[entity], sValue, sizeof(sValue));
+				FloatToString(Zone[entity].Radius, sValue, sizeof(sValue));
 				UpdateZonesConfigKey(entity, "radius", sValue);
 
 				OpenZonePropertiesMenu(param1, entity);
 			}
 			else if (StrEqual(sInfo, "edit_remove_radius"))
 			{
-				g_fZoneRadius[entity] -= 5.0;
-				g_fZoneRadius[entity] = ClampCell(g_fZoneRadius[entity], 0.0, 430.0);
+				Zone[entity].Radius -= 5.0;
+				Zone[entity].Radius = ClampCell(Zone[entity].Radius, 0.0, 430.0);
 
 				char sValue[64];
-				FloatToString(g_fZoneRadius[entity], sValue, sizeof(sValue));
+				FloatToString(Zone[entity].Radius, sValue, sizeof(sValue));
 				UpdateZonesConfigKey(entity, "radius", sValue);
 
 				OpenZonePropertiesMenu(param1, entity);
@@ -1407,7 +1413,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
 
-				g_aZonePointsData[entity].PushArray(vLookPoint, 3);
+				Zone[entity].PointsData.PushArray(vLookPoint, 3);
 
 				SaveZonePointsData(entity);
 
@@ -1415,12 +1421,12 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			}
 			else if (StrEqual(sInfo, "edit_remove_point"))
 			{
-				int size = g_aZonePointsData[entity].Length;
+				int size = Zone[entity].PointsData.Length;
 				int actual = size - 1;
 
 				if (size > 0)
 				{
-					g_aZonePointsData[entity].Resize(actual);
+					Zone[entity].PointsData.Resize(actual);
 					SaveZonePointsData(entity);
 				}
 
@@ -1428,7 +1434,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			}
 			else if (StrEqual(sInfo, "edit_clear_points"))
 			{
-				g_aZonePointsData[entity].Clear();
+				Zone[entity].PointsData.Clear();
 				SaveZonePointsData(entity);
 
 				OpenZonePropertiesMenu(param1, entity);
@@ -1749,13 +1755,13 @@ void SaveZonePointsData(int entity)
 
 		if (g_kvConfig.JumpToKey("points", true))
 		{
-			for (int i = 0; i < g_aZonePointsData[entity].Length; i++)
+			for (int i = 0; i < Zone[entity].PointsData.Length; i++)
 			{
 				char sID[12];
 				IntToString(i, sID, sizeof(sID));
 
 				float coordinates[3];
-				g_aZonePointsData[entity].GetArray(i, coordinates, sizeof(coordinates));
+				Zone[entity].PointsData.GetArray(i, coordinates, sizeof(coordinates));
 
 				g_kvConfig.SetVector(sID, coordinates);
 			}
@@ -1875,7 +1881,7 @@ public int MenuHandler_EditZoneColorMenu(Menu menu, MenuAction action, int param
 
 			int color[4];
 			g_smColorData.GetArray(sColor, color, sizeof(color));
-			g_iZoneColor[entity] = color;
+			Zone[entity].Color = color;
 
 			OpenEditZoneColorMenu(param1, entity);
 		}
@@ -2166,7 +2172,7 @@ bool AddZoneEffectMenu(int client, int entity)
 		int draw = ITEMDRAW_DEFAULT;
 
 		StringMap values = null;
-		if (g_smZoneEffects[entity].GetValue(sEffect, values) && values != null)
+		if (Zone[entity].Effects.GetValue(sEffect, values) && values != null)
 		{
 			draw = ITEMDRAW_DISABLED;
 		}
@@ -2231,7 +2237,7 @@ bool EditZoneEffectMenu(int client, int entity)
 		g_aEffectsList.GetString(i, sEffect, sizeof(sEffect));
 
 		StringMap values = null;
-		if (g_smZoneEffects[entity].GetValue(sEffect, values) && values != null)
+		if (Zone[entity].Effects.GetValue(sEffect, values) && values != null)
 		{
 			menu.AddItem(sEffect, sEffect);
 		}
@@ -2284,7 +2290,7 @@ bool ListZoneEffectKeys(int client, int entity, const char[] effect)
 	menu.SetTitle("Pick effect key to edit for %s:", sName);
 
 	StringMap smEffects = null;
-	g_smZoneEffects[entity].GetValue(effect, smEffects);
+	Zone[entity].Effects.GetValue(effect, smEffects);
 
 	if (smEffects != null)
 	{
@@ -2377,7 +2383,7 @@ void AddEffectToZone(int entity, const char[] effect)
 	{
 		if (keys != null)
 		{
-			g_smZoneEffects[entity].SetValue(effect, CloneHandle(keys));
+			Zone[entity].Effects.SetValue(effect, CloneHandle(keys));
 
 			StringMapSnapshot map = keys.Snapshot();
 
@@ -2427,7 +2433,7 @@ stock void UpdateZoneEffectKey(int entity, const char[] effect_name, const char[
 		g_kvConfig.Rewind();
 
 		StringMap smEffects = null;
-		g_smZoneEffects[entity].GetValue(effect_name, smEffects);
+		Zone[entity].Effects.GetValue(effect_name, smEffects);
 
 		StringMapSnapshot keys = smEffects.Snapshot();
 		for (int i = 0; i < keys.Length; i++)
@@ -2463,7 +2469,7 @@ bool RemoveZoneEffectMenu(int client, int entity)
 		int draw = ITEMDRAW_DEFAULT;
 
 		StringMap values = null;
-		if (!g_smZoneEffects[entity].GetValue(sEffect, values))
+		if (!Zone[entity].Effects.GetValue(sEffect, values))
 		{
 			draw = ITEMDRAW_DISABLED;
 		}
@@ -2522,10 +2528,10 @@ void RemoveEffectFromZone(int entity, const char[] effect)
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	StringMap values = null;
-	if (g_smZoneEffects[entity].GetValue(effect, values))
+	if (Zone[entity].Effects.GetValue(effect, values))
 	{
 		delete values;
-		g_smZoneEffects[entity].Remove(effect);
+		Zone[entity].Effects.Remove(effect);
 	}
 
 	if (g_kvConfig.JumpToKey(sName) && g_kvConfig.JumpToKey("effects", true) && g_kvConfig.JumpToKey(effect))
@@ -2759,7 +2765,7 @@ int GetZoneTypeByIndex(int entity)
 	}
 	else if (StrEqual(sClassname, "info_target"))
 	{
-		return g_aZonePointsData[entity] != null ? ZONE_TYPE_POLY : ZONE_TYPE_CIRCLE;
+		return Zone[entity].PointsData != null ? ZONE_TYPE_POLY : ZONE_TYPE_CIRCLE;
 	}
 
 	return ZONE_TYPE_BOX;
@@ -2902,29 +2908,29 @@ public Action Timer_DisplayZones(Handle timer)
 						case ZONE_TYPE_BOX:
 						{
 							GetAbsBoundingBox(zone, vecStart, vecEnd);
-							TE_DrawBeamBoxToClient(i, vecStart, vecEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, g_iZoneColor[zone], TE_SPEED);
+							TE_DrawBeamBoxToClient(i, vecStart, vecEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED);
 							if (bWrite) PrintToChat(i, "2.1");
 						}
 
 						case ZONE_TYPE_CIRCLE:
 						{
-							TE_SetupBeamRingPointToClient(i, vecOrigin, g_fZoneRadius[zone], g_fZoneRadius[zone] + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, g_iZoneColor[zone], TE_SPEED, TE_FLAGS);
+							TE_SetupBeamRingPointToClient(i, vecOrigin, Zone[zone].Radius, Zone[zone].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED, TE_FLAGS);
 							if (bWrite) PrintToChat(i, "2.2");
 						}
 
 						case ZONE_TYPE_POLY:
 						{
-							if (g_aZonePointsData[zone] != null && g_aZonePointsData[zone].Length > 0)
+							if (Zone[zone].PointsData != null && Zone[zone].PointsData.Length > 0)
 							{
 								if (bWrite) PrintToChat(i, "2.3");
-								for (int y = 0; y < g_aZonePointsData[zone].Length; y++)
+								for (int y = 0; y < Zone[zone].PointsData.Length; y++)
 								{
 									float coordinates[3];
-									g_aZonePointsData[zone].GetArray(y, coordinates, sizeof(coordinates));
+									Zone[zone].PointsData.GetArray(y, coordinates, sizeof(coordinates));
 
 									int index;
 
-									if (y + 1 == g_aZonePointsData[zone].Length)
+									if (y + 1 == Zone[zone].PointsData.Length)
 									{
 										index = 0;
 									}
@@ -2934,9 +2940,9 @@ public Action Timer_DisplayZones(Handle timer)
 									}
 
 									float nextpoint[3];
-									g_aZonePointsData[zone].GetArray(index, nextpoint, sizeof(nextpoint));
+									Zone[zone].PointsData.GetArray(index, nextpoint, sizeof(nextpoint));
 
-									TE_SetupBeamPointsToClient(i, coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, g_iZoneColor[zone], TE_SPEED);
+									TE_SetupBeamPointsToClient(i, coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED);
 								}
 							}
 						}
@@ -3053,27 +3059,27 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 				DispatchKeyValueVector(entity, "origin", start);
 				DispatchSpawn(entity);
 
-				delete g_aZonePointsData[entity];
+				delete Zone[entity].PointsData;
 
 				if (points != null)
 				{
-					g_aZonePointsData[entity] = view_as<ArrayList>(CloneHandle(points));
+					Zone[entity].PointsData = view_as<ArrayList>(CloneHandle(points));
 				}
 				else
 				{
-					g_aZonePointsData[entity] = new ArrayList(3);
+					Zone[entity].PointsData = new ArrayList(3);
 				}
 
-				g_fZonePointsHeight[entity] = points_height;
+				Zone[entity].PointsHeight = points_height;
 
 				float tempMin[3];
 				float tempMax[3];
 				float greatdiff;
 
-				for (int i = 0; i < g_aZonePointsData[entity].Length; i++)
+				for (int i = 0; i < Zone[entity].PointsData.Length; i++)
 				{
 					float coordinates[3];
-					g_aZonePointsData[entity].GetArray(i, coordinates, sizeof(coordinates));
+					Zone[entity].PointsData.GetArray(i, coordinates, sizeof(coordinates));
 
 					for (int j = 0; j < 3; j++)
 					{
@@ -3086,7 +3092,7 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 					}
 
 					float coordinates2[3];
-					g_aZonePointsData[entity].GetArray(0, coordinates2, sizeof(coordinates2));
+					Zone[entity].PointsData.GetArray(0, coordinates2, sizeof(coordinates2));
 
 					float diff = CalculateHorizontalDistance(coordinates2, coordinates, false);
 					if(diff > greatdiff) {
@@ -3096,11 +3102,11 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 
 				for (int y = 0; y < 3; y++)
 				{
-					g_fZonePointsMin[entity][y] = tempMin[y];
-					g_fZonePointsMax[entity][y] = tempMax[y];
+					Zone[entity].PointsMin[y] = tempMin[y];
+					Zone[entity].PointsMax[y] = tempMax[y];
 				}
 
-				g_fZonePointsDistance[entity] = greatdiff;
+				Zone[entity].PointsDistance = greatdiff;
 			}
 		}
 	}
@@ -3108,35 +3114,35 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 	if (IsValidEntity(entity))
 	{
 		g_aZoneEntities.Push(EntIndexToEntRef(entity));
-		g_fZoneRadius[entity] = radius;
+		Zone[entity].Radius = radius;
 
-		if (g_smZoneEffects[entity] != null)
+		if (Zone[entity].Effects != null)
 		{
-			StringMapSnapshot snap1 = g_smZoneEffects[entity].Snapshot();
+			StringMapSnapshot snap1 = Zone[entity].Effects.Snapshot();
 			char sKey[128];
 			for (int j = 0; j < snap1.Length; j++)
 			{
 				snap1.GetKey(j, sKey, sizeof(sKey));
 
 				StringMap temp = null;
-				g_smZoneEffects[entity].GetValue(sKey, temp);
+				Zone[entity].Effects.GetValue(sKey, temp);
 				delete temp;
 			}
 			delete snap1;
 		}
 
-		delete g_smZoneEffects[entity];
+		delete Zone[entity].Effects;
 
 		if (effects != null)
 		{
-			g_smZoneEffects[entity] = view_as<StringMap>(CloneHandle(effects));
+			Zone[entity].Effects = view_as<StringMap>(CloneHandle(effects));
 		}
 		else
 		{
-			g_smZoneEffects[entity] = new StringMap();
+			Zone[entity].Effects = new StringMap();
 		}
 
-		g_iZoneColor[entity] = color;
+		Zone[entity].Color = color;
 	}
 
 	LogMessage("Zone %s has been spawned %s as a %s zone with the entity index %i.", sName, IsValidEntity(entity) ? "successfully" : "not successfully", sType, entity);
@@ -3406,7 +3412,7 @@ void CallEffectCallback(int entity, int client, int callback)
 
 		Handle callbacks[MAX_EFFECT_CALLBACKS];
 		StringMap values = null;
-		if (g_smEffectCalls.GetArray(sEffect, callbacks, sizeof(callbacks)) && callbacks[callback] != null && GetForwardFunctionCount(callbacks[callback]) > 0 && g_smZoneEffects[entity].GetValue(sEffect, values))
+		if (g_smEffectCalls.GetArray(sEffect, callbacks, sizeof(callbacks)) && callbacks[callback] != null && GetForwardFunctionCount(callbacks[callback]) > 0 && Zone[entity].Effects.GetValue(sEffect, values))
 		{
 			Call_StartForward(callbacks[callback]);
 			Call_PushCell(client);
@@ -3425,20 +3431,20 @@ void DeleteZone(int entity, bool permanent = false)
 	int index = g_aZoneEntities.FindValue(EntIndexToEntRef(entity));
 	g_aZoneEntities.Erase(index);
 
-	StringMapSnapshot snap1 = g_smZoneEffects[entity].Snapshot();
+	StringMapSnapshot snap1 = Zone[entity].Effects.Snapshot();
 	char sKey[128];
 	for (int j = 0; j < snap1.Length; j++)
 	{
 		snap1.GetKey(j, sKey, sizeof(sKey));
 
 		StringMap temp = null;
-		g_smZoneEffects[entity].GetValue(sKey, temp);
+		Zone[entity].Effects.GetValue(sKey, temp);
 		delete temp;
 	}
 	delete snap1;
 
-	delete g_smZoneEffects[entity];
-	delete g_aZonePointsData[entity];
+	delete Zone[entity].Effects;
+	delete Zone[entity].PointsData;
 
 	RemoveEntity(entity);
 
@@ -3817,7 +3823,7 @@ bool IsPointInZone(float point[3], int zone)
 	//Get a ray outside of the polygon
 	float ray[3];
 	ray = point;
-	ray[1] += g_fZonePointsDistance[zone] + 50.0;
+	ray[1] += Zone[zone].PointsDistance + 50.0;
 	ray[2] = point[2];
 
 	//Store the x and y intersections of where the ray hits the line
@@ -3865,24 +3871,24 @@ bool IsPointInZone(float point[3], int zone)
 	//lEq2 = -lEq2;
 
 	//Loop through every point of the zone
-	int size = g_aZonePointsData[zone].Length;
+	int size = Zone[zone].PointsData.Length;
 
 	for (int i = 0; i < size; i++)
 	{
 		//Get current & next point
 		float currentpoint[3];
-		g_aZonePointsData[zone].GetArray(i, currentpoint, sizeof(currentpoint));
+		Zone[zone].PointsData.GetArray(i, currentpoint, sizeof(currentpoint));
 
 		float nextpoint[3];
 
 		//Check if its the last point, if it is, join it with the first
 		if (size == i + 1)
 		{
-			g_aZonePointsData[zone].GetArray(0, nextpoint, sizeof(nextpoint));
+			Zone[zone].PointsData.GetArray(0, nextpoint, sizeof(nextpoint));
 		}
 		else
 		{
-			g_aZonePointsData[zone].GetArray(i + 1, nextpoint, sizeof(nextpoint));
+			Zone[zone].PointsData.GetArray(i + 1, nextpoint, sizeof(nextpoint));
 		}
 
 		//Check if the ray intersects the point
@@ -3893,7 +3899,7 @@ bool IsPointInZone(float point[3], int zone)
 		bool baseInter = get_line_intersection(ray[1], ray[2], point[1], point[2], currentpoint[1], currentpoint[2], nextpoint[1], nextpoint[2], baseY, baseZ);
 
 		//Get intersections of the top
-		bool baseInter2 = get_line_intersection(ray[1], ray[2], point[1], point[2], currentpoint[1] + g_fZonePointsHeight[zone], currentpoint[2] + g_fZonePointsHeight[zone], nextpoint[1] + g_fZonePointsHeight[zone], nextpoint[2] + g_fZonePointsHeight[zone], baseY2, baseZ2);
+		bool baseInter2 = get_line_intersection(ray[1], ray[2], point[1], point[2], currentpoint[1] + Zone[zone].PointsHeight, currentpoint[2] + Zone[zone].PointsHeight, nextpoint[1] + Zone[zone].PointsHeight, nextpoint[2] + Zone[zone].PointsHeight, baseY2, baseZ2);
 
 		//If base intersected, store the line for later
 		if (baseInter && lIntNum < sizeof(fIntersect))
@@ -3929,7 +3935,7 @@ bool IsPointInZone(float point[3], int zone)
 			//Get slope of ray
 			float y = (lSlope * xint) + lEq;
 
-			if (y > y2 && y < y2 + 128.0 + g_fZonePointsHeight[zone])
+			if (y > y2 && y < y2 + 128.0 + Zone[zone].PointsHeight)
 			{
 				//The ray intersected the line and is within the height
 				intersections++;
@@ -3959,26 +3965,26 @@ bool IsPointInZone(float point[3], int zone)
 			float currentpoint[2][3];
 			float nextpoint[2][3];
 
-			if (g_aZonePointsData[zone].Length == i + 1)
+			if (Zone[zone].PointsData.Length == i + 1)
 			{
-				g_aZonePointsData[zone].GetArray(i, currentpoint[0], 3);
-				g_aZonePointsData[zone].GetArray(0, nextpoint[0], 3);
+				Zone[zone].PointsData.GetArray(i, currentpoint[0], 3);
+				Zone[zone].PointsData.GetArray(0, nextpoint[0], 3);
 			}
 			else
 			{
-				g_aZonePointsData[zone].GetArray(i, currentpoint[0], 3);
-				g_aZonePointsData[zone].GetArray(i + 1, nextpoint[0], 3);
+				Zone[zone].PointsData.GetArray(i, currentpoint[0], 3);
+				Zone[zone].PointsData.GetArray(i + 1, nextpoint[0], 3);
 			}
 
-			if (g_aZonePointsData[zone].Length == j + 1)
+			if (Zone[zone].PointsData.Length == j + 1)
 			{
-				g_aZonePointsData[zone].GetArray(j, currentpoint[1], 3);
-				g_aZonePointsData[zone].GetArray(0, nextpoint[1], 3);
+				Zone[zone].PointsData.GetArray(j, currentpoint[1], 3);
+				Zone[zone].PointsData.GetArray(0, nextpoint[1], 3);
 			}
 			else
 			{
-				g_aZonePointsData[zone].GetArray(j, currentpoint[1], 3);
-				g_aZonePointsData[zone].GetArray(j + 1, nextpoint[1], 3);
+				Zone[zone].PointsData.GetArray(j, currentpoint[1], 3);
+				Zone[zone].PointsData.GetArray(j + 1, nextpoint[1], 3);
 			}
 
 			//Get equation of both lines then find slope of them
@@ -4020,26 +4026,26 @@ bool IsPointInZone(float point[3], int zone)
 			float currentpoint[2][3];
 			float nextpoint[2][3];
 
-			if (g_aZonePointsData[zone].Length == i + 1)
+			if (Zone[zone].PointsData.Length == i + 1)
 			{
-				g_aZonePointsData[zone].GetArray(i, currentpoint[0], 3);
-				g_aZonePointsData[zone].GetArray(0, nextpoint[0], 3);
+				Zone[zone].PointsData.GetArray(i, currentpoint[0], 3);
+				Zone[zone].PointsData.GetArray(0, nextpoint[0], 3);
 			}
 			else
 			{
-				g_aZonePointsData[zone].GetArray(i, currentpoint[0], 3);
-				g_aZonePointsData[zone].GetArray(i + 1, nextpoint[0], 3);
+				Zone[zone].PointsData.GetArray(i, currentpoint[0], 3);
+				Zone[zone].PointsData.GetArray(i + 1, nextpoint[0], 3);
 			}
 
-			if (g_aZonePointsData[zone].Length == j + 1)
+			if (Zone[zone].PointsData.Length == j + 1)
 			{
-				g_aZonePointsData[zone].GetArray(j, currentpoint[1], 3);
-				g_aZonePointsData[zone].GetArray(0, nextpoint[1], 3);
+				Zone[zone].PointsData.GetArray(j, currentpoint[1], 3);
+				Zone[zone].PointsData.GetArray(0, nextpoint[1], 3);
 			}
 			else
 			{
-				g_aZonePointsData[zone].GetArray(j, currentpoint[1], 3);
-				g_aZonePointsData[zone].GetArray(j + 1, nextpoint[1], 3);
+				Zone[zone].PointsData.GetArray(j, currentpoint[1], 3);
+				Zone[zone].PointsData.GetArray(j + 1, nextpoint[1], 3);
 			}
 
 			//Get equation of both lines then find slope of them
@@ -4071,7 +4077,7 @@ bool IsPointInZone(float point[3], int zone)
 
 bool IsOriginInBox(float origin[3], int zone)
 {
-	if(origin[0] >= g_fZonePointsMin[zone][0] && origin[1] >= g_fZonePointsMin[zone][1] && origin[2] >= g_fZonePointsMin[zone][2] && origin[0] <= g_fZonePointsMax[zone][0] + g_fZonePointsHeight[zone] && origin[1] <= g_fZonePointsMax[zone][1] + g_fZonePointsHeight[zone] && origin[2] <= g_fZonePointsMax[zone][2] + g_fZonePointsHeight[zone])
+	if(origin[0] >= Zone[zone].PointsMin[0] && origin[1] >= Zone[zone].PointsMin[1] && origin[2] >= Zone[zone].PointsMin[2] && origin[0] <= Zone[zone].PointsMax[0] + Zone[zone].PointsHeight && origin[1] <= Zone[zone].PointsMax[1] + Zone[zone].PointsHeight && origin[2] <= Zone[zone].PointsMax[2] + Zone[zone].PointsHeight)
 	{
 		return true;
 	}
