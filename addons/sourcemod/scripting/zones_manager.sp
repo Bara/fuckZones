@@ -59,7 +59,6 @@ enum struct eForwards
 
 eForwards Forward;
 
-bool g_bLate;
 KeyValues g_kvConfig = null;
 int g_iRegenerationTime = -1;
 
@@ -145,7 +144,6 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	Forward.TouchZone_Post = new GlobalForward("ZonesManager_OnTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	Forward.EndTouchZone_Post = new GlobalForward("ZonesManager_OnEndTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
 
-	g_bLate = late;
 	return APLRes_Success;
 }
 
@@ -246,26 +244,6 @@ void ReparseMapZonesConfig(bool delete_config = false)
 public void OnConfigsExecuted()
 {
 	ParseColorsData();
-
-	if (g_bLate)
-	{
-		SpawnAllZones();
-
-		for (int i = 1; i <= MaxClients; i++)
-		{
-			if (IsClientConnected(i))
-			{
-				OnClientConnected(i);
-			}
-
-			if (AreClientCookiesCached(i))
-			{
-				OnClientCookiesCached(i);
-			}
-		}
-
-		g_bLate = false;
-	}
 }
 
 public void OnAllPluginsLoaded()
