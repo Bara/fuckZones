@@ -2659,20 +2659,18 @@ void CreateNewZone(int client)
 	GetZoneNameByType(CZone[client].Type, sType, sizeof(sType));
 	g_kvConfig.SetString("type", sType);
 
-	int iColor[4];
-
-	iColor[0] = 255;
-	iColor[1] = 20;
-	iColor[2] = 147;
-	iColor[3] = 255;
+	CZone[client].iColors[0] = 255;
+	CZone[client].iColors[1] = 20;
+	CZone[client].iColors[2] = 147;
+	CZone[client].iColors[3] = 255;
 
 	if (strlen(CZone[client].Color) > 0)
 	{
-		g_smColorData.GetArray(CZone[client].Color, iColor, sizeof(iColor));
+		g_smColorData.GetArray(CZone[client].Color, CZone[client].iColors, sizeof(eCreateZone::iColors));
 	}
 
 	char sColor[64];
-	FormatEx(sColor, sizeof(sColor), "%i %i %i %i", iColor[0], iColor[1], iColor[2], iColor[3]);
+	FormatEx(sColor, sizeof(sColor), "%i %i %i %i", CZone[client].iColors[0], CZone[client].iColors[1], CZone[client].iColors[2], CZone[client].iColors[3]);
 	g_kvConfig.SetString("color", sColor);
 
 	CZone[client].PointsHeight = 256.0;
@@ -3091,6 +3089,7 @@ int CreateZone(eCreateZone Data)
 	if (IsValidEntity(entity))
 	{
 		g_aZoneEntities.Push(EntIndexToEntRef(entity));
+
 		Zone[entity].Radius = Data.Radius;
 
 		if (Zone[entity].Effects != null)
