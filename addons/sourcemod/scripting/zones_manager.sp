@@ -412,8 +412,6 @@ void SpawnAllZones()
 				g_kvConfig.GoBack();
 			}
 
-
-
 			eCreateZone zone;
 			strcopy(zone.Name, sizeof(eCreateZone::Name), sName);
 			zone.Type = type;
@@ -2931,7 +2929,7 @@ int CreateZone(eCreateZone Data)
 	char sType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneNameByType(Data.Type, sType, sizeof(sType));
 
-	LogMessage("Spawning Data: %s - %s - %.2f/%.2f/%.2f - %.2f/%.2f/%.2f - %.2f", Data.Name, sType, Data.Start[0], Data.Start[1], Data.Start[2], Data.End[0], Data.End[1], Data.End[2], Data.Radius);
+	LogMessage("Spawning Zone: %s - %s - %.2f/%.2f/%.2f - %.2f/%.2f/%.2f - %.2f", Data.Name, sType, Data.Start[0], Data.Start[1], Data.Start[2], Data.End[0], Data.End[1], Data.End[2], Data.Radius);
 
 	int entity = -1;
 	switch (Data.Type)
