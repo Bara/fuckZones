@@ -100,8 +100,10 @@ enum struct eCreateZone
 	float End[3];
 	float Radius;
 	char Color[64];
+	int iColors[4];
 	ArrayList PointsData;
 	float PointsHeight;
+	StringMap Effects;
 	bool ShowZone;
 	bool SetName;
 }
@@ -410,7 +412,19 @@ void SpawnAllZones()
 				g_kvConfig.GoBack();
 			}
 
-			CreateZone(sName, type, vStartPosition, vEndPosition, fRadius, iColor, points, points_height, effects);
+
+
+			eCreateZone zone;
+			strcopy(zone.Name, sizeof(eCreateZone::Name), sName);
+			zone.Type = type;
+			zone.Start = vStartPosition;
+			zone.End = vEndPosition;
+			zone.Radius = fRadius;
+			zone.iColors = iColor;
+			zone.PointsData = points;
+			zone.PointsHeight = points_height;
+			zone.Effects = effects;
+			CreateZone(zone);
 		}
 		while(g_kvConfig.GotoNextKey());
 	}
@@ -496,7 +510,17 @@ int SpawnAZone(const char[] name)
 			g_kvConfig.GoBack();
 		}
 
-		return CreateZone(name, type, vStartPosition, vEndPosition, fRadius, iColor, points, points_height, effects);
+		eCreateZone zone;
+		strcopy(zone.Name, sizeof(eCreateZone::Name), name);
+		zone.Type = type;
+		zone.Start = vStartPosition;
+		zone.End = vEndPosition;
+		zone.Radius = fRadius;
+		zone.iColors = iColor;
+		zone.PointsData = points;
+		zone.PointsHeight = points_height;
+		zone.Effects = effects;
+		return CreateZone(zone);
 	}
 
 	return -1;
@@ -2667,7 +2691,7 @@ void CreateNewZone(int client)
 
 	SaveMapConfig();
 
-	CreateZone(CZone[client].Name, CZone[client].Type, CZone[client].Start, CZone[client].End, CZone[client].Radius, iColor, CZone[client].PointsData, CZone[client].PointsHeight);
+	CreateZone(CZone[client]);
 	CPrintToChat(client, "Zone '%s' has been created successfully.", CZone[client].Name);
 	CZone[client].ShowZone = false;
 }
@@ -2902,15 +2926,15 @@ void GetAbsBoundingBox(int ent, float mins[3], float maxs[3])
 	maxs[2] += origin[2];
 }
 
-int CreateZone(const char[] sName, int type, float start[3], float end[3], float radius, int color[4], ArrayList &points = null, float points_height = 256.0, StringMap &effects = null)
+int CreateZone(eCreateZone Data)
 {
 	char sType[MAX_ZONE_TYPE_LENGTH];
-	GetZoneNameByType(type, sType, sizeof(sType));
+	GetZoneNameByType(Data.Type, sType, sizeof(sType));
 
-	LogMessage("Spawning Zone: %s - %s - %.2f/%.2f/%.2f - %.2f/%.2f/%.2f - %.2f", sName, sType, start[0], start[1], start[2], end[0], end[1], end[2], radius);
+	LogMessage("Spawning Data: %s - %s - %.2f/%.2f/%.2f - %.2f/%.2f/%.2f - %.2f", Data.Name, sType, Data.Start[0], Data.Start[1], Data.Start[2], Data.End[0], Data.End[1], Data.End[2], Data.Radius);
 
 	int entity = -1;
-	switch (type)
+	switch (Data.Type)
 	{
 		case ZONE_TYPE_BOX:
 		{
@@ -2920,7 +2944,7 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 			{
 				SetEntityModel(entity, ZONE_MODEL);
 
-				DispatchKeyValue(entity, "targetname", sName);
+				DispatchKeyValue(entity, "targetname", Data.Name);
 				DispatchKeyValue(entity, "spawnflags", "257");
 				DispatchKeyValue(entity, "StartDisabled", "0");
 				DispatchKeyValue(entity, "wait", "0");
@@ -2932,33 +2956,33 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 				SetEntProp(entity, Prop_Send, "m_fEffects", 32);
 
 				float fMiddle[3];
-				GetMiddleOfABox(start, end, fMiddle);
+				GetMiddleOfABox(Data.Start, Data.End, fMiddle);
 				TeleportEntity(entity, fMiddle, NULL_VECTOR, NULL_VECTOR);
 
 				// Have the mins always be negative
-				start[0] = start[0] - fMiddle[0];
-				if(start[0] > 0.0)
-					start[0] *= -1.0;
-				start[1] = start[1] - fMiddle[1];
-				if(start[1] > 0.0)
-					start[1] *= -1.0;
-				start[2] = start[2] - fMiddle[2];
-				if(start[2] > 0.0)
-					start[2] *= -1.0;
+				Data.Start[0] = Data.Start[0] - fMiddle[0];
+				if(Data.Start[0] > 0.0)
+					Data.Start[0] *= -1.0;
+				Data.Start[1] = Data.Start[1] - fMiddle[1];
+				if(Data.Start[1] > 0.0)
+					Data.Start[1] *= -1.0;
+				Data.Start[2] = Data.Start[2] - fMiddle[2];
+				if(Data.Start[2] > 0.0)
+					Data.Start[2] *= -1.0;
 
 				// And the maxs always be positive
-				end[0] = end[0] - fMiddle[0];
-				if(end[0] < 0.0)
-					end[0] *= -1.0;
-				end[1] = end[1] - fMiddle[1];
-				if(end[1] < 0.0)
-					end[1] *= -1.0;
-				end[2] = end[2] - fMiddle[2];
-				if(end[2] < 0.0)
-					end[2] *= -1.0;
+				Data.End[0] = Data.End[0] - fMiddle[0];
+				if(Data.End[0] < 0.0)
+					Data.End[0] *= -1.0;
+				Data.End[1] = Data.End[1] - fMiddle[1];
+				if(Data.End[1] < 0.0)
+					Data.End[1] *= -1.0;
+				Data.End[2] = Data.End[2] - fMiddle[2];
+				if(Data.End[2] < 0.0)
+					Data.End[2] *= -1.0;
 
-				SetEntPropVector(entity, Prop_Data, "m_vecMins", start);
-				SetEntPropVector(entity, Prop_Data, "m_vecMaxs", end);
+				SetEntPropVector(entity, Prop_Data, "m_vecMins", Data.Start);
+				SetEntPropVector(entity, Prop_Data, "m_vecMaxs", Data.End);
 
 				SDKHook(entity, SDKHook_StartTouchPost, Zones_StartTouch);
 				SDKHook(entity, SDKHook_TouchPost, Zones_Touch);
@@ -2975,8 +2999,8 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 
 			if (IsValidEntity(entity))
 			{
-				DispatchKeyValue(entity, "targetname", sName);
-				DispatchKeyValueVector(entity, "origin", start);
+				DispatchKeyValue(entity, "targetname", Data.Name);
+				DispatchKeyValueVector(entity, "origin", Data.Start);
 				DispatchSpawn(entity);
 			}
 		}
@@ -2987,22 +3011,22 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 
 			if (IsValidEntity(entity))
 			{
-				DispatchKeyValue(entity, "targetname", sName);
-				DispatchKeyValueVector(entity, "origin", start);
+				DispatchKeyValue(entity, "targetname", Data.Name);
+				DispatchKeyValueVector(entity, "origin", Data.Start);
 				DispatchSpawn(entity);
 
 				delete Zone[entity].PointsData;
 
-				if (points != null)
+				if (Data.PointsData != null)
 				{
-					Zone[entity].PointsData = view_as<ArrayList>(CloneHandle(points));
+					Zone[entity].PointsData = view_as<ArrayList>(CloneHandle(Data.PointsData));
 				}
 				else
 				{
 					Zone[entity].PointsData = new ArrayList(3);
 				}
 
-				Zone[entity].PointsHeight = points_height;
+				Zone[entity].PointsHeight = Data.PointsHeight;
 
 				float tempMin[3];
 				float tempMax[3];
@@ -3046,7 +3070,7 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 	if (IsValidEntity(entity))
 	{
 		g_aZoneEntities.Push(EntIndexToEntRef(entity));
-		Zone[entity].Radius = radius;
+		Zone[entity].Radius = Data.Radius;
 
 		if (Zone[entity].Effects != null)
 		{
@@ -3065,22 +3089,22 @@ int CreateZone(const char[] sName, int type, float start[3], float end[3], float
 
 		delete Zone[entity].Effects;
 
-		if (effects != null)
+		if (Data.Effects != null)
 		{
-			Zone[entity].Effects = view_as<StringMap>(CloneHandle(effects));
+			Zone[entity].Effects = view_as<StringMap>(CloneHandle(Data.Effects));
 		}
 		else
 		{
 			Zone[entity].Effects = new StringMap();
 		}
 
-		Zone[entity].Color = color;
+		Zone[entity].Color = Data.iColors;
 	}
 
-	LogMessage("Zone %s has been spawned %s as a %s zone with the entity index %i.", sName, IsValidEntity(entity) ? "successfully" : "not successfully", sType, entity);
+	LogMessage("Zone %s has been spawned %s as a %s zone with the entity index %i.", Data.Name, IsValidEntity(entity) ? "successfully" : "not successfully", sType, entity);
 
-	delete points;
-	delete effects;
+	delete Data.PointsData;
+	delete Data.Effects;
 	
 	return entity;
 }
