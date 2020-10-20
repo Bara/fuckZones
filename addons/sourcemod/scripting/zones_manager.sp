@@ -46,20 +46,24 @@
 ConVar g_cPrecisionValue = null;
 ConVar g_cRegenerateSpam = null;
 
-GlobalForward g_fwQueueEffects_Post = null;
-GlobalForward g_fwStartTouchZone = null;
-GlobalForward g_fwTouchZone = null;
-GlobalForward g_fwEndTouchZone = null;
-GlobalForward g_fwStartTouchZone_Post = null;
-GlobalForward g_fwTouchZone_Post = null;
-GlobalForward g_fwEndTouchZone_Post = null;
+enum struct eForwards
+{
+	GlobalForward QueueEffects_Post;
+	GlobalForward StartTouchZone;
+	GlobalForward TouchZone;
+	GlobalForward EndTouchZone;
+	GlobalForward StartTouchZone_Post;
+	GlobalForward TouchZone_Post;
+	GlobalForward EndTouchZone_Post;
+}
+
+eForwards Forward;
 
 bool g_bLate;
 KeyValues g_kvConfig = null;
-bool g_bShowAllZones[MAXPLAYERS + 1] = {true, ...};
 Handle g_coShowZones = null;
+int g_iRegenerationTime = -1;
 
-bool g_bIsInZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 
 ArrayList g_aColors = null;
 StringMap g_smColorData = null;
@@ -70,7 +74,7 @@ int g_iDefaultHaloIndex = -1;
 //Entities Data
 ArrayList g_aZoneEntities = null;
 
-enum struct EntityData
+enum struct eEntityData
 {
 	float Radius;
 	int Color[4];
@@ -82,11 +86,7 @@ enum struct EntityData
 	float PointsMax[3];
 }
 
-EntityData Zone[MAX_ENTITY_LIMIT];
-
-//Not Box Type Zones Management
-bool g_bIsInsideZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
-bool g_bIsInsideZone_Post[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
+eEntityData Zone[MAX_ENTITY_LIMIT];
 
 //Effects Data
 StringMap g_smEffectCalls = null;
@@ -115,8 +115,11 @@ int g_iEffectKeyValue_Entity[MAXPLAYERS + 1];
 char g_sEffectKeyValue_Effect[MAXPLAYERS + 1][MAX_EFFECT_NAME_LENGTH];
 char g_sEffectKeyValue_EffectKey[MAXPLAYERS + 1][MAX_KEY_NAME_LENGTH];
 int g_iEditingName[MAXPLAYERS + 1] = {INVALID_ENT_REFERENCE, ...};
-int g_iRegenerationTime = -1;
 int g_iTime[MAXPLAYERS + 1] = { -1, ... };
+bool g_bShowAllZones[MAXPLAYERS + 1] = {true, ...};
+bool g_bIsInZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
+bool g_bIsInsideZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
+bool g_bIsInsideZone_Post[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 
 public Plugin myinfo =
 {
@@ -137,13 +140,13 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("ZonesManager_IsClientInZone", Native_IsClientInZone);
 	CreateNative("ZonesManager_TeleportClientToZone", Native_TeleportClientToZone);
 
-	g_fwQueueEffects_Post = new GlobalForward("ZonesManager_OnQueueEffects_Post", ET_Ignore);
-	g_fwStartTouchZone = new GlobalForward("ZonesManager_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
-	g_fwTouchZone = new GlobalForward("ZonesManager_OnTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
-	g_fwEndTouchZone = new GlobalForward("ZonesManager_OnEndTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
-	g_fwStartTouchZone_Post = new GlobalForward("ZonesManager_OnStartTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
-	g_fwTouchZone_Post = new GlobalForward("ZonesManager_OnTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
-	g_fwEndTouchZone_Post = new GlobalForward("ZonesManager_OnEndTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.QueueEffects_Post = new GlobalForward("ZonesManager_OnQueueEffects_Post", ET_Ignore);
+	Forward.StartTouchZone = new GlobalForward("ZonesManager_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.TouchZone = new GlobalForward("ZonesManager_OnTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.EndTouchZone = new GlobalForward("ZonesManager_OnEndTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.StartTouchZone_Post = new GlobalForward("ZonesManager_OnStartTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.TouchZone_Post = new GlobalForward("ZonesManager_OnTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.EndTouchZone_Post = new GlobalForward("ZonesManager_OnEndTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
 
 	g_bLate = late;
 	return APLRes_Success;
@@ -297,7 +300,7 @@ void QueueEffects(bool reset = true)
 		g_aEffectsList.Clear();
 	}
 
-	Call_StartForward(g_fwQueueEffects_Post);
+	Call_StartForward(Forward.QueueEffects_Post);
 	Call_Finish();
 }
 
@@ -3162,7 +3165,7 @@ Action IsNearExternalZone(int client, int entity, int type)
 
 	if (!g_bIsInsideZone[client][entity])
 	{
-		Call_StartForward(g_fwStartTouchZone);
+		Call_StartForward(Forward.StartTouchZone);
 		Call_PushCell(client);
 		Call_PushCell(entity);
 		Call_PushString(sName);
@@ -3173,7 +3176,7 @@ Action IsNearExternalZone(int client, int entity, int type)
 	}
 	else
 	{
-		Call_StartForward(g_fwTouchZone);
+		Call_StartForward(Forward.TouchZone);
 		Call_PushCell(client);
 		Call_PushCell(entity);
 		Call_PushString(sName);
@@ -3193,7 +3196,7 @@ Action IsNotNearExternalZone(int client, int entity, int type)
 
 	if (g_bIsInsideZone[client][entity])
 	{
-		Call_StartForward(g_fwEndTouchZone);
+		Call_StartForward(Forward.EndTouchZone);
 		Call_PushCell(client);
 		Call_PushCell(entity);
 		Call_PushString(sName);
@@ -3215,7 +3218,7 @@ void IsNearExternalZone_Post(int client, int entity, int type)
 	{
 		CallEffectCallback(entity, client, EFFECT_CALLBACK_ONENTERZONE);
 
-		Call_StartForward(g_fwStartTouchZone_Post);
+		Call_StartForward(Forward.StartTouchZone_Post);
 		Call_PushCell(client);
 		Call_PushCell(entity);
 		Call_PushString(sName);
@@ -3230,7 +3233,7 @@ void IsNearExternalZone_Post(int client, int entity, int type)
 	{
 		CallEffectCallback(entity, client, EFFECT_CALLBACK_ONACTIVEZONE);
 
-		Call_StartForward(g_fwTouchZone_Post);
+		Call_StartForward(Forward.TouchZone_Post);
 		Call_PushCell(client);
 		Call_PushCell(entity);
 		Call_PushString(sName);
@@ -3248,7 +3251,7 @@ void IsNotNearExternalZone_Post(int client, int entity, int type)
 	{
 		CallEffectCallback(entity, client, EFFECT_CALLBACK_ONLEAVEZONE);
 
-		Call_StartForward(g_fwEndTouchZone_Post);
+		Call_StartForward(Forward.EndTouchZone_Post);
 		Call_PushCell(client);
 		Call_PushCell(entity);
 		Call_PushString(sName);
@@ -3275,7 +3278,7 @@ public Action Zones_StartTouch(int entity, int other)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	Call_StartForward(g_fwStartTouchZone);
+	Call_StartForward(Forward.StartTouchZone);
 	Call_PushCell(client);
 	Call_PushCell(entity);
 	Call_PushString(sName);
@@ -3299,7 +3302,7 @@ public Action Zones_Touch(int entity, int other)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	Call_StartForward(g_fwTouchZone);
+	Call_StartForward(Forward.TouchZone);
 	Call_PushCell(client);
 	Call_PushCell(entity);
 	Call_PushString(sName);
@@ -3325,7 +3328,7 @@ public Action Zones_EndTouch(int entity, int other)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	Call_StartForward(g_fwEndTouchZone);
+	Call_StartForward(Forward.EndTouchZone);
 	Call_PushCell(client);
 	Call_PushCell(entity);
 	Call_PushString(sName);
@@ -3351,7 +3354,7 @@ public void Zones_StartTouchPost(int entity, int other)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	Call_StartForward(g_fwStartTouchZone_Post);
+	Call_StartForward(Forward.StartTouchZone_Post);
 	Call_PushCell(client);
 	Call_PushCell(entity);
 	Call_PushString(sName);
@@ -3373,7 +3376,7 @@ public void Zones_TouchPost(int entity, int other)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	Call_StartForward(g_fwTouchZone_Post);
+	Call_StartForward(Forward.TouchZone_Post);
 	Call_PushCell(client);
 	Call_PushCell(entity);
 	Call_PushString(sName);
@@ -3395,7 +3398,7 @@ public void Zones_EndTouchPost(int entity, int other)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	Call_StartForward(g_fwEndTouchZone_Post);
+	Call_StartForward(Forward.EndTouchZone_Post);
 	Call_PushCell(client);
 	Call_PushCell(entity);
 	Call_PushString(sName);
