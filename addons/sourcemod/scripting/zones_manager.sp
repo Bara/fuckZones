@@ -2023,6 +2023,7 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 			AddMenuItemFormat(menu, "add_radius", ITEMDRAW_DEFAULT, "Radius +%.1f: %.1f", g_cPrecisionValue.FloatValue, CZone[client].Radius);
 			AddMenuItemFormat(menu, "rem_radius", ITEMDRAW_DEFAULT, "Radius -%.1f: %.1f", g_cPrecisionValue.FloatValue, CZone[client].Radius);
 			// TODO: Add cvar for default radius
+			// TODO: Add customizable points height
 		}
 
 		case ZONE_TYPE_POLY:
@@ -2714,6 +2715,8 @@ void CreateNewZone(int client)
 			}
 		}
 	}
+
+	g_kvConfig.SetNum("display", CZone[client].Display);
 
 	SaveMapConfig();
 
