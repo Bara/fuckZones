@@ -59,6 +59,8 @@ enum struct eForwards
 
 eForwards Forward;
 
+bool g_bLate;
+
 KeyValues g_kvConfig = null;
 int g_iRegenerationTime = -1;
 
@@ -146,6 +148,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	Forward.TouchZone_Post = new GlobalForward("ZonesManager_OnTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	Forward.EndTouchZone_Post = new GlobalForward("ZonesManager_OnEndTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
 
+	g_bLate = late;
 	return APLRes_Success;
 }
 
@@ -179,11 +182,24 @@ public void OnPluginStart()
 	g_aColors = new ArrayList(ByteCountToCells(64));
 	g_smColorData = new StringMap();
 
+	g_iRegenerationTime = -1;
+	
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		for (int x = MaxClients; x < MAX_ENTITY_LIMIT; x++)
+		{
+			g_bIsInZone[i][x] = false;
+		}
+	}
+
+	ReparseMapZonesConfig();
+
 	CreateTimer(TIMER_INTERVAL, Timer_DisplayZones, _, TIMER_REPEAT);
 }
 
 public void OnMapStart()
 {
+	g_iRegenerationTime = -1;
 	g_iDefaultModelIndex = PrecacheModel(DEFAULT_MODELINDEX, true);
 	g_iDefaultHaloIndex = PrecacheModel(DEFAULT_HALOINDEX, true);
 	PrecacheModel(ZONE_MODEL, true);
@@ -246,6 +262,13 @@ void ReparseMapZonesConfig(bool delete_config = false)
 public void OnConfigsExecuted()
 {
 	ParseColorsData();
+
+	if (g_bLate)
+	{
+		SpawnAllZones();
+
+		g_bLate = false;
+	}
 }
 
 public void OnAllPluginsLoaded()
@@ -2846,59 +2869,59 @@ public Action Timer_DisplayZones(Handle timer)
 				}
 			}
 		}
+	}
 
-		float vecOrigin[3];
-		float vecStart[3];
-		float vecEnd[3];
+	float vecOrigin[3];
+	float vecStart[3];
+	float vecEnd[3];
 
-		for (int x = 0; x < g_aZoneEntities.Length; x++)
+	for (int x = 0; x < g_aZoneEntities.Length; x++)
+	{
+		int zone = EntRefToEntIndex(g_aZoneEntities.Get(x));
+
+		if (IsValidEntity(zone))
 		{
-			int zone = EntRefToEntIndex(g_aZoneEntities.Get(x));
+			GetEntPropVector(zone, Prop_Data, "m_vecOrigin", vecOrigin);
 
-			if (IsValidEntity(zone))
+			switch (GetZoneTypeByIndex(zone))
 			{
-				GetEntPropVector(zone, Prop_Data, "m_vecOrigin", vecOrigin);
-
-				switch (GetZoneTypeByIndex(zone))
+				case ZONE_TYPE_BOX:
 				{
-					case ZONE_TYPE_BOX:
-					{
-						GetAbsBoundingBox(zone, vecStart, vecEnd);
-						TE_DrawBeamBoxToAll(vecStart, vecEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED);
-					}
+					GetAbsBoundingBox(zone, vecStart, vecEnd);
+					TE_DrawBeamBoxToAll(vecStart, vecEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED);
+				}
 
-					case ZONE_TYPE_CIRCLE:
-					{
-						TE_SetupBeamRingPoint(vecOrigin, Zone[zone].Radius, Zone[zone].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED, TE_FLAGS);
-						TE_SendToAll();
-					}
+				case ZONE_TYPE_CIRCLE:
+				{
+					TE_SetupBeamRingPoint(vecOrigin, Zone[zone].Radius, Zone[zone].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED, TE_FLAGS);
+					TE_SendToAll();
+				}
 
-					case ZONE_TYPE_POLY:
+				case ZONE_TYPE_POLY:
+				{
+					if (Zone[zone].PointsData != null && Zone[zone].PointsData.Length > 0)
 					{
-						if (Zone[zone].PointsData != null && Zone[zone].PointsData.Length > 0)
+						for (int y = 0; y < Zone[zone].PointsData.Length; y++)
 						{
-							for (int y = 0; y < Zone[zone].PointsData.Length; y++)
+							float coordinates[3];
+							Zone[zone].PointsData.GetArray(y, coordinates, sizeof(coordinates));
+
+							int index;
+
+							if (y + 1 == Zone[zone].PointsData.Length)
 							{
-								float coordinates[3];
-								Zone[zone].PointsData.GetArray(y, coordinates, sizeof(coordinates));
-
-								int index;
-
-								if (y + 1 == Zone[zone].PointsData.Length)
-								{
-									index = 0;
-								}
-								else
-								{
-									index = y + 1;
-								}
-
-								float nextpoint[3];
-								Zone[zone].PointsData.GetArray(index, nextpoint, sizeof(nextpoint));
-
-								TE_SetupBeamPoints(coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED);
-								TE_SendToAll();
+								index = 0;
 							}
+							else
+							{
+								index = y + 1;
+							}
+
+							float nextpoint[3];
+							Zone[zone].PointsData.GetArray(index, nextpoint, sizeof(nextpoint));
+
+							TE_SetupBeamPoints(coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED);
+							TE_SendToAll();
 						}
 					}
 				}
