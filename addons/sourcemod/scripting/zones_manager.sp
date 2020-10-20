@@ -1230,6 +1230,7 @@ void OpenZonePropertiesMenu(int client, int entity)
 	menu.AddItem("edit_name", "Name");
 	menu.AddItem("edit_type", "Type");
 	menu.AddItem("edit_color", "Color");
+	// TODO: Add new options from recently added create zone opens
 
 	switch (GetZoneTypeByIndex(entity))
 	{
