@@ -61,7 +61,6 @@ eForwards Forward;
 
 bool g_bLate;
 KeyValues g_kvConfig = null;
-Handle g_coShowZones = null;
 int g_iRegenerationTime = -1;
 
 
@@ -116,7 +115,6 @@ char g_sEffectKeyValue_Effect[MAXPLAYERS + 1][MAX_EFFECT_NAME_LENGTH];
 char g_sEffectKeyValue_EffectKey[MAXPLAYERS + 1][MAX_KEY_NAME_LENGTH];
 int g_iEditingName[MAXPLAYERS + 1] = {INVALID_ENT_REFERENCE, ...};
 int g_iTime[MAXPLAYERS + 1] = { -1, ... };
-bool g_bShowAllZones[MAXPLAYERS + 1] = {true, ...};
 bool g_bIsInZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 bool g_bIsInsideZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 bool g_bIsInsideZone_Post[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
@@ -181,8 +179,6 @@ public void OnPluginStart()
 
 	g_aColors = new ArrayList(ByteCountToCells(64));
 	g_smColorData = new StringMap();
-
-	g_coShowZones = RegClientCookie("zones_manager_show_zones", "Show zones that are configured correctly to clients.", CookieAccess_Public);
 
 	CreateTimer(TIMER_INTERVAL, Timer_DisplayZones, _, TIMER_REPEAT);
 }
@@ -307,27 +303,6 @@ void QueueEffects(bool reset = true)
 public void OnPluginEnd()
 {
 	ClearAllZones();
-}
-
-public void OnClientConnected(int client)
-{
-	g_bShowAllZones[client] = true;
-}
-
-public void OnClientCookiesCached(int client)
-{
-	char sValue[12];
-	GetClientCookie(client, g_coShowZones, sValue, sizeof(sValue));
-
-	if (strlen(sValue) == 0)
-	{
-		g_bShowAllZones[client] = true;
-		SetClientCookie(client, g_coShowZones, "1");
-	}
-	else
-	{
-		g_bShowAllZones[client] = view_as<bool>(StringToInt(sValue));
-	}
 }
 
 public void OnClientDisconnect(int client)
@@ -866,7 +841,6 @@ void OpenZonesMenu(int client)
 
 	menu.AddItem("create", "Create Zones");
 	menu.AddItem("manage", "Manage Zones\n ");
-	AddMenuItemFormat(menu, "viewall", ITEMDRAW_DEFAULT, "Draw Zones: %s", g_bShowAllZones[client] ? "On" : "Off");
 	AddMenuItemFormat(menu, "regenerate", ITEMDRAW_DEFAULT, "Regenerate Zones");
 	AddMenuItemFormat(menu, "deleteall", ITEMDRAW_DEFAULT, "Delete all Zones");
 
@@ -889,12 +863,6 @@ public int MenuHandle_ZonesMenu(Menu menu, MenuAction action, int param1, int pa
 			else if (StrEqual(sInfo, "create"))
 			{
 				OpenCreateZonesMenu(param1, true);
-			}
-			else if (StrEqual(sInfo, "viewall"))
-			{
-				g_bShowAllZones[param1] = !g_bShowAllZones[param1];
-				SetClientCookie(param1, g_coShowZones, g_bShowAllZones[param1] ? "1" : "0");
-				OpenZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "regenerate"))
 			{
@@ -2891,62 +2859,61 @@ public Action Timer_DisplayZones(Handle timer)
 			}
 		}
 
-		if (g_bShowAllZones[i])
+		if (bWrite) PrintToChat(i, "2");
+		float vecOrigin[3];
+		float vecStart[3];
+		float vecEnd[3];
+
+		for (int x = 0; x < g_aZoneEntities.Length; x++)
 		{
-			if (bWrite) PrintToChat(i, "2");
-			float vecOrigin[3];
-			float vecStart[3];
-			float vecEnd[3];
+			int zone = EntRefToEntIndex(g_aZoneEntities.Get(x));
 
-			for (int x = 0; x < g_aZoneEntities.Length; x++)
+			if (IsValidEntity(zone))
 			{
-				int zone = EntRefToEntIndex(g_aZoneEntities.Get(x));
+				GetEntPropVector(zone, Prop_Data, "m_vecOrigin", vecOrigin);
 
-				if (IsValidEntity(zone))
+				switch (GetZoneTypeByIndex(zone))
 				{
-					GetEntPropVector(zone, Prop_Data, "m_vecOrigin", vecOrigin);
-
-					switch (GetZoneTypeByIndex(zone))
+					case ZONE_TYPE_BOX:
 					{
-						case ZONE_TYPE_BOX:
-						{
-							GetAbsBoundingBox(zone, vecStart, vecEnd);
-							TE_DrawBeamBoxToClient(i, vecStart, vecEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED);
-							if (bWrite) PrintToChat(i, "2.1");
-						}
+						GetAbsBoundingBox(zone, vecStart, vecEnd);
+						TE_DrawBeamBoxToAll(vecStart, vecEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED);
+						if (bWrite) PrintToChat(i, "2.1");
+					}
 
-						case ZONE_TYPE_CIRCLE:
-						{
-							TE_SetupBeamRingPointToClient(i, vecOrigin, Zone[zone].Radius, Zone[zone].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED, TE_FLAGS);
-							if (bWrite) PrintToChat(i, "2.2");
-						}
+					case ZONE_TYPE_CIRCLE:
+					{
+						TE_SetupBeamRingPoint(vecOrigin, Zone[zone].Radius, Zone[zone].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED, TE_FLAGS);
+						TE_SendToAll();
+						if (bWrite) PrintToChat(i, "2.2");
+					}
 
-						case ZONE_TYPE_POLY:
+					case ZONE_TYPE_POLY:
+					{
+						if (Zone[zone].PointsData != null && Zone[zone].PointsData.Length > 0)
 						{
-							if (Zone[zone].PointsData != null && Zone[zone].PointsData.Length > 0)
+							if (bWrite) PrintToChat(i, "2.3");
+							for (int y = 0; y < Zone[zone].PointsData.Length; y++)
 							{
-								if (bWrite) PrintToChat(i, "2.3");
-								for (int y = 0; y < Zone[zone].PointsData.Length; y++)
+								float coordinates[3];
+								Zone[zone].PointsData.GetArray(y, coordinates, sizeof(coordinates));
+
+								int index;
+
+								if (y + 1 == Zone[zone].PointsData.Length)
 								{
-									float coordinates[3];
-									Zone[zone].PointsData.GetArray(y, coordinates, sizeof(coordinates));
-
-									int index;
-
-									if (y + 1 == Zone[zone].PointsData.Length)
-									{
-										index = 0;
-									}
-									else
-									{
-										index = y + 1;
-									}
-
-									float nextpoint[3];
-									Zone[zone].PointsData.GetArray(index, nextpoint, sizeof(nextpoint));
-
-									TE_SetupBeamPointsToClient(i, coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED);
+									index = 0;
 								}
+								else
+								{
+									index = y + 1;
+								}
+
+								float nextpoint[3];
+								Zone[zone].PointsData.GetArray(index, nextpoint, sizeof(nextpoint));
+
+								TE_SetupBeamPoints(coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED);
+								TE_SendToAll();
 							}
 						}
 					}
@@ -3603,7 +3570,7 @@ void TE_DrawBeamBoxToClient(int client, const float bottomCorner[3], const float
 // This is never used
 stock void TE_DrawBeamBoxToAll(const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame, int frameRate, float life, float width, float endWidth, int fadeLength, float amplitude, const color[4], int speed)
 {
-	int clients[MaxClients];
+	int[] clients = new int[MaxClients];
 	int numClients;
 
 	for (int i = 1; i <= MaxClients; i++)
