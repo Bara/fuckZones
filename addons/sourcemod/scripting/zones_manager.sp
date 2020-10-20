@@ -114,7 +114,6 @@ int g_iEffectKeyValue_Entity[MAXPLAYERS + 1];
 char g_sEffectKeyValue_Effect[MAXPLAYERS + 1][MAX_EFFECT_NAME_LENGTH];
 char g_sEffectKeyValue_EffectKey[MAXPLAYERS + 1][MAX_KEY_NAME_LENGTH];
 int g_iEditingName[MAXPLAYERS + 1] = {INVALID_ENT_REFERENCE, ...};
-int g_iTime[MAXPLAYERS + 1] = { -1, ... };
 bool g_bIsInZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 bool g_bIsInsideZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 bool g_bIsInsideZone_Post[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
@@ -2786,14 +2785,6 @@ public Action Timer_DisplayZones(Handle timer)
 			continue;
 		}
 
-		bool bWrite = false;
-
-		if (g_iTime[i] < 0 || g_iTime[i] <= (GetTime()-3))
-		{
-			bWrite = true;
-			g_iTime[i] = GetTime();
-		}
-
 		if (CZone[i].ShowZone)
 		{
 			int iColor[4];
@@ -2812,7 +2803,6 @@ public Action Timer_DisplayZones(Handle timer)
 			{
 				case ZONE_TYPE_BOX:
 				{
-					if (bWrite) PrintToChat(i, "1.1");
 					if (!IsPositionNull(CZone[i].Start) && !IsPositionNull(CZone[i].End))
 					{
 						TE_DrawBeamBoxToClient(i, CZone[i].Start, CZone[i].End, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
@@ -2821,7 +2811,6 @@ public Action Timer_DisplayZones(Handle timer)
 
 				case ZONE_TYPE_CIRCLE:
 				{
-					if (bWrite) PrintToChat(i, "1.2");
 					if (!IsPositionNull(CZone[i].Start))
 					{
 						TE_SetupBeamRingPointToClient(i, CZone[i].Start, CZone[i].Radius, CZone[i].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
@@ -2830,7 +2819,6 @@ public Action Timer_DisplayZones(Handle timer)
 
 				case ZONE_TYPE_POLY:
 				{
-					if (bWrite) PrintToChat(i, "1.3");
 					if (CZone[i].PointsData != null && CZone[i].PointsData.Length > 0)
 					{
 						for (int x = 0; x < CZone[i].PointsData.Length; x++)
@@ -2859,7 +2847,6 @@ public Action Timer_DisplayZones(Handle timer)
 			}
 		}
 
-		if (bWrite) PrintToChat(i, "2");
 		float vecOrigin[3];
 		float vecStart[3];
 		float vecEnd[3];
@@ -2878,21 +2865,18 @@ public Action Timer_DisplayZones(Handle timer)
 					{
 						GetAbsBoundingBox(zone, vecStart, vecEnd);
 						TE_DrawBeamBoxToAll(vecStart, vecEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED);
-						if (bWrite) PrintToChat(i, "2.1");
 					}
 
 					case ZONE_TYPE_CIRCLE:
 					{
 						TE_SetupBeamRingPoint(vecOrigin, Zone[zone].Radius, Zone[zone].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED, TE_FLAGS);
 						TE_SendToAll();
-						if (bWrite) PrintToChat(i, "2.2");
 					}
 
 					case ZONE_TYPE_POLY:
 					{
 						if (Zone[zone].PointsData != null && Zone[zone].PointsData.Length > 0)
 						{
-							if (bWrite) PrintToChat(i, "2.3");
 							for (int y = 0; y < Zone[zone].PointsData.Length; y++)
 							{
 								float coordinates[3];
