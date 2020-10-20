@@ -106,7 +106,7 @@ enum struct eCreateZone
 	ArrayList PointsData;
 	float PointsHeight;
 	StringMap Effects;
-	bool ShowZone;
+	bool Display;
 	bool SetName;
 }
 
@@ -376,6 +376,8 @@ void SpawnAllZones()
 			float vEndPosition[3];
 			g_kvConfig.GetVector("end", vEndPosition);
 
+			bool bDisplay = view_as<bool>(g_kvConfig.GetNum("display"));
+
 			float fRadius = g_kvConfig.GetFloat("radius");
 
 			int iColor[4] = {0, 255, 255, 255};
@@ -445,6 +447,7 @@ void SpawnAllZones()
 			zone.PointsData = points;
 			zone.PointsHeight = points_height;
 			zone.Effects = effects;
+			zone.Display = bDisplay;
 			CreateZone(zone);
 		}
 		while(g_kvConfig.GotoNextKey());
@@ -472,6 +475,8 @@ int SpawnAZone(const char[] name)
 
 		float vEndPosition[3];
 		g_kvConfig.GetVector("end", vEndPosition);
+
+		bool bDisplay = view_as<bool>(g_kvConfig.GetNum("display"));
 
 		float fRadius = g_kvConfig.GetFloat("radius");
 
@@ -541,6 +546,7 @@ int SpawnAZone(const char[] name)
 		zone.PointsData = points;
 		zone.PointsHeight = points_height;
 		zone.Effects = effects;
+		zone.Display = bDisplay;
 		return CreateZone(zone);
 	}
 
@@ -2030,7 +2036,8 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	}
 
 	AddMenuItemFormat(menu, "color", ITEMDRAW_DEFAULT, "Color: %s", (strlen(CZone[client].Color) > 0) ? CZone[client].Color : "Pink");
-	AddMenuItemFormat(menu, "view", ITEMDRAW_DEFAULT, "View Zone: %s", CZone[client].ShowZone ? "On" : "Off");
+	AddMenuItemFormat(menu, "view", ITEMDRAW_DEFAULT, "Display: %s", CZone[client].Display ? "Yes" : "No");
+	// AddMenuItemFormat(menu, "draw", ITEMDRAW_DEFAULT, "Draw whole zone: %s", CZone[client].DrawWholeZone ? "Yes" : "No");
 
 	menu.ExitBackButton = true;
 	menu.Display(client, MENU_TIME_FOREVER);
@@ -2123,7 +2130,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			}
 			else if (StrEqual(sInfo, "view"))
 			{
-				CZone[param1].ShowZone = !CZone[param1].ShowZone;
+				CZone[param1].Display = !CZone[param1].Display;
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "create"))
@@ -2712,7 +2719,6 @@ void CreateNewZone(int client)
 
 	CreateZone(CZone[client]);
 	CPrintToChat(client, "Zone '%s' has been created successfully.", CZone[client].Name);
-	CZone[client].ShowZone = false;
 }
 
 void ResetCreateZoneVariables(int client)
@@ -2729,8 +2735,6 @@ void ResetCreateZoneVariables(int client)
 	CZone[client].Radius = 0.0;
 	delete CZone[client].PointsData;
 	CZone[client].PointsHeight = 0.0;
-
-	CZone[client].ShowZone = true;
 	CZone[client].SetName = false;
 }
 
@@ -2806,7 +2810,7 @@ public Action Timer_DisplayZones(Handle timer)
 			continue;
 		}
 
-		if (CZone[i].ShowZone)
+		if (CZone[i].Display)
 		{
 			int iColor[4];
 
