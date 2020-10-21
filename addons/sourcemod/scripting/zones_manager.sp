@@ -46,6 +46,7 @@
 ConVar g_cPrecisionValue = null;
 ConVar g_cRegenerateSpam = null;
 ConVar g_cDefaultHeight = null;
+ConVar g_cDefaultRadius = null;
 
 enum struct eForwards
 {
@@ -163,6 +164,7 @@ public void OnPluginStart()
 	g_cPrecisionValue = CreateConVar("zones_manager_precision_offset", "10.0", "Default value to use when setting a zones precision area.", FCVAR_NOTIFY, true, 0.0);
 	g_cRegenerateSpam = CreateConVar("zones_manager_regenerate_spam", "10", "How long should zone regenerations restricted after zone regeneation? (0 to disable this feature)", _, true, 0.0);
 	g_cDefaultHeight = CreateConVar("zones_manager_default_height", "256", "Default height for circles and polygons zones (Default: 256)");
+	g_cDefaultRadius = CreateConVar("zones_manager_default_radius", "150", "Default radius for circle zones (Default: 150)");
 
 	HookEventEx("teamplay_round_start", Event_OnRoundStart);
 	HookEventEx("round_start", Event_OnRoundStart);
@@ -2024,7 +2026,6 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 			menu.AddItem("start", "Set Center Point", ITEMDRAW_DEFAULT);
 			AddMenuItemFormat(menu, "add_radius", ITEMDRAW_DEFAULT, "Radius +%.1f: %.1f", g_cPrecisionValue.FloatValue, CZone[client].Radius);
 			AddMenuItemFormat(menu, "rem_radius", ITEMDRAW_DEFAULT, "Radius -%.1f: %.1f", g_cPrecisionValue.FloatValue, CZone[client].Radius);
-			// TODO: Add cvar for default radius
 			// TODO: Add customizable points height
 		}
 
@@ -2737,7 +2738,7 @@ void ResetCreateZoneVariables(int client)
 	CZone[client].End[0] = 0.0;
 	CZone[client].End[1] = 0.0;
 	CZone[client].End[2] = 0.0;
-	CZone[client].Radius = 0.0;
+	CZone[client].Radius = g_cDefaultRadius.FloatValue;
 	delete CZone[client].PointsData;
 	CZone[client].PointsHeight = g_cDefaultHeight.FloatValue;
 	CZone[client].SetName = false;
