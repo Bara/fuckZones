@@ -2024,9 +2024,10 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 		case ZONE_TYPE_CIRCLE:
 		{
 			menu.AddItem("start", "Set Center Point", ITEMDRAW_DEFAULT);
-			AddMenuItemFormat(menu, "add_radius", ITEMDRAW_DEFAULT, "Radius +%.1f: %.1f", g_cPrecisionValue.FloatValue, CZone[client].Radius);
-			AddMenuItemFormat(menu, "rem_radius", ITEMDRAW_DEFAULT, "Radius -%.1f: %.1f", g_cPrecisionValue.FloatValue, CZone[client].Radius);
-			// TODO: Add customizable points height
+			AddMenuItemFormat(menu, "add_radius", ITEMDRAW_DEFAULT, "Radius +");
+			AddMenuItemFormat(menu, "rem_radius", ITEMDRAW_DEFAULT, "Radius -");
+			AddMenuItemFormat(menu, "cp_z_add", ITEMDRAW_DEFAULT, "Z +");
+			AddMenuItemFormat(menu, "cp_z_remove", ITEMDRAW_DEFAULT, "Z -");
 		}
 
 		case ZONE_TYPE_POLY:
@@ -2034,7 +2035,8 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 			menu.AddItem("add", "Add Zone Point", ITEMDRAW_DEFAULT);
 			menu.AddItem("remove", "Remove Last Point", ITEMDRAW_DEFAULT);
 			menu.AddItem("clear", "Clear All Points", ITEMDRAW_DEFAULT);
-			// TODO: Add customizable points height
+			AddMenuItemFormat(menu, "cp_z_add", ITEMDRAW_DEFAULT, "Z +");
+			AddMenuItemFormat(menu, "cp_z_remove", ITEMDRAW_DEFAULT, "Z -");
 		}
 	}
 
@@ -2099,6 +2101,16 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			{
 				CZone[param1].Radius -= g_cPrecisionValue.FloatValue;
 				ClampCell(CZone[param1].Radius, 0.0, 430.0);
+				OpenCreateZonesMenu(param1);
+			}
+			else if (StrEqual(sInfo, "cp_z_add"))
+			{
+				CZone[param1].PointsHeight += g_cPrecisionValue.FloatValue;
+				OpenCreateZonesMenu(param1);
+			}
+			else if (StrEqual(sInfo, "cp_z_remove"))
+			{
+				CZone[param1].PointsHeight -= g_cPrecisionValue.FloatValue;
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "add"))
@@ -2682,9 +2694,6 @@ void CreateNewZone(int client)
 	char sColor[64];
 	FormatEx(sColor, sizeof(sColor), "%i %i %i %i", CZone[client].iColors[0], CZone[client].iColors[1], CZone[client].iColors[2], CZone[client].iColors[3]);
 	g_kvConfig.SetString("color", sColor);
-
-	#warning Make it configurable
-	CZone[client].PointsHeight = g_cDefaultHeight.FloatValue; 
 
 	switch (CZone[client].Type)
 	{
