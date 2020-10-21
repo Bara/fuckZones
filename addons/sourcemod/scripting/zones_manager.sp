@@ -2751,8 +2751,8 @@ void GetZoneNameByType(int type, char[] buffer, int size)
 	{
 		case ZONE_TYPE_NONE: strcopy(buffer, size, "N/A");
 		case ZONE_TYPE_BOX: strcopy(buffer, size, "Standard");
-		case ZONE_TYPE_CIRCLE: strcopy(buffer, size, "Radius/Circle");
-		case ZONE_TYPE_POLY: strcopy(buffer, size, "Polygons");
+		case ZONE_TYPE_CIRCLE: strcopy(buffer, size, "Circle");
+		case ZONE_TYPE_POLY: strcopy(buffer, size, "Polygon");
 	}
 }
 
@@ -2779,11 +2779,11 @@ int GetZoneTypeByName(const char[] sType)
 	{
 		return ZONE_TYPE_BOX;
 	}
-	else if (StrEqual(sType, "Radius/Circle"))
+	else if (StrEqual(sType, "Circle"))
 	{
 		return ZONE_TYPE_CIRCLE;
 	}
-	else if (StrEqual(sType, "Polygons"))
+	else if (StrEqual(sType, "Polygon"))
 	{
 		return ZONE_TYPE_POLY;
 	}
