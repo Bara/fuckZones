@@ -45,6 +45,7 @@
 
 ConVar g_cPrecisionValue = null;
 ConVar g_cRegenerateSpam = null;
+ConVar g_cDefaultHeight = null;
 
 enum struct eForwards
 {
@@ -159,6 +160,7 @@ public void OnPluginStart()
 
 	g_cPrecisionValue = CreateConVar("zones_manager_precision_offset", "10.0", "Default value to use when setting a zones precision area.", FCVAR_NOTIFY, true, 0.0);
 	g_cRegenerateSpam = CreateConVar("zones_manager_regenerate_spam", "10", "How long should zone regenerations restricted after zone regeneation? (0 to disable this feature)", _, true, 0.0);
+	g_cDefaultHeight = CreateConVar("zones_manager_default_height", "256", "Default height for circles and polygons zones (Default: 256)");
 
 	HookEventEx("teamplay_round_start", Event_OnRoundStart);
 	HookEventEx("round_start", Event_OnRoundStart);
@@ -483,7 +485,7 @@ int SpawnAZone(const char[] name)
 		int iColor[4] = {0, 255, 255, 255};
 		g_kvConfig.GetColor("color", iColor[0], iColor[1], iColor[2], iColor[3]);
 
-		float points_height = g_kvConfig.GetFloat("points_height", 256.0);
+		float points_height = g_kvConfig.GetFloat("points_height", g_cDefaultHeight.FloatValue);
 
 		ArrayList points = new ArrayList(3);
 		if (g_kvConfig.JumpToKey("points") && g_kvConfig.GotoFirstSubKey())
@@ -2682,7 +2684,8 @@ void CreateNewZone(int client)
 	FormatEx(sColor, sizeof(sColor), "%i %i %i %i", CZone[client].iColors[0], CZone[client].iColors[1], CZone[client].iColors[2], CZone[client].iColors[3]);
 	g_kvConfig.SetString("color", sColor);
 
-	CZone[client].PointsHeight = 256.0;
+	#warning Make it configurable
+	CZone[client].PointsHeight = g_cDefaultHeight.FloatValue; 
 
 	switch (CZone[client].Type)
 	{
