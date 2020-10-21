@@ -2740,6 +2740,7 @@ void ResetCreateZoneVariables(int client)
 	delete CZone[client].PointsData;
 	CZone[client].PointsHeight = 0.0;
 	CZone[client].SetName = false;
+	CZone[client].Display = true;
 }
 
 void GetZoneNameByType(int type, char[] buffer, int size)
