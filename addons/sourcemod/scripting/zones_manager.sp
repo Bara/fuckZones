@@ -65,7 +65,6 @@ bool g_bLate;
 KeyValues g_kvConfig = null;
 int g_iRegenerationTime = -1;
 
-
 ArrayList g_aColors = null;
 StringMap g_smColorData = null;
 
@@ -122,6 +121,9 @@ bool g_bIsInZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 bool g_bIsInsideZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 bool g_bIsInsideZone_Post[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 
+Handle g_coPrecision = null;
+float g_fPrecision[MAXPLAYERS + 1] = { 0.0, ... };
+
 public Plugin myinfo =
 {
 	name = "Zones Manager - Core",
@@ -174,6 +176,7 @@ public void OnPluginStart()
 	RegAdminCmd("sm_regeneratezones", Command_RegenerateZones, ADMFLAG_ROOT, "Regenerate all zones on the map.");
 	RegAdminCmd("sm_deleteallzones", Command_DeleteAllZones, ADMFLAG_ROOT, "Delete all zones on the map.");
 	RegAdminCmd("sm_reloadeffects", Command_ReloadEffects, ADMFLAG_ROOT, "Reload all effects data and their callbacks.");
+	RegAdminCmd("sm_setprecision", Command_SetPrecision, ADMFLAG_ROOT, "Set your precision value");
 
 	g_aZoneEntities = new ArrayList();
 
@@ -183,6 +186,8 @@ public void OnPluginStart()
 
 	g_aColors = new ArrayList(ByteCountToCells(64));
 	g_smColorData = new StringMap();
+
+	g_coPrecision = RegClientCookie("zones_manager_precision", "Set client precision value.", CookieAccess_Public);
 
 	g_iRegenerationTime = -1;
 	
@@ -269,6 +274,19 @@ public void OnConfigsExecuted()
 	{
 		SpawnAllZones();
 
+		for (int i = 1; i <= MaxClients; i++)
+		{
+			if (IsClientConnected(i))
+			{
+				OnClientConnected(i);
+			}
+
+			if (AreClientCookiesCached(i))
+			{
+				OnClientCookiesCached(i);
+			}
+		}
+
 		g_bLate = false;
 	}
 }
@@ -307,6 +325,30 @@ void QueueEffects(bool reset = true)
 public void OnPluginEnd()
 {
 	ClearAllZones();
+}
+
+public void OnClientConnected(int client)
+{
+	g_fPrecision[client] = g_cPrecisionValue.FloatValue;
+}
+
+public void OnClientCookiesCached(int client)
+{
+	char sValue[12];
+	GetClientCookie(client, g_coPrecision, sValue, sizeof(sValue));
+
+	if (strlen(sValue) == 0)
+	{
+		g_fPrecision[client] = g_cPrecisionValue.FloatValue;
+
+		char sBuffer[12];
+		g_cPrecisionValue.GetString(sBuffer, sizeof(sBuffer));
+		SetClientCookie(client, g_coPrecision, sBuffer);
+	}
+	else
+	{
+		g_fPrecision[client] = view_as<float>(StringToInt(sValue));
+	}
 }
 
 public void OnClientDisconnect(int client)
@@ -747,6 +789,40 @@ public Action Command_ReloadEffects(int client, int args)
 {
 	QueueEffects();
 	CReplyToCommand(client, "Effects data has been reloaded.");
+	return Plugin_Handled;
+}
+
+public Action Command_SetPrecision(int client, int args)
+{
+	if (!IsClientValid(client))
+	{
+		return Plugin_Handled;
+	}
+
+	if (args != 1)
+	{
+		CReplyToCommand(client, "sm_setprecision <value>");
+		return Plugin_Handled;
+	}
+
+	char sArg[12];
+	GetCmdArgString(sArg, sizeof(sArg));
+
+	for (int i = 0; i < strlen(sArg); i++)
+	{
+		if (!IsCharNumeric(sArg[i]))
+		{
+			CReplyToCommand(client, "Your input isn't valid! Only numbers.");
+			return Plugin_Handled;
+		}
+	}
+
+	g_fPrecision[client] = StringToFloat(sArg);
+
+	char sBuffer[12];
+	FloatToString(g_fPrecision[client], sBuffer, sizeof(sBuffer));
+	SetClientCookie(client, g_coPrecision, sBuffer);
+
 	return Plugin_Handled;
 }
 
