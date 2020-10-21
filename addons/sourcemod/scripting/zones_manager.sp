@@ -2845,6 +2845,10 @@ public Action Timer_DisplayZones(Handle timer)
 					if (!IsPositionNull(CZone[i].Start))
 					{
 						TE_SetupBeamRingPointToClient(i, CZone[i].Start, CZone[i].Radius, CZone[i].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
+
+						// Show second beam with the height
+						CZone[i].Start[2] += CZone[i].PointsHeight;
+						TE_SetupBeamRingPointToClient(i, CZone[i].Start, CZone[i].Radius, CZone[i].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 					}
 				}
 
@@ -2871,6 +2875,10 @@ public Action Timer_DisplayZones(Handle timer)
 							float nextpoint[3];
 							CZone[i].PointsData.GetArray(index, nextpoint, sizeof(nextpoint));
 
+							TE_SetupBeamPointsToClient(i, coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+
+							coordinates[2] += CZone[i].PointsHeight;
+							nextpoint[2] += CZone[i].PointsHeight;
 							TE_SetupBeamPointsToClient(i, coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 						}
 					}
