@@ -1926,8 +1926,14 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 
 	menu.AddItem("create", "Create Zone\n ", (bValidPoints && CZone[client].Type > ZONE_TYPE_NONE && strlen(CZone[client].Name) > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 
+	char sBuffer[256];
+	if (CZone[client].Type == ZONE_TYPE_POLY)
+	{
+		Format(sBuffer, sizeof(sBuffer), "Points: %d", CZone[client].PointsData.Length);
+	}
+
 	AddMenuItemFormat(menu, "name", ITEMDRAW_DEFAULT, "Name: %s", strlen(CZone[client].Name) > 0 ? CZone[client].Name : "N/A");
-	AddMenuItemFormat(menu, "type", ITEMDRAW_DEFAULT, "Type: %s", sType);
+	AddMenuItemFormat(menu, "type", ITEMDRAW_DEFAULT, "Type: %s\n \n%s", sType, sBuffer);
 
 	switch (CZone[client].Type)
 	{
@@ -1948,7 +1954,6 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 
 		case ZONE_TYPE_POLY:
 		{
-			AddMenuItemFormat(menu, "", ITEMDRAW_DISABLED, "Points: %d", CZone[client].PointsData.Length);
 			menu.AddItem("add", "Add Zone Point", ITEMDRAW_DEFAULT);
 			menu.AddItem("remove", "Remove Last Point", ITEMDRAW_DEFAULT);
 			menu.AddItem("clear", "Clear All Points", ITEMDRAW_DEFAULT);
@@ -2658,7 +2663,7 @@ void ResetCreateZoneVariables(int client)
 	CZone[client].End[2] = 0.0;
 	CZone[client].Radius = 0.0;
 	delete CZone[client].PointsData;
-	CZone[client].PointsHeight = 0.0;
+	CZone[client].PointsHeight = g_cDefaultHeight.FloatValue;
 	CZone[client].SetName = false;
 	CZone[client].Display = true;
 }
