@@ -349,7 +349,7 @@ public void OnClientCookiesCached(int client)
 	}
 	else
 	{
-		g_fPrecision[client] = view_as<float>(StringToInt(sValue));
+		g_fPrecision[client] = StringToFloat(sValue);
 	}
 }
 
@@ -824,6 +824,8 @@ public Action Command_SetPrecision(int client, int args)
 	char sBuffer[12];
 	FloatToString(g_fPrecision[client], sBuffer, sizeof(sBuffer));
 	SetClientCookie(client, g_coPrecision, sBuffer);
+
+	CReplyToCommand(client, "Precision set to %.1f", g_fPrecision[client]);
 
 	return Plugin_Handled;
 }
@@ -1506,14 +1508,12 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 			char sName[MAX_ZONE_NAME_LENGTH];
 			GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-			float precision = g_cPrecisionValue.FloatValue;
-
 			if (StrEqual(sInfo, "a_add_x"))
 			{
 				float vecPointA[3];
 				GetZonesVectorData(entity, "start", vecPointA);
 
-				vecPointA[0] += precision;
+				vecPointA[0] += g_fPrecision[param1];
 
 				UpdateZonesConfigKeyVector(entity, "start", vecPointA);
 			}
@@ -1522,7 +1522,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				float vecPointA[3];
 				GetZonesVectorData(entity, "start", vecPointA);
 
-				vecPointA[1] += precision;
+				vecPointA[1] += g_fPrecision[param1];
 
 				UpdateZonesConfigKeyVector(entity, "start", vecPointA);
 			}
@@ -1531,7 +1531,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				float vecPointA[3];
 				GetZonesVectorData(entity, "start", vecPointA);
 
-				vecPointA[2] += precision;
+				vecPointA[2] += g_fPrecision[param1];
 
 				UpdateZonesConfigKeyVector(entity, "start", vecPointA);
 			}
@@ -1540,7 +1540,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				float vecPointA[3];
 				GetZonesVectorData(entity, "start", vecPointA);
 
-				vecPointA[0] -= precision;
+				vecPointA[0] -= g_fPrecision[param1];
 
 				UpdateZonesConfigKeyVector(entity, "start", vecPointA);
 			}
@@ -1549,7 +1549,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				float vecPointA[3];
 				GetZonesVectorData(entity, "start", vecPointA);
 
-				vecPointA[1] -= precision;
+				vecPointA[1] -= g_fPrecision[param1];
 
 				UpdateZonesConfigKeyVector(entity, "start", vecPointA);
 			}
@@ -1558,7 +1558,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				float vecPointA[3];
 				GetZonesVectorData(entity, "start", vecPointA);
 
-				vecPointA[2] -= precision;
+				vecPointA[2] -= g_fPrecision[param1];
 
 				UpdateZonesConfigKeyVector(entity, "start", vecPointA);
 			}
@@ -1567,7 +1567,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				float vecPointB[3];
 				GetZonesVectorData(entity, "end", vecPointB);
 
-				vecPointB[0] += precision;
+				vecPointB[0] += g_fPrecision[param1];
 
 				UpdateZonesConfigKeyVector(entity, "end", vecPointB);
 			}
@@ -1576,7 +1576,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				float vecPointB[3];
 				GetZonesVectorData(entity, "end", vecPointB);
 
-				vecPointB[1] += precision;
+				vecPointB[1] += g_fPrecision[param1];
 
 				UpdateZonesConfigKeyVector(entity, "end", vecPointB);
 			}
@@ -1585,7 +1585,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				float vecPointB[3];
 				GetZonesVectorData(entity, "end", vecPointB);
 
-				vecPointB[2] += precision;
+				vecPointB[2] += g_fPrecision[param1];
 
 				UpdateZonesConfigKeyVector(entity, "end", vecPointB);
 			}
@@ -1594,7 +1594,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				float vecPointB[3];
 				GetZonesVectorData(entity, "end", vecPointB);
 
-				vecPointB[0] -= precision;
+				vecPointB[0] -= g_fPrecision[param1];
 
 				UpdateZonesConfigKeyVector(entity, "end", vecPointB);
 			}
@@ -1603,7 +1603,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				float vecPointB[3];
 				GetZonesVectorData(entity, "end", vecPointB);
 
-				vecPointB[1] -= precision;
+				vecPointB[1] -= g_fPrecision[param1];
 
 				UpdateZonesConfigKeyVector(entity, "end", vecPointB);
 			}
@@ -1612,7 +1612,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				float vecPointB[3];
 				GetZonesVectorData(entity, "end", vecPointB);
 
-				vecPointB[2] -= precision;
+				vecPointB[2] -= g_fPrecision[param1];
 
 				UpdateZonesConfigKeyVector(entity, "end", vecPointB);
 			}
@@ -2093,24 +2093,24 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			}
 			else if (StrEqual(sInfo, "add_radius"))
 			{
-				CZone[param1].Radius += g_cPrecisionValue.FloatValue;
+				CZone[param1].Radius += g_fPrecision[param1];
 				ClampCell(CZone[param1].Radius, 0.0, 430.0);
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "rem_radius"))
 			{
-				CZone[param1].Radius -= g_cPrecisionValue.FloatValue;
+				CZone[param1].Radius -= g_fPrecision[param1];
 				ClampCell(CZone[param1].Radius, 0.0, 430.0);
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "cp_z_add"))
 			{
-				CZone[param1].PointsHeight += g_cPrecisionValue.FloatValue;
+				CZone[param1].PointsHeight += g_fPrecision[param1];
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "cp_z_remove"))
 			{
-				CZone[param1].PointsHeight -= g_cPrecisionValue.FloatValue;
+				CZone[param1].PointsHeight -= g_fPrecision[param1];
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "add"))
