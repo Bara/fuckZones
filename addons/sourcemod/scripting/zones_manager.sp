@@ -29,7 +29,7 @@
 #define TIMER_INTERVAL 0.1
 #define TE_LIFE TIMER_INTERVAL+0.1
 #define TE_STARTFRAME 0
-#define TE_FRAMERATE 0
+#define TE_FRAMERATE 30
 #define TE_FADELENGTH 0
 #define TE_AMPLITUDE 0.0
 #define TE_WIDTH 1.0
@@ -405,15 +405,109 @@ void SpawnAllZones()
 	LogMessage("Spawning all zones...");
 
 	g_kvConfig.Rewind();
-	if (g_kvConfig.GotoFirstSubKey())
+	if (g_kvConfig.GotoFirstSubKey(false))
 	{
 		do
 		{
 			char sName[MAX_ZONE_NAME_LENGTH];
 			g_kvConfig.GetSectionName(sName, sizeof(sName));
-			SpawnAZone(sName);
+			
+			char sType[MAX_ZONE_TYPE_LENGTH];
+			g_kvConfig.GetString("type", sType, sizeof(sType));
+			int type = GetZoneTypeByName(sType);
+
+			float vStartPosition[3];
+			g_kvConfig.GetVector("start", vStartPosition);
+
+			float vEndPosition[3];
+			g_kvConfig.GetVector("end", vEndPosition);
+
+			bool bDisplay = view_as<bool>(g_kvConfig.GetNum("display"));
+
+			float fRadius = g_kvConfig.GetFloat("radius");
+
+			int iColor[4] = {0, 255, 255, 255};
+			g_kvConfig.GetColor("color", iColor[0], iColor[1], iColor[2], iColor[3]);
+
+			float points_height = g_kvConfig.GetFloat("points_height", g_cDefaultHeight.FloatValue);
+
+			ArrayList points = new ArrayList(3);
+			if (g_kvConfig.JumpToKey("points"))
+			{
+				PrintToServer("Test1");
+				if (g_kvConfig.GotoFirstSubKey(false))
+				{
+					PrintToServer("Test2");
+					do
+					{
+						float coordinates[3];
+						g_kvConfig.GetVector(NULL_STRING, coordinates);
+
+						PrintToServer("Test3");
+
+						points.PushArray(coordinates, 3);
+					}
+					while (g_kvConfig.GotoNextKey(false));
+
+					g_kvConfig.GoBack();
+				}
+
+				g_kvConfig.GoBack();
+			}
+
+			StringMap effects = new StringMap();
+			if (g_kvConfig.JumpToKey("effects"))
+			{
+				if (g_kvConfig.GotoFirstSubKey(false))
+				{
+					do
+					{
+						char sEffect[256];
+						g_kvConfig.GetSectionName(sEffect, sizeof(sEffect));
+
+						StringMap effect_data = new StringMap();
+
+						if (g_kvConfig.GotoFirstSubKey(false))
+						{
+							do
+							{
+								char sKey[256];
+								g_kvConfig.GetSectionName(sKey, sizeof(sKey));
+
+								char sValue[256];
+								g_kvConfig.GetString(NULL_STRING, sValue, sizeof(sValue));
+
+								effect_data.SetString(sKey, sValue);
+							}
+							while (g_kvConfig.GotoNextKey(false));
+
+							g_kvConfig.GoBack();
+						}
+
+						effects.SetValue(sEffect, effect_data);
+					}
+					while (g_kvConfig.GotoNextKey(false));
+
+					g_kvConfig.GoBack();
+				}
+
+				g_kvConfig.GoBack();
+			}
+
+			eCreateZone zone;
+			strcopy(zone.Name, sizeof(eCreateZone::Name), sName);
+			zone.Type = type;
+			zone.Start = vStartPosition;
+			zone.End = vEndPosition;
+			zone.Radius = fRadius;
+			zone.iColors = iColor;
+			zone.PointsData = points;
+			zone.PointsHeight = points_height;
+			zone.Effects = effects;
+			zone.Display = bDisplay;
+			CreateZone(zone);
 		}
-		while(g_kvConfig.GotoNextKey());
+		while(g_kvConfig.GotoNextKey(false));
 	}
 
 	LogMessage("Zones have been spawned.");
@@ -449,7 +543,7 @@ int SpawnAZone(const char[] name)
 		float points_height = g_kvConfig.GetFloat("points_height", g_cDefaultHeight.FloatValue);
 
 		ArrayList points = new ArrayList(3);
-		if (g_kvConfig.JumpToKey("points") && g_kvConfig.GotoFirstSubKey())
+		if (g_kvConfig.JumpToKey("points") && g_kvConfig.GotoFirstSubKey(false))
 		{
 			do
 			{
@@ -458,14 +552,14 @@ int SpawnAZone(const char[] name)
 
 				points.PushArray(coordinates, 3);
 			}
-			while (g_kvConfig.GotoNextKey());
+			while (g_kvConfig.GotoNextKey(false));
 
 			g_kvConfig.GoBack();
 			g_kvConfig.GoBack();
 		}
 
 		StringMap effects = new StringMap();
-		if (g_kvConfig.JumpToKey("effects") && g_kvConfig.GotoFirstSubKey())
+		if (g_kvConfig.JumpToKey("effects") && g_kvConfig.GotoFirstSubKey(false))
 		{
 			do
 			{
@@ -493,7 +587,7 @@ int SpawnAZone(const char[] name)
 
 				effects.SetValue(sEffect, effect_data);
 			}
-			while (g_kvConfig.GotoNextKey());
+			while (g_kvConfig.GotoNextKey(false));
 
 			g_kvConfig.GoBack();
 			g_kvConfig.GoBack();
@@ -2694,6 +2788,7 @@ void CreateNewZone(int client)
 	char sColor[64];
 	FormatEx(sColor, sizeof(sColor), "%i %i %i %i", CZone[client].iColors[0], CZone[client].iColors[1], CZone[client].iColors[2], CZone[client].iColors[3]);
 	g_kvConfig.SetString("color", sColor);
+	g_kvConfig.SetNum("display", CZone[client].Display);
 
 	switch (CZone[client].Type)
 	{
@@ -2727,8 +2822,6 @@ void CreateNewZone(int client)
 			}
 		}
 	}
-
-	g_kvConfig.SetNum("display", CZone[client].Display);
 
 	SaveMapConfig();
 
