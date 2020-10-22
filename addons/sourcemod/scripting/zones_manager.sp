@@ -2654,6 +2654,7 @@ void CreateNewZone(int client)
 
 	CreateZone(CZone[client]);
 	CPrintToChat(client, "Zone '%s' has been created successfully.", CZone[client].Name);
+	ResetCreateZoneVariables(client);
 }
 
 void ResetCreateZoneVariables(int client)
