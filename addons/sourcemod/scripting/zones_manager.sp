@@ -2251,9 +2251,10 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 
 		case MenuAction_Cancel:
 		{
+			ResetCreateZoneVariables(param1);
+			
 			if (param2 == MenuCancel_ExitBack)
 			{
-				ResetCreateZoneVariables(param1);
 				OpenZonesMenu(param1);
 			}
 		}
