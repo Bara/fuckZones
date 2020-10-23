@@ -430,7 +430,7 @@ int SpawnAZone(const char[] name)
 	g_kvConfig.Rewind();
 	if (g_kvConfig.JumpToKey(name))
 	{
-		SpawnZone(name);
+		return SpawnZone(name);
 	}
 
 	return -1;
