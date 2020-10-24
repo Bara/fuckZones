@@ -18,16 +18,17 @@
 #define DEFAULT_HALOINDEX "materials/sprites/halo.vmt"
 #define ZONE_MODEL "models/error.mdl"
 
-#define ZONE_TYPES 3
-#define ZONE_TYPE_NONE -1
-#define ZONE_TYPE_BOX 0
-#define ZONE_TYPE_CIRCLE 1
-#define ZONE_TYPE_POLY 2
+#define ZONE_TYPES 4
+#define ZONE_TYPE_NONE 0
+#define ZONE_TYPE_BOX 1
+#define ZONE_TYPE_CIRCLE 2
+#define ZONE_TYPE_POLY 3
 
 #define MAX_ENTITY_LIMIT 4096
 
 #define TIMER_INTERVAL 0.1
 #define TE_LIFE TIMER_INTERVAL+0.1
+#define TE_DRAW_RADIUS 15.0
 #define TE_STARTFRAME 0
 #define TE_FRAMERATE 30
 #define TE_FADELENGTH 0
@@ -47,6 +48,7 @@ ConVar g_cPrecisionValue = null;
 ConVar g_cRegenerateSpam = null;
 ConVar g_cDefaultHeight = null;
 ConVar g_cDefaultRadius = null;
+ConVar g_cDefaultZOffset = null;
 
 enum struct eForwards
 {
@@ -81,6 +83,7 @@ enum struct eEntityData
 	int Color[4];
 	StringMap Effects;
 	ArrayList PointsData;
+	float Start[3];
 	float PointsHeight;
 	float PointsDistance;
 	float PointsMin[3];
@@ -109,6 +112,7 @@ enum struct eCreateZone
 	StringMap Effects;
 	bool Display;
 	bool SetName;
+	bool Show;
 }
 
 eCreateZone CZone[MAXPLAYERS + 1];
@@ -121,6 +125,7 @@ int g_iEditingName[MAXPLAYERS + 1] = {INVALID_ENT_REFERENCE, ...};
 bool g_bIsInZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 bool g_bIsInsideZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 bool g_bIsInsideZone_Post[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
+bool g_bSelectedZone[MAX_ENTITY_LIMIT] = { false, ... };
 
 Handle g_coPrecision = null;
 float g_fPrecision[MAXPLAYERS + 1] = { 0.0, ... };
@@ -130,7 +135,7 @@ public Plugin myinfo =
 	name = "Zones Manager - Core",
 	author = "Bara (Original author: Drixevel)",
 	description = "A sourcemod plugin with rich features for dynamic zone development.",
-	version = "1.1.0",
+	version = "1.0.0",
 	url = "github.com/Bara"
 };
 
@@ -165,6 +170,7 @@ public void OnPluginStart()
 	g_cRegenerateSpam = CreateConVar("zones_manager_regenerate_spam", "10", "How long should zone regenerations restricted after zone regeneation? (0 to disable this feature)", _, true, 0.0);
 	g_cDefaultHeight = CreateConVar("zones_manager_default_height", "256", "Default height for circles and polygons zones (Default: 256)");
 	g_cDefaultRadius = CreateConVar("zones_manager_default_radius", "150", "Default radius for circle zones (Default: 150)");
+	g_cDefaultZOffset = CreateConVar("zones_manager_default_z_offset", "5", "Adds an offset of X to all points while creating/editing a zone. (Default: 5)");
 
 	HookEventEx("teamplay_round_start", Event_OnRoundStart);
 	HookEventEx("round_start", Event_OnRoundStart);
@@ -472,9 +478,7 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 		if (g_kvConfig.JumpToKey(sArgs))
 		{
 			g_kvConfig.Rewind();
-			CPrintToChat(client, "Zone name already exists, please pick a different name.");
-			CZone[client].SetName = false;
-			OpenCreateZonesMenu(client);
+			CPrintToChat(client, "Zone name already exists, please pick a different name or cancel the process with \"!cancel\".");
 			return;
 		}
 		
@@ -621,9 +625,201 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				}
 			}
 		}
+
+		if (CZone[client].Show && CZone[client].Display && CZone[client].Type > ZONE_TYPE_NONE)
+		{
+			CZone[client].Show = false;
+			int iColor[4];
+
+			iColor[0] = 255;
+			iColor[1] = 20;
+			iColor[2] = 147;
+			iColor[3] = 255;
+
+			if (strlen(CZone[client].Color) > 0)
+			{
+				g_smColorData.GetArray(CZone[client].Color, iColor, sizeof(iColor));
+			}
+
+			/*
+				if (CZone[client].Type == ZONE_TYPE_POLY && CZone[client].PointsData != null)
+				{
+					if (CZone[client].PointsData.Length > 2)
+					{
+						bValidPoints = true;
+					}
+				}
+				else if (CZone[client].Type == ZONE_TYPE_BOX)
+				{
+					if (!IsPositionNull(CZone[client].Start) && !IsPositionNull(CZone[client].End))
+					{
+						bValidPoints = true;
+					}
+				}
+				else if (CZone[client].Type == ZONE_TYPE_CIRCLE)
+				{
+					if (!IsPositionNull(CZone[client].Start))
+					{
+						bValidPoints = true;
+					}
+				}
+			*/
+
+			float fPoint[3];
+			GetClientLookPoint(client, fPoint);
+			fPoint[2] += g_cDefaultZOffset.FloatValue;
+
+			switch (CZone[client].Type)
+			{
+				case ZONE_TYPE_CIRCLE:
+				{
+					if (IsPositionNull(CZone[client].Start))
+					{
+						TE_SetupBeamRingPointToClient(client, fPoint, CZone[client].Radius, CZone[client].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
+
+						float fStart[3], fEnd[3];
+						for (int j = 0; j < 4; j++)
+						{
+							fStart = fPoint;
+							fEnd = fPoint;
+
+							if (j < 2)
+							{
+								fStart[j] += CZone[client].Radius / 2;
+								fEnd[j] += CZone[client].Radius / 2;
+								fEnd[2] += CZone[client].PointsHeight;
+							}
+							else
+							{
+								fStart[j - 2] -= CZone[client].Radius / 2;
+								fEnd[j - 2] -= CZone[client].Radius / 2;
+								fEnd[2] += CZone[client].PointsHeight;
+							}
+
+							TE_SetupBeamPointsToClient(client, fStart, fEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+						}
+
+						float fUpper[3];
+						fUpper = fPoint;
+						fUpper[2] = fPoint[2] + CZone[client].PointsHeight;
+						TE_SetupBeamRingPointToClient(client, fUpper, CZone[client].Radius, CZone[client].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
+					}
+				}
+
+				case ZONE_TYPE_BOX:
+				{
+					if ((!IsPositionNull(CZone[client].Start) && IsPositionNull(CZone[client].End)) || (IsPositionNull(CZone[client].Start) && !IsPositionNull(CZone[client].End)))
+					{
+						float fStart[3];
+						
+						if (!IsPositionNull(CZone[client].Start))
+						{
+							fStart = CZone[client].Start;
+						}
+						if (!IsPositionNull(CZone[client].End))
+						{
+							fStart = CZone[client].End;
+						}
+
+						TE_DrawBeamBoxToClient(client, fStart, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+					}
+				}
+
+				case ZONE_TYPE_POLY:
+				{
+					if (CZone[client].PointsData != null && CZone[client].PointsData.Length > 0)
+					{
+						float fStart[3];
+						float fLast[3];
+
+						for (int x = 0; x < CZone[client].PointsData.Length; x++)
+						{
+							float fBottomStart[3];
+							CZone[client].PointsData.GetArray(x, fBottomStart, sizeof(fBottomStart));
+
+							if (x == 0)
+							{
+								CZone[client].PointsData.GetArray(x, fStart, sizeof(fStart));
+							}
+
+							CZone[client].PointsData.GetArray(x, fLast, sizeof(fLast));
+
+							int index;
+
+							if (x + 1 == CZone[client].PointsData.Length)
+							{
+								float fLastStart[3];
+								fLastStart = fBottomStart;
+								fLastStart[2] += CZone[client].PointsHeight;
+								TE_SetupBeamPointsToClient(client, fLastStart, fBottomStart, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							}
+							else
+							{
+								index = x + 1;
+							}
+
+							float fBottomNext[3];
+							CZone[client].PointsData.GetArray(index, fBottomNext, sizeof(fBottomNext));
+
+							TE_SetupBeamPointsToClient(client, fBottomStart, fBottomNext, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+
+							float fUpperStart[3];
+							fUpperStart = fBottomStart;
+							fUpperStart[2] += CZone[client].PointsHeight;
+
+							float fUpperNext[3];
+							fUpperNext = fBottomNext;
+							fUpperNext[2] += CZone[client].PointsHeight;
+
+							TE_SetupBeamPointsToClient(client, fUpperStart, fUpperNext, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							TE_SetupBeamPointsToClient(client, fBottomStart, fUpperStart, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+						}
+
+						iColor[0] = 255;
+						iColor[1] = 255;
+						iColor[2] = 0;
+						iColor[3] = 255;
+
+						TE_SetupBeamPointsToClient(client, fLast, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+						TE_SetupBeamPointsToClient(client, fStart, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+
+						float fUpperLast[3];
+						fUpperLast = fLast;
+						fUpperLast[2] += CZone[client].PointsHeight;
+
+						float fUpperPoint[3];
+						fUpperPoint = fPoint;
+						fUpperPoint[2] += CZone[client].PointsHeight;
+
+						float fUpperStart[3];
+						fUpperStart = fStart;
+						fUpperStart[2] += CZone[client].PointsHeight;
+
+						TE_SetupBeamPointsToClient(client, fUpperLast, fUpperPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+						TE_SetupBeamPointsToClient(client, fUpperStart, fUpperPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+						
+						TE_SetupBeamPointsToClient(client, fUpperPoint, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+					}
+				}
+			}
+
+			CreateTimer(0.1, Timer_ResetShow, GetClientUserId(client));
+		}
 	}
 
 	return Plugin_Continue;
+}
+
+public Action Timer_ResetShow(Handle timer, int userid)
+{
+	int client = GetClientOfUserId(userid);
+
+	if (IsClientValid(client))
+	{
+		CZone[client].Show = true;
+	}
+
+	return Plugin_Handled;
 }
 
 public Action Command_EditZoneMenu(int client, int args)
@@ -1018,6 +1214,8 @@ void OpenEditZoneMenu(int client, int entity)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
+	g_bSelectedZone[entity] = true;
+
 	Menu menu = new Menu(MenuHandle_ManageEditMenu);
 	menu.SetTitle("Manage Zone '%s':", sName);
 
@@ -1122,6 +1320,8 @@ public int MenuHandle_ManageEditMenu(Menu menu, MenuAction action, int param1, i
 
 		case MenuAction_Cancel:
 		{
+			g_bSelectedZone[GetMenuCell(menu, "entity")] = false;
+			
 			if (param2 == MenuCancel_ExitBack)
 			{
 				OpenManageZonesMenu(param1);
@@ -1139,6 +1339,8 @@ void OpenZonePropertiesMenu(int client, int entity)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	g_bSelectedZone[entity] = true;
 
 	char sRadiusAmount[64];
 	FormatEx(sRadiusAmount, sizeof(sRadiusAmount), "\nRadius is currently: %.2f", Zone[entity].Radius);
@@ -1164,8 +1366,11 @@ void OpenZonePropertiesMenu(int client, int entity)
 		case ZONE_TYPE_CIRCLE:
 		{
 			menu.AddItem("edit_startpoint", "StartPoint");
+			menu.AddItem("edit_startpoint_a_precision", "StartPoint Precision");
 			menu.AddItem("edit_add_radius", "Radius +");
 			menu.AddItem("edit_remove_radius", "Radius -");
+			menu.AddItem("edit_add_height", "Height +");
+			menu.AddItem("edit_remove_height", "Height -");
 		}
 
 		case ZONE_TYPE_POLY:
@@ -1173,6 +1378,8 @@ void OpenZonePropertiesMenu(int client, int entity)
 			menu.AddItem("edit_add_point", "Add a Point");
 			menu.AddItem("edit_remove_point", "Remove last Point");
 			menu.AddItem("edit_clear_points", "Clear all Points");
+			menu.AddItem("edit_add_height", "Height +");
+			menu.AddItem("edit_remove_height", "Height -");
 		}
 	}
 
@@ -1213,6 +1420,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			{
 				float vecLook[3];
 				GetClientLookPoint(param1, vecLook);
+				vecLook[2] += g_cDefaultZOffset.FloatValue;
 
 				UpdateZonesConfigKeyVector(entity, "start", vecLook);
 
@@ -1251,6 +1459,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			{
 				float vecLook[3];
 				GetClientLookPoint(param1, vecLook);
+				vecLook[2] += g_cDefaultZOffset.FloatValue;
 
 				UpdateZonesConfigKeyVector(entity, "end", vecLook);
 
@@ -1299,6 +1508,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			{
 				float start[3];
 				GetClientLookPoint(param1, start);
+				start[2] += g_cDefaultZOffset.FloatValue;
 
 				TeleportEntity(entity, start, NULL_VECTOR, NULL_VECTOR);
 
@@ -1307,30 +1517,59 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			}
 			else if (StrEqual(sInfo, "edit_add_radius"))
 			{
-				Zone[entity].Radius += 5.0;
+				Zone[entity].Radius += g_fPrecision[param1];
 				Zone[entity].Radius = ClampCell(Zone[entity].Radius, 0.0, 430.0);
 
 				char sValue[64];
 				FloatToString(Zone[entity].Radius, sValue, sizeof(sValue));
 				UpdateZonesConfigKey(entity, "radius", sValue);
 
+				entity = RemakeZoneEntity(entity);
+				
 				OpenZonePropertiesMenu(param1, entity);
 			}
 			else if (StrEqual(sInfo, "edit_remove_radius"))
 			{
-				Zone[entity].Radius -= 5.0;
+				Zone[entity].Radius -= g_fPrecision[param1];
 				Zone[entity].Radius = ClampCell(Zone[entity].Radius, 0.0, 430.0);
 
 				char sValue[64];
 				FloatToString(Zone[entity].Radius, sValue, sizeof(sValue));
 				UpdateZonesConfigKey(entity, "radius", sValue);
 
+				entity = RemakeZoneEntity(entity);
+				
+				OpenZonePropertiesMenu(param1, entity);
+			}
+			else if (StrEqual(sInfo, "edit_add_height"))
+			{
+				Zone[entity].PointsHeight += g_fPrecision[param1];
+
+				char sValue[64];
+				FloatToString(Zone[entity].PointsHeight, sValue, sizeof(sValue));
+				UpdateZonesConfigKey(entity, "points_height", sValue);
+
+				entity = RemakeZoneEntity(entity);
+				
+				OpenZonePropertiesMenu(param1, entity);
+			}
+			else if (StrEqual(sInfo, "edit_remove_height"))
+			{
+				Zone[entity].PointsHeight -= g_fPrecision[param1];
+
+				char sValue[64];
+				FloatToString(Zone[entity].PointsHeight, sValue, sizeof(sValue));
+				UpdateZonesConfigKey(entity, "points_height", sValue);
+
+				entity = RemakeZoneEntity(entity);
+				
 				OpenZonePropertiesMenu(param1, entity);
 			}
 			else if (StrEqual(sInfo, "edit_add_point"))
 			{
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
+				vLookPoint[2] += g_cDefaultZOffset.FloatValue;
 
 				Zone[entity].PointsData.PushArray(vLookPoint, 3);
 
@@ -1366,6 +1605,8 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 
 		case MenuAction_Cancel:
 		{
+			g_bSelectedZone[GetMenuCell(menu, "entity")] = false;
+
 			if (param2 == MenuCancel_ExitBack)
 			{
 				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
@@ -1383,6 +1624,8 @@ void OpenEditZoneStartPointAMenu(int client, int entity, bool whichpoint)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	g_bSelectedZone[entity] = true;
 
 	Menu menu = new Menu(MenuHandle_ZoneEditStartPointMenu);
 	menu.SetTitle("Edit start point %s properties for zone '%s':", whichpoint ? "A" : "B", sName);
@@ -1548,6 +1791,8 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 
 		case MenuAction_Cancel:
 		{
+			g_bSelectedZone[GetMenuCell(menu, "entity")] = false;
+
 			if (param2 == MenuCancel_ExitBack)
 			{
 				OpenZonePropertiesMenu(param1, GetMenuCell(menu, "entity"));
@@ -1701,7 +1946,7 @@ void OpenEditZoneTypeMenu(int client, int entity)
 	Menu menu = new Menu(MenuHandler_EditZoneTypeMenu);
 	menu.SetTitle("Choose a new zone type%s:", sAddendum);
 
-	for (int i = 0; i < ZONE_TYPES; i++)
+	for (int i = 1; i < ZONE_TYPES; i++)
 	{
 		char sID[12];
 		IntToString(i, sID, sizeof(sID));
@@ -1946,8 +2191,8 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 			menu.AddItem("start", "Set Center Point", ITEMDRAW_DEFAULT);
 			AddMenuItemFormat(menu, "add_radius", ITEMDRAW_DEFAULT, "Radius +");
 			AddMenuItemFormat(menu, "rem_radius", ITEMDRAW_DEFAULT, "Radius -");
-			AddMenuItemFormat(menu, "cp_z_add", ITEMDRAW_DEFAULT, "Z +");
-			AddMenuItemFormat(menu, "cp_z_remove", ITEMDRAW_DEFAULT, "Z -");
+			AddMenuItemFormat(menu, "cp_height_add", ITEMDRAW_DEFAULT, "Height +");
+			AddMenuItemFormat(menu, "cp_height_rem", ITEMDRAW_DEFAULT, "Height -");
 		}
 
 		case ZONE_TYPE_POLY:
@@ -1955,8 +2200,8 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 			menu.AddItem("add", "Add Zone Point", ITEMDRAW_DEFAULT);
 			menu.AddItem("remove", "Remove Last Point", ITEMDRAW_DEFAULT);
 			menu.AddItem("clear", "Clear All Points", ITEMDRAW_DEFAULT);
-			AddMenuItemFormat(menu, "cp_z_add", ITEMDRAW_DEFAULT, "Z +");
-			AddMenuItemFormat(menu, "cp_z_remove", ITEMDRAW_DEFAULT, "Z -");
+			AddMenuItemFormat(menu, "cp_height_add", ITEMDRAW_DEFAULT, "Height +");
+			AddMenuItemFormat(menu, "cp_height_rem", ITEMDRAW_DEFAULT, "Height -");
 		}
 	}
 
@@ -1997,6 +2242,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			{
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
+				vLookPoint[2] += g_cDefaultZOffset.FloatValue;
 				Array_Copy(vLookPoint, CZone[param1].Start, 3);
 				CPrintToChat(param1, "Starting point: %.2f/%.2f/%.2f", CZone[param1].Start[0], CZone[param1].Start[1], CZone[param1].Start[2]);
 
@@ -2006,6 +2252,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			{
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
+				vLookPoint[2] += g_cDefaultZOffset.FloatValue;
 				Array_Copy(vLookPoint, CZone[param1].End, 3);
 				CPrintToChat(param1, "Ending point: %.2f/%.2f/%.2f", CZone[param1].End[0], CZone[param1].End[1], CZone[param1].End[2]);
 
@@ -2023,12 +2270,12 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 				ClampCell(CZone[param1].Radius, 0.0, 430.0);
 				OpenCreateZonesMenu(param1);
 			}
-			else if (StrEqual(sInfo, "cp_z_add"))
+			else if (StrEqual(sInfo, "cp_height_add"))
 			{
 				CZone[param1].PointsHeight += g_fPrecision[param1];
 				OpenCreateZonesMenu(param1);
 			}
-			else if (StrEqual(sInfo, "cp_z_remove"))
+			else if (StrEqual(sInfo, "cp_height_rem"))
 			{
 				CZone[param1].PointsHeight -= g_fPrecision[param1];
 				OpenCreateZonesMenu(param1);
@@ -2037,6 +2284,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			{
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
+				vLookPoint[2] += g_cDefaultZOffset.FloatValue;
 
 				CZone[param1].PointsData.PushArray(vLookPoint, 3);
 
@@ -2487,7 +2735,7 @@ void OpenZoneTypeMenu(int client)
 	Menu menu = new Menu(MenuHandler_ZoneTypeMenu);
 	menu.SetTitle("Choose a zone type%s:", strlen(CZone[client].Name) > 0 ? sAddendum : "");
 
-	for (int i = 0; i < ZONE_TYPES; i++)
+	for (int i = 1; i < ZONE_TYPES; i++)
 	{
 		char sID[12];
 		IntToString(i, sID, sizeof(sID));
@@ -2629,6 +2877,7 @@ void CreateNewZone(int client)
 		{
 			g_kvConfig.SetVector("start", CZone[client].Start);
 			g_kvConfig.SetFloat("radius", CZone[client].Radius);
+			g_kvConfig.SetFloat("points_height", CZone[client].PointsHeight);
 		}
 
 		case ZONE_TYPE_POLY:
@@ -2673,6 +2922,7 @@ void ResetCreateZoneVariables(int client)
 	CZone[client].PointsHeight = g_cDefaultHeight.FloatValue;
 	CZone[client].SetName = false;
 	CZone[client].Display = true;
+	CZone[client].Show = true;
 }
 
 void GetZoneNameByType(int type, char[] buffer, int size)
@@ -2680,7 +2930,7 @@ void GetZoneNameByType(int type, char[] buffer, int size)
 	switch (type)
 	{
 		case ZONE_TYPE_NONE: strcopy(buffer, size, "N/A");
-		case ZONE_TYPE_BOX: strcopy(buffer, size, "Standard");
+		case ZONE_TYPE_BOX: strcopy(buffer, size, "Box");
 		case ZONE_TYPE_CIRCLE: strcopy(buffer, size, "Circle");
 		case ZONE_TYPE_POLY: strcopy(buffer, size, "Polygon");
 	}
@@ -2705,7 +2955,7 @@ int GetZoneTypeByIndex(int entity)
 
 int GetZoneTypeByName(const char[] sType)
 {
-	if (StrEqual(sType, "Standard"))
+	if (StrEqual(sType, "Box"))
 	{
 		return ZONE_TYPE_BOX;
 	}
@@ -2777,22 +3027,43 @@ public Action Timer_DisplayZones(Handle timer)
 					{
 						TE_SetupBeamRingPointToClient(i, CZone[i].Start, CZone[i].Radius, CZone[i].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 
-						// Show second beam with the height
-						float fStart[3];
-						fStart = CZone[i].Start;
-						fStart[2] = CZone[i].Start[2] + CZone[i].PointsHeight;
-						TE_SetupBeamRingPointToClient(i, fStart, CZone[i].Radius, CZone[i].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
+						float fStart[3], fEnd[3];
+						for (int j = 0; j < 4; j++)
+						{
+							fStart = CZone[i].Start;
+							fEnd = CZone[i].Start;
+
+							if (j < 2)
+							{
+								fStart[j] += CZone[i].Radius / 2;
+								fEnd[j] += CZone[i].Radius / 2;
+								fEnd[2] += CZone[i].PointsHeight;
+							}
+							else
+							{
+								fStart[j - 2] -= CZone[i].Radius / 2;
+								fEnd[j - 2] -= CZone[i].Radius / 2;
+								fEnd[2] += CZone[i].PointsHeight;
+							}
+
+							TE_SetupBeamPointsToClient(i, fStart, fEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+						}
+
+						float fUpper[3];
+						fUpper = CZone[i].Start;
+						fUpper[2] = CZone[i].Start[2] + CZone[i].PointsHeight;
+						TE_SetupBeamRingPointToClient(i, fUpper, CZone[i].Radius, CZone[i].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 					}
 				}
 
-				case ZONE_TYPE_POLY:
+				/* case ZONE_TYPE_POLY:
 				{
 					if (CZone[i].PointsData != null && CZone[i].PointsData.Length > 0)
 					{
 						for (int x = 0; x < CZone[i].PointsData.Length; x++)
 						{
-							float coordinates[3];
-							CZone[i].PointsData.GetArray(x, coordinates, sizeof(coordinates));
+							float fBottomStart[3];
+							CZone[i].PointsData.GetArray(x, fBottomStart, sizeof(fBottomStart));
 
 							int index;
 
@@ -2805,17 +3076,24 @@ public Action Timer_DisplayZones(Handle timer)
 								index = x + 1;
 							}
 
-							float nextpoint[3];
-							CZone[i].PointsData.GetArray(index, nextpoint, sizeof(nextpoint));
+							float fStart[3];
+							CZone[i].PointsData.GetArray(index, fStart, sizeof(fStart));
 
-							TE_SetupBeamPointsToClient(i, coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							TE_SetupBeamPointsToClient(i, fBottomStart, fStart, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 
-							coordinates[2] += CZone[i].PointsHeight;
-							nextpoint[2] += CZone[i].PointsHeight;
-							TE_SetupBeamPointsToClient(i, coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							float fUpperStart[3];
+							fUpperStart = fBottomStart;
+							fUpperStart[2] += CZone[i].PointsHeight;
+
+							float fUpperNext[3];
+							fUpperNext = fStart;
+							fUpperNext[2] += CZone[i].PointsHeight;
+
+							TE_SetupBeamPointsToClient(i, fUpperStart, fUpperNext, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							TE_SetupBeamPointsToClient(i, fBottomStart, fUpperStart, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 						}
 					}
-				}
+				}*/
 			}
 		}
 	}
@@ -2832,17 +3110,57 @@ public Action Timer_DisplayZones(Handle timer)
 		{
 			GetEntPropVector(zone, Prop_Data, "m_vecOrigin", vecOrigin);
 
+			int iColor[4];
+			iColor = Zone[zone].Color;
+
+			if (g_bSelectedZone[zone])
+			{
+				iColor[0] = 255;
+				iColor[1] = 120;
+				iColor[2] = 0;
+				iColor[3] = 255;
+			}
+
 			switch (GetZoneTypeByIndex(zone))
 			{
 				case ZONE_TYPE_BOX:
 				{
 					GetAbsBoundingBox(zone, vecStart, vecEnd);
-					TE_DrawBeamBoxToAll(vecStart, vecEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED);
+					TE_DrawBeamBoxToAll(vecStart, vecEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 				}
 
 				case ZONE_TYPE_CIRCLE:
 				{
-					TE_SetupBeamRingPoint(vecOrigin, Zone[zone].Radius, Zone[zone].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED, TE_FLAGS);
+					TE_SetupBeamRingPoint(vecOrigin, Zone[zone].Radius, Zone[zone].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
+					TE_SendToAll();
+
+					float fStart[3], fEnd[3];
+					for (int j = 0; j < 4; j++)
+					{
+						fStart = Zone[zone].Start;
+						fEnd = Zone[zone].Start;
+
+						if (j < 2)
+						{
+							fStart[j] += Zone[zone].Radius / 2;
+							fEnd[j] += Zone[zone].Radius / 2;
+							fEnd[2] += Zone[zone].PointsHeight;
+						}
+						else
+						{
+							fStart[j - 2] -= Zone[zone].Radius / 2;
+							fEnd[j - 2] -= Zone[zone].Radius / 2;
+							fEnd[2] += Zone[zone].PointsHeight;
+						}
+
+						TE_SetupBeamPoints(fStart, fEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+						TE_SendToAll();
+					}
+
+					float fUpper[3];
+					fUpper = Zone[zone].Start;
+					fUpper[2] = Zone[zone].Start[2] + Zone[zone].PointsHeight;
+					TE_SetupBeamRingPoint(fUpper, Zone[zone].Radius, Zone[zone].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 					TE_SendToAll();
 				}
 
@@ -2852,8 +3170,8 @@ public Action Timer_DisplayZones(Handle timer)
 					{
 						for (int y = 0; y < Zone[zone].PointsData.Length; y++)
 						{
-							float coordinates[3];
-							Zone[zone].PointsData.GetArray(y, coordinates, sizeof(coordinates));
+							float fBottomStart[3];
+							Zone[zone].PointsData.GetArray(y, fBottomStart, sizeof(fBottomStart));
 
 							int index;
 
@@ -2866,10 +3184,23 @@ public Action Timer_DisplayZones(Handle timer)
 								index = y + 1;
 							}
 
-							float nextpoint[3];
-							Zone[zone].PointsData.GetArray(index, nextpoint, sizeof(nextpoint));
+							float fBottomNext[3];
+							Zone[zone].PointsData.GetArray(index, fBottomNext, sizeof(fBottomNext));
 
-							TE_SetupBeamPoints(coordinates, nextpoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, Zone[zone].Color, TE_SPEED);
+							TE_SetupBeamPoints(fBottomStart, fBottomNext, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							TE_SendToAll();
+
+							float fUpperStart[3];
+							fUpperStart = fBottomStart;
+							fUpperStart[2] += Zone[zone].PointsHeight;
+
+							float fUpperNext[3];
+							fUpperNext = fBottomNext;
+							fUpperNext[2] += Zone[zone].PointsHeight;
+
+							TE_SetupBeamPoints(fUpperStart, fUpperNext, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							TE_SendToAll();
+							TE_SetupBeamPoints(fBottomStart, fUpperStart, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 							TE_SendToAll();
 						}
 					}
@@ -3041,7 +3372,9 @@ int CreateZone(eCreateZone Data)
 	{
 		g_aZoneEntities.Push(EntIndexToEntRef(entity));
 
+		Zone[entity].Start = Data.Start;
 		Zone[entity].Radius = Data.Radius;
+		Zone[entity].PointsHeight = Data.PointsHeight;
 
 		if (Zone[entity].Effects != null)
 		{
@@ -4337,5 +4670,10 @@ int SpawnZone(const char[] name)
 	zone.PointsHeight = points_height;
 	zone.Effects = effects;
 	zone.Display = bDisplay;
-	return CreateZone(zone);
+
+	int iEntity = CreateZone(zone);
+
+	g_bSelectedZone[iEntity] = false;
+
+	return iEntity;
 }
