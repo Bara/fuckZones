@@ -24,6 +24,11 @@
 #define ZONE_TYPE_CIRCLE 2
 #define ZONE_TYPE_POLY 3
 
+#define DISPLAY_TYPE_TYPES 3
+#define DISPLAY_TYPE_HIDE 0
+#define DISPLAY_TYPE_BOTTOM 1
+#define DISPLAY_TYPE_FULL 2
+
 #define MAX_ENTITY_LIMIT 4096
 
 #define TIMER_INTERVAL 0.1
@@ -81,6 +86,7 @@ enum struct eEntityData
 {
 	float Radius;
 	int Color[4];
+	int Display;
 	StringMap Effects;
 	ArrayList PointsData;
 	float Start[3];
@@ -110,7 +116,7 @@ enum struct eCreateZone
 	ArrayList PointsData;
 	float PointsHeight;
 	StringMap Effects;
-	bool Display;
+	int Display;
 	bool SetName;
 	bool Show;
 }
@@ -250,7 +256,7 @@ void ReparseMapZonesConfig(bool delete_config = false)
 	GetCurrentMap(sMap, sizeof(sMap));
 
 	char sFile[PLATFORM_MAX_PATH];
-	Format(sFile, sizeof(sFile), "%s%s.cfg", sFolder, sMap);
+	Format(sFile, sizeof(sFile), "%s%s.zon", sFolder, sMap);
 
 	if (delete_config)
 	{
@@ -258,7 +264,7 @@ void ReparseMapZonesConfig(bool delete_config = false)
 	}
 
 	LogMessage("Creating keyvalues for the new map before pulling new map zones info.");
-	g_kvConfig = new KeyValues("zones_manager");
+	g_kvConfig = new KeyValues("zones");
 
 	if (FileExists(sFile))
 	{
@@ -626,7 +632,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			}
 		}
 
-		if (CZone[client].Show && CZone[client].Display && CZone[client].Type > ZONE_TYPE_NONE)
+		if (CZone[client].Show && CZone[client].Display > DISPLAY_TYPE_HIDE && CZone[client].Type > ZONE_TYPE_NONE)
 		{
 			CZone[client].Show = false;
 			int iColor[4];
@@ -1350,6 +1356,7 @@ void OpenZonePropertiesMenu(int client, int entity)
 
 	menu.AddItem("edit_name", "Name");
 	menu.AddItem("edit_type", "Type");
+	menu.AddItem("edit_display", "Display");
 	menu.AddItem("edit_color", "Color");
 	// TODO: Add new options from recently added create zone opens
 
@@ -1411,6 +1418,10 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			else if (StrEqual(sInfo, "edit_type"))
 			{
 				OpenEditZoneTypeMenu(param1, entity);
+			}
+			else if (StrEqual(sInfo, "edit_display"))
+			{
+				OpenEditZoneDisplayMenu(param1, entity);
 			}
 			else if (StrEqual(sInfo, "edit_color"))
 			{
@@ -1997,6 +2008,67 @@ public int MenuHandler_EditZoneTypeMenu(Menu menu, MenuAction action, int param1
 	}
 }
 
+void OpenEditZoneDisplayMenu(int client, int entity)
+{
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+	char sAddendum[256];
+	FormatEx(sAddendum, sizeof(sAddendum), " %s", sName);
+
+	Menu menu = new Menu(MenuHandler_EditZoneDisplayMenu);
+	menu.SetTitle("How should be zone %s shown:", sAddendum);
+
+	for (int i = 0; i < DISPLAY_TYPE_TYPES; i++)
+	{
+		char sID[12];
+		IntToString(i, sID, sizeof(sID));
+
+		char sType[MAX_ZONE_TYPE_LENGTH];
+		GetDisplayNameByType(i, sType, sizeof(sType));
+
+		menu.AddItem(sID, sType);
+	}
+
+	PushMenuCell(menu, "entity", entity);
+
+	menu.ExitBackButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
+}
+
+public int MenuHandler_EditZoneDisplayMenu(Menu menu, MenuAction action, int param1, int param2)
+{
+	switch (action)
+	{
+		case MenuAction_Select:
+		{
+			char sID[12]; char sType[MAX_ZONE_TYPE_LENGTH];
+			menu.GetItem(param2, sID, sizeof(sID), _, sType, sizeof(sType));
+			int type = StringToInt(sID);
+
+			int entity = GetMenuCell(menu, "entity");
+
+			Zone[entity].Display = type;
+			UpdateZonesConfigKey(entity, "display", sType);
+
+			OpenZonePropertiesMenu(param1, entity);
+		}
+
+		case MenuAction_Cancel:
+		{
+			if (param2 == MenuCancel_ExitBack)
+			{
+				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
+			}
+		}
+
+		case MenuAction_End:
+		{
+			delete menu;
+		}
+	}
+}
+
 void OpenEditZoneColorMenu(int client, int entity)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
@@ -2165,7 +2237,7 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	GetZoneNameByType(CZone[client].Type, sType, sizeof(sType));
 
 	Menu menu = new Menu(MenuHandle_CreateZonesMenu);
-	menu.SetTitle("Create a Zone:");
+	menu.SetTitle("Create a Zone");
 
 	menu.AddItem("create", "Create Zone\n ", (bValidPoints && CZone[client].Type > ZONE_TYPE_NONE && strlen(CZone[client].Name) > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 
@@ -2206,8 +2278,9 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	}
 
 	AddMenuItemFormat(menu, "color", ITEMDRAW_DEFAULT, "Color: %s", (strlen(CZone[client].Color) > 0) ? CZone[client].Color : "Pink");
-	AddMenuItemFormat(menu, "view", ITEMDRAW_DEFAULT, "Display: %s", CZone[client].Display ? "Yes" : "No");
-	// AddMenuItemFormat(menu, "draw", ITEMDRAW_DEFAULT, "Draw whole zone: %s", CZone[client].DrawWholeZone ? "Yes" : "No");
+
+	GetDisplayNameByType(CZone[client].Display, sType, sizeof(sType));
+	AddMenuItemFormat(menu, "display", ITEMDRAW_DEFAULT, "Display: %s", sType);
 
 	menu.ExitBackButton = true;
 	menu.Display(client, MENU_TIME_FOREVER);
@@ -2311,10 +2384,16 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			{
 				OpenZonesColorMenu(param1);
 			}
-			else if (StrEqual(sInfo, "view"))
+			else if (StrEqual(sInfo, "display"))
 			{
-				CZone[param1].Display = !CZone[param1].Display;
-				OpenCreateZonesMenu(param1);
+				CZone[param1].Display++;
+
+				if (CZone[param1].Display > DISPLAY_TYPE_TYPES)
+				{
+					CZone[param1].Display = DISPLAY_TYPE_HIDE;
+				}
+
+				OpenZoneDisplayMenu(param1);
 			}
 			else if (StrEqual(sInfo, "create"))
 			{
@@ -2782,6 +2861,61 @@ public int MenuHandler_ZoneTypeMenu(Menu menu, MenuAction action, int param1, in
 	}
 }
 
+void OpenZoneDisplayMenu(int client)
+{
+	char sAddendum[256];
+	FormatEx(sAddendum, sizeof(sAddendum), " %s", CZone[client].Name);
+
+	Menu menu = new Menu(MenuHandler_ZoneDisplayMenu);
+	menu.SetTitle("How should be zone %s shown:", strlen(CZone[client].Name) > 0 ? sAddendum : "");
+
+	for (int i = 0; i < DISPLAY_TYPE_TYPES; i++)
+	{
+		char sID[12];
+		IntToString(i, sID, sizeof(sID));
+
+		char sType[MAX_ZONE_TYPE_LENGTH];
+		GetDisplayNameByType(i, sType, sizeof(sType));
+
+		menu.AddItem(sID, sType);
+	}
+
+	menu.Display(client, MENU_TIME_FOREVER);
+}
+
+public int MenuHandler_ZoneDisplayMenu(Menu menu, MenuAction action, int param1, int param2)
+{
+	switch (action)
+	{
+		case MenuAction_Select:
+		{
+			char sID[12]; char sType[MAX_ZONE_TYPE_LENGTH];
+			menu.GetItem(param2, sID, sizeof(sID), _, sType, sizeof(sType));
+			int type = StringToInt(sID);
+
+			char sAddendum[256];
+			FormatEx(sAddendum, sizeof(sAddendum), " for %s", CZone[param1].Name);
+
+			CZone[param1].Display = type;
+			CPrintToChat(param1, "Display type%s set to %s.", sAddendum, sType);
+			OpenCreateZonesMenu(param1);
+		}
+
+		case MenuAction_Cancel:
+		{
+			if (param2 == MenuCancel_ExitBack)
+			{
+				OpenCreateZonesMenu(param1);
+			}
+		}
+
+		case MenuAction_End:
+		{
+			delete menu;
+		}
+	}
+}
+
 void OpenZonesColorMenu(int client)
 {
 	Menu menu = new Menu(MenuHandler_ZoneColorMenu);
@@ -2863,7 +2997,9 @@ void CreateNewZone(int client)
 	char sColor[64];
 	FormatEx(sColor, sizeof(sColor), "%i %i %i %i", CZone[client].iColors[0], CZone[client].iColors[1], CZone[client].iColors[2], CZone[client].iColors[3]);
 	g_kvConfig.SetString("color", sColor);
-	g_kvConfig.SetNum("display", CZone[client].Display);
+
+	GetDisplayNameByType(CZone[client].Display, sType, sizeof(sType));
+	g_kvConfig.SetString("display", sType);
 
 	switch (CZone[client].Type)
 	{
@@ -2921,7 +3057,7 @@ void ResetCreateZoneVariables(int client)
 	delete CZone[client].PointsData;
 	CZone[client].PointsHeight = g_cDefaultHeight.FloatValue;
 	CZone[client].SetName = false;
-	CZone[client].Display = true;
+	CZone[client].Display = DISPLAY_TYPE_BOTTOM;
 	CZone[client].Show = true;
 }
 
@@ -2971,6 +3107,34 @@ int GetZoneTypeByName(const char[] sType)
 	return ZONE_TYPE_BOX;
 }
 
+void GetDisplayNameByType(int type, char[] buffer, int size)
+{
+	switch (type)
+	{
+		case DISPLAY_TYPE_HIDE: strcopy(buffer, size, "Hide");
+		case DISPLAY_TYPE_BOTTOM: strcopy(buffer, size, "Bottom");
+		case DISPLAY_TYPE_FULL: strcopy(buffer, size, "Full");
+	}
+}
+
+int GetDisplayTypeByName(const char[] sType)
+{
+	if (StrEqual(sType, "Hide"))
+	{
+		return DISPLAY_TYPE_HIDE;
+	}
+	else if (StrEqual(sType, "Bottom"))
+	{
+		return DISPLAY_TYPE_BOTTOM;
+	}
+	else if (StrEqual(sType, "Full"))
+	{
+		return DISPLAY_TYPE_FULL;
+	}
+
+	return DISPLAY_TYPE_HIDE;
+}
+
 void SaveMapConfig()
 {
 	if (g_kvConfig == null)
@@ -2982,7 +3146,7 @@ void SaveMapConfig()
 	GetCurrentMap(sMap, sizeof(sMap));
 
 	char sPath[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, sPath, sizeof(sPath), "data/zones/%s.cfg", sMap);
+	BuildPath(Path_SM, sPath, sizeof(sPath), "data/zones/%s.zon", sMap);
 
 	g_kvConfig.Rewind();
 	KeyValuesToFile(g_kvConfig, sPath);
@@ -3106,7 +3270,7 @@ public Action Timer_DisplayZones(Handle timer)
 	{
 		int zone = EntRefToEntIndex(g_aZoneEntities.Get(x));
 
-		if (IsValidEntity(zone))
+		if (IsValidEntity(zone) && Zone[zone].Display > DISPLAY_TYPE_HIDE)
 		{
 			GetEntPropVector(zone, Prop_Data, "m_vecOrigin", vecOrigin);
 
@@ -3126,7 +3290,7 @@ public Action Timer_DisplayZones(Handle timer)
 				case ZONE_TYPE_BOX:
 				{
 					GetAbsBoundingBox(zone, vecStart, vecEnd);
-					TE_DrawBeamBoxToAll(vecStart, vecEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+					TE_DrawBeamBoxToAll(zone, vecStart, vecEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 				}
 
 				case ZONE_TYPE_CIRCLE:
@@ -3134,34 +3298,38 @@ public Action Timer_DisplayZones(Handle timer)
 					TE_SetupBeamRingPoint(vecOrigin, Zone[zone].Radius, Zone[zone].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 					TE_SendToAll();
 
-					float fStart[3], fEnd[3];
-					for (int j = 0; j < 4; j++)
+					if (Zone[zone].Display == DISPLAY_TYPE_FULL)
 					{
-						fStart = Zone[zone].Start;
-						fEnd = Zone[zone].Start;
-
-						if (j < 2)
+						float fStart[3], fEnd[3];
+						for (int j = 0; j < 4; j++)
 						{
-							fStart[j] += Zone[zone].Radius / 2;
-							fEnd[j] += Zone[zone].Radius / 2;
-							fEnd[2] += Zone[zone].PointsHeight;
-						}
-						else
-						{
-							fStart[j - 2] -= Zone[zone].Radius / 2;
-							fEnd[j - 2] -= Zone[zone].Radius / 2;
-							fEnd[2] += Zone[zone].PointsHeight;
+							fStart = Zone[zone].Start;
+							fEnd = Zone[zone].Start;
+
+							if (j < 2)
+							{
+								fStart[j] += Zone[zone].Radius / 2;
+								fEnd[j] += Zone[zone].Radius / 2;
+								fEnd[2] += Zone[zone].PointsHeight;
+							}
+							else
+							{
+								fStart[j - 2] -= Zone[zone].Radius / 2;
+								fEnd[j - 2] -= Zone[zone].Radius / 2;
+								fEnd[2] += Zone[zone].PointsHeight;
+							}
+
+							TE_SetupBeamPoints(fStart, fEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							TE_SendToAll();
 						}
 
-						TE_SetupBeamPoints(fStart, fEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+					
+						float fUpper[3];
+						fUpper = Zone[zone].Start;
+						fUpper[2] = Zone[zone].Start[2] + Zone[zone].PointsHeight;
+						TE_SetupBeamRingPoint(fUpper, Zone[zone].Radius, Zone[zone].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 						TE_SendToAll();
 					}
-
-					float fUpper[3];
-					fUpper = Zone[zone].Start;
-					fUpper[2] = Zone[zone].Start[2] + Zone[zone].PointsHeight;
-					TE_SetupBeamRingPoint(fUpper, Zone[zone].Radius, Zone[zone].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
-					TE_SendToAll();
 				}
 
 				case ZONE_TYPE_POLY:
@@ -3190,18 +3358,21 @@ public Action Timer_DisplayZones(Handle timer)
 							TE_SetupBeamPoints(fBottomStart, fBottomNext, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 							TE_SendToAll();
 
-							float fUpperStart[3];
-							fUpperStart = fBottomStart;
-							fUpperStart[2] += Zone[zone].PointsHeight;
+							if (Zone[zone].Display == DISPLAY_TYPE_FULL)
+							{
+								float fUpperStart[3];
+								fUpperStart = fBottomStart;
+								fUpperStart[2] += Zone[zone].PointsHeight;
 
-							float fUpperNext[3];
-							fUpperNext = fBottomNext;
-							fUpperNext[2] += Zone[zone].PointsHeight;
+								float fUpperNext[3];
+								fUpperNext = fBottomNext;
+								fUpperNext[2] += Zone[zone].PointsHeight;
 
-							TE_SetupBeamPoints(fUpperStart, fUpperNext, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
-							TE_SendToAll();
-							TE_SetupBeamPoints(fBottomStart, fUpperStart, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
-							TE_SendToAll();
+								TE_SetupBeamPoints(fUpperStart, fUpperNext, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+								TE_SendToAll();
+								TE_SetupBeamPoints(fBottomStart, fUpperStart, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+								TE_SendToAll();
+							}
 						}
 					}
 				}
@@ -3375,6 +3546,7 @@ int CreateZone(eCreateZone Data)
 		Zone[entity].Start = Data.Start;
 		Zone[entity].Radius = Data.Radius;
 		Zone[entity].PointsHeight = Data.PointsHeight;
+		Zone[entity].Display = Data.Display;
 
 		if (Zone[entity].Effects != null)
 		{
@@ -3854,11 +4026,10 @@ void TE_DrawBeamBoxToClient(int client, const float bottomCorner[3], const float
 {
 	int clients[1];
 	clients[0] = client;
-	TE_DrawBeamBox(clients, 1, bottomCorner, upperCorner, modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
+	TE_DrawBeamBox(-1, clients, 1, bottomCorner, upperCorner, modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
 }
 
-// This is never used
-stock void TE_DrawBeamBoxToAll(const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame, int frameRate, float life, float width, float endWidth, int fadeLength, float amplitude, const color[4], int speed)
+stock void TE_DrawBeamBoxToAll(int entity, const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame, int frameRate, float life, float width, float endWidth, int fadeLength, float amplitude, const color[4], int speed)
 {
 	int[] clients = new int[MaxClients];
 	int numClients;
@@ -3871,10 +4042,10 @@ stock void TE_DrawBeamBoxToAll(const float bottomCorner[3], const float upperCor
 		}
 	}
 
-	TE_DrawBeamBox(clients, numClients, bottomCorner, upperCorner, modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
+	TE_DrawBeamBox(entity, clients, numClients, bottomCorner, upperCorner, modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
 }
 
-void TE_DrawBeamBox(int[] clients,int numClients, const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame, int frameRate, float life, float width, float endWidth, int fadeLength, float amplitude, const color[4], int speed)
+void TE_DrawBeamBox(int entity, int[] clients,int numClients, const float bottomCorner[3], const float upperCorner[3], int modelIndex, int haloIndex, int startFrame, int frameRate, float life, float width, float endWidth, int fadeLength, float amplitude, const color[4], int speed)
 {
 	float corners[8][3];
 
@@ -3900,17 +4071,20 @@ void TE_DrawBeamBox(int[] clients,int numClients, const float bottomCorner[3], c
 		TE_Send(clients, numClients);
 	}
 
-	for (int i = 4; i < 8; i++)
+	if (entity == -1 || (entity != -1 && Zone[entity].Display == DISPLAY_TYPE_FULL))
 	{
-		int j = ( i == 7 ? 4 : i+1 );
-		TE_SetupBeamPoints(corners[i], corners[j], modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
-		TE_Send(clients, numClients);
-	}
+		for (int i = 4; i < 8; i++)
+		{
+			int j = ( i == 7 ? 4 : i+1 );
+			TE_SetupBeamPoints(corners[i], corners[j], modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
+			TE_Send(clients, numClients);
+		}
 
-	for (int i = 0; i < 4; i++)
-	{
-		TE_SetupBeamPoints(corners[i], corners[i+4], modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
-		TE_Send(clients, numClients);
+		for (int i = 0; i < 4; i++)
+		{
+			TE_SetupBeamPoints(corners[i], corners[i+4], modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
+			TE_Send(clients, numClients);
+		}
 	}
 }
 
@@ -3931,17 +4105,21 @@ void ParseColorsData()
 	g_aColors.Clear();
 	g_smColorData.Clear();
 
-	char sPath[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, sPath, sizeof(sPath), "configs/zone_colors.cfg");
+	char sFolder[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, sFolder, sizeof(sFolder), "configs/zones_manager/");
+	CreateDirectory(sFolder, 511);
 
-	KeyValues kv = new KeyValues("zone_colors");
+	char sFile[PLATFORM_MAX_PATH];
+	Format(sFile, sizeof(sFile), "%scolors.cfg", sFolder);
+
+	KeyValues kv = new KeyValues("colors");
 
 	int color[4];
 	char sBuffer[64];
 
-	if (FileExists(sPath))
+	if (FileExists(sFile))
 	{
-		if (kv.ImportFromFile(sPath) && kv.GotoFirstSubKey(false))
+		if (kv.ImportFromFile(sFile) && kv.GotoFirstSubKey(false))
 		{
 			do
 			{
@@ -4000,7 +4178,7 @@ void ParseColorsData()
 		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
 		kv.SetString("Pink", sBuffer);
 
-		KeyValuesToFile(kv, sPath);
+		KeyValuesToFile(kv, sFile);
 	}
 
 	delete kv;
@@ -4599,7 +4777,8 @@ int SpawnZone(const char[] name)
 	float vEndPosition[3];
 	g_kvConfig.GetVector("end", vEndPosition);
 
-	bool bDisplay = view_as<bool>(g_kvConfig.GetNum("display"));
+	g_kvConfig.GetString("display", sType, sizeof(sType));
+	int display = GetDisplayTypeByName(sType);
 
 	float fRadius = g_kvConfig.GetFloat("radius");
 
@@ -4669,7 +4848,7 @@ int SpawnZone(const char[] name)
 	zone.PointsData = points;
 	zone.PointsHeight = points_height;
 	zone.Effects = effects;
-	zone.Display = bDisplay;
+	zone.Display = display;
 
 	int iEntity = CreateZone(zone);
 
