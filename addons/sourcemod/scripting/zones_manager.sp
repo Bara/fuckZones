@@ -375,6 +375,7 @@ public void OnClientDisconnect(int client)
 
 public void Event_OnRoundStart(Event event, const char[] name, bool dontBroadcast)
 {
+
 	RegenerateZones();
 }
 
@@ -1082,6 +1083,11 @@ public int MenuHandle_TeleportToZoneMenu(Menu menu, MenuAction action, int param
 
 void RegenerateZones(int client = -1)
 {
+	if (client == -1)
+	{
+		g_iRegenerationTime = -1;
+	}
+	
 	if (g_iRegenerationTime > 0 && GetTime() < (g_iRegenerationTime + g_cRegenerateSpam.IntValue))
 	{
 		if (IsClientValid(client))
