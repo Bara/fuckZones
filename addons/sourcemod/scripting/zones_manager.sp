@@ -2233,6 +2233,10 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	{
 		Format(sBuffer, sizeof(sBuffer), "Points: %d", CZone[client].PointsData.Length);
 	}
+	else if (CZone[client].Type == ZONE_TYPE_CIRCLE)
+	{
+		Format(sBuffer, sizeof(sBuffer), "Radius: %.1f", CZone[client].Radius);
+	}
 
 	AddMenuItemFormat(menu, "name", ITEMDRAW_DEFAULT, "Name: %s", strlen(CZone[client].Name) > 0 ? CZone[client].Name : "N/A");
 	AddMenuItemFormat(menu, "type", ITEMDRAW_DEFAULT, "Type: %s\n \n%s", sType, sBuffer);
