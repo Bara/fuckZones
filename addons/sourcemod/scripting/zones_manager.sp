@@ -1371,8 +1371,10 @@ void OpenZonePropertiesMenu(int client, int entity)
 		case ZONE_TYPE_BOX:
 		{
 			menu.AddItem("edit_startpoint_a", "StartPoint A");
+			menu.AddItem("edit_startpoint_a_no_z", "StartPoint A (Ignore Z/Height)");
 			menu.AddItem("edit_startpoint_a_precision", "StartPoint A Precision");
 			menu.AddItem("edit_startpoint_b", "StartPoint B");
+			menu.AddItem("edit_startpoint_b_no_z", "StartPoint B (Ignore Z/Height)");
 			menu.AddItem("edit_startpoint_b_precision", "StartPoint B Precision");
 		}
 
@@ -1444,33 +1446,6 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 				entity = RemakeZoneEntity(entity);
 
 				OpenZonePropertiesMenu(param1, entity);
-
-				//TODO: Make this work
-
-				/*float start[3];
-				GetClientLookPoint(param1, start, true);
-
-				float end[3];
-				//GetEntPropVector(entity, Prop_Data, "m_vecMaxs", end);
-				GetZonesVectorData(entity, "end", end);
-
-				float fMiddle[3];
-				GetMiddleOfABox(start, end, fMiddle);
-
-				TeleportEntity(entity, fMiddle, NULL_VECTOR, NULL_VECTOR);
-
-				// Have the mins always be negative
-				start[0] = start[0] - fMiddle[0];
-				if(start[0] > 0.0)
-				start[0] *= -1.0;
-				start[1] = start[1] - fMiddle[1];
-				if(start[1] > 0.0)
-				start[1] *= -1.0;
-				start[2] = start[2] - fMiddle[2];
-				if(start[2] > 0.0)
-				start[2] *= -1.0;
-
-				SetEntPropVector(entity, Prop_Data, "m_vecMins", start);*/
 			}
 			else if (StrEqual(sInfo, "edit_startpoint_b"))
 			{
@@ -1483,35 +1458,40 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 				entity = RemakeZoneEntity(entity);
 
 				OpenZonePropertiesMenu(param1, entity);
+			}
+			else if (StrEqual(sInfo, "edit_startpoint_a_no_z"))
+			{
+				float vecStart[3], vecEnd[3];
+				GetAbsBoundingBox(entity, vecStart, vecEnd);
 
-				//TODO: Make this work
+				float vecLook[3];
+				GetClientLookPoint(param1, vecLook);
+				
+				vecStart[0] = vecLook[0];
+				vecStart[1] = vecLook[1];
 
-				/*float start[3];
-				//GetEntPropVector(entity, Prop_Data, "m_vecMins", start);
-				GetZonesVectorData(entity, "start", start);
+				UpdateZonesConfigKeyVector(entity, "start", vecStart);
 
-				float end[3];
-				GetClientLookPoint(param1, end, true);
+				entity = RemakeZoneEntity(entity);
 
-				float fMiddle[3];
-				GetMiddleOfABox(start, end, fMiddle);
+				OpenZonePropertiesMenu(param1, entity);
+			}
+			else if (StrEqual(sInfo, "edit_startpoint_b_no_z"))
+			{
+				float vecStart[3], vecEnd[3];
+				GetAbsBoundingBox(entity, vecStart, vecEnd);
 
-				TeleportEntity(entity, fMiddle, NULL_VECTOR, NULL_VECTOR);
+				float vecLook[3];
+				GetClientLookPoint(param1, vecLook);
+				
+				vecEnd[0] = vecLook[0];
+				vecEnd[1] = vecLook[1];
 
-				// And the maxs always be positive
-				end[0] = end[0] - fMiddle[0];
-				if(end[0] < 0.0)
-				end[0] *= -1.0;
-				end[1] = end[1] - fMiddle[1];
-				if(end[1] < 0.0)
-				end[1] *= -1.0;
-				end[2] = end[2] - fMiddle[2];
-				if(end[2] < 0.0)
-				end[2] *= -1.0;
+				UpdateZonesConfigKeyVector(entity, "end", vecEnd);
 
-				SetEntPropVector(entity, Prop_Data, "m_vecMaxs", end);*/
+				entity = RemakeZoneEntity(entity);
 
-				//UpdateZonesConfigKeyVector(entity, "end", end);
+				OpenZonePropertiesMenu(param1, entity);
 			}
 			else if (StrEqual(sInfo, "edit_startpoint_a_precision"))
 			{
