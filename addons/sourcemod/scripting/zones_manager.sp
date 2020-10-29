@@ -2325,13 +2325,13 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			else if (StrEqual(sInfo, "add_radius"))
 			{
 				CZone[param1].Radius += g_fPrecision[param1];
-				ClampCell(CZone[param1].Radius, 0.0, 430.0);
+				CZone[param1].Radius = ClampCell(CZone[param1].Radius, 0.0, 430.0);
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "rem_radius"))
 			{
 				CZone[param1].Radius -= g_fPrecision[param1];
-				ClampCell(CZone[param1].Radius, 0.0, 430.0);
+				CZone[param1].Radius = ClampCell(CZone[param1].Radius, 0.0, 430.0);
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "cp_height_add"))
