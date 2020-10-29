@@ -1087,7 +1087,7 @@ void RegenerateZones(int client = -1)
 	{
 		g_iRegenerationTime = -1;
 	}
-	
+
 	if (g_iRegenerationTime > 0 && GetTime() < (g_iRegenerationTime + g_cRegenerateSpam.IntValue))
 	{
 		if (IsClientValid(client))
@@ -1527,9 +1527,10 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 				GetClientLookPoint(param1, start);
 				start[2] += g_cDefaultZOffset.FloatValue;
 
-				TeleportEntity(entity, start, NULL_VECTOR, NULL_VECTOR);
-
 				UpdateZonesConfigKeyVector(entity, "start", start);
+
+				entity = RemakeZoneEntity(entity);
+				
 				OpenZonePropertiesMenu(param1, entity);
 			}
 			else if (StrEqual(sInfo, "edit_add_radius"))
