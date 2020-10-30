@@ -1359,35 +1359,47 @@ void OpenZonePropertiesMenu(int client, int entity)
 	char sRadiusAmount[64];
 	FormatEx(sRadiusAmount, sizeof(sRadiusAmount), "\nRadius is currently: %.2f", Zone[entity].Radius);
 
+	int iType = GetZoneTypeByIndex(entity);
+
+	char sType[MAX_ZONE_TYPE_LENGTH];
+	GetZoneNameByType(iType, sType, sizeof(sType));
+
 	Menu menu = new Menu(MenuHandle_ZonePropertiesMenu);
-	menu.SetTitle("Edit properties for zone '%s':%s", sName, GetZoneTypeByIndex(entity) == ZONE_TYPE_CIRCLE ? sRadiusAmount : "");
+	menu.SetTitle("Edit properties for zone '%s':%s", sName, iType == ZONE_TYPE_CIRCLE ? sRadiusAmount : "");
 
-	menu.AddItem("edit_name", "Name");
-	menu.AddItem("edit_type", "Type");
-	menu.AddItem("edit_display", "Display");
-	menu.AddItem("edit_color", "Color");
-	// TODO: Add new options from recently added create zone opens
+	char sBuffer[256];
+	if (iType== ZONE_TYPE_POLY)
+	{
+		Format(sBuffer, sizeof(sBuffer), "Points: %d", Zone[entity].PointsData.Length);
+	}
+	else if (iType== ZONE_TYPE_CIRCLE)
+	{
+		Format(sBuffer, sizeof(sBuffer), "Radius: %.1f", Zone[entity].Radius);
+	}
 
-	switch (GetZoneTypeByIndex(entity))
+	AddMenuItemFormat(menu, "name", ITEMDRAW_DEFAULT, "Name: %s", strlen(sName) > 0 ? sName : "N/A");
+	AddMenuItemFormat(menu, "type", ITEMDRAW_DEFAULT, "Type: %s\n \n%s", sType, sBuffer);
+
+	switch (iType)
 	{
 		case ZONE_TYPE_BOX:
 		{
-			menu.AddItem("edit_startpoint_a", "StartPoint A");
-			menu.AddItem("edit_startpoint_a_no_z", "StartPoint A (Ignore Z/Height)");
-			menu.AddItem("edit_startpoint_a_precision", "StartPoint A Precision");
-			menu.AddItem("edit_startpoint_b", "StartPoint B");
-			menu.AddItem("edit_startpoint_b_no_z", "StartPoint B (Ignore Z/Height)");
-			menu.AddItem("edit_startpoint_b_precision", "StartPoint B Precision");
+			menu.AddItem("edit_startpoint_a", "Set Starting Point");
+			menu.AddItem("edit_startpoint_a_no_z", "Set Starting Point (Ignore Z/Height)");
+			menu.AddItem("edit_startpoint_a_precision", "Move Starting Point (Precision)");
+			menu.AddItem("edit_startpoint_b", "Set Ending Point");
+			menu.AddItem("edit_startpoint_b_no_z", "Set Ending Point (Ignore Z/Height)");
+			menu.AddItem("edit_startpoint_b_precision", "Move Ending Point (Precision)\n ");
 		}
 
 		case ZONE_TYPE_CIRCLE:
 		{
-			menu.AddItem("edit_startpoint", "StartPoint");
-			menu.AddItem("edit_startpoint_a_precision", "StartPoint Precision");
+			menu.AddItem("edit_startpoint", "Set Center Point");
+			menu.AddItem("edit_startpoint_a_precision", "Move Center Point Precision");
 			menu.AddItem("edit_add_radius", "Radius +");
 			menu.AddItem("edit_remove_radius", "Radius -");
 			menu.AddItem("edit_add_height", "Height +");
-			menu.AddItem("edit_remove_height", "Height -");
+			menu.AddItem("edit_remove_height", "Height -\n ");
 		}
 
 		case ZONE_TYPE_POLY:
@@ -1396,9 +1408,16 @@ void OpenZonePropertiesMenu(int client, int entity)
 			menu.AddItem("edit_remove_point", "Remove last Point");
 			menu.AddItem("edit_clear_points", "Clear all Points");
 			menu.AddItem("edit_add_height", "Height +");
-			menu.AddItem("edit_remove_height", "Height -");
+			menu.AddItem("edit_remove_height", "Height -\n ");
 		}
 	}
+
+	char sColor[32];
+	GetColorNameByCode(Zone[entity].Color, sColor, sizeof(sColor));
+	AddMenuItemFormat(menu, "color", ITEMDRAW_DEFAULT, "Color: %s", (strlen(sColor) > 0) ? sColor : "Pink");
+	
+	GetDisplayNameByType(Zone[entity].Display, sType, sizeof(sType));
+	AddMenuItemFormat(menu, "display", ITEMDRAW_DEFAULT, "Display: %s", sType);
 
 	PushMenuCell(menu, "entity", entity);
 
@@ -2247,26 +2266,26 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	{
 		case ZONE_TYPE_BOX:
 		{
-			menu.AddItem("start", "Set Starting Point", ITEMDRAW_DEFAULT);
-			menu.AddItem("end", "Set Ending Point", ITEMDRAW_DEFAULT);
+			menu.AddItem("start", "Set Starting Point");
+			menu.AddItem("end", "Set Ending Point\n ");
 		}
 
 		case ZONE_TYPE_CIRCLE:
 		{
-			menu.AddItem("start", "Set Center Point", ITEMDRAW_DEFAULT);
-			AddMenuItemFormat(menu, "add_radius", ITEMDRAW_DEFAULT, "Radius +");
-			AddMenuItemFormat(menu, "rem_radius", ITEMDRAW_DEFAULT, "Radius -");
-			AddMenuItemFormat(menu, "cp_height_add", ITEMDRAW_DEFAULT, "Height +");
-			AddMenuItemFormat(menu, "cp_height_rem", ITEMDRAW_DEFAULT, "Height -");
+			menu.AddItem("start", "Set Center Point");
+			menu.AddItem("add_radius", "Radius +");
+			menu.AddItem("rem_radius", "Radius -");
+			menu.AddItem("cp_height_add", "Height +");
+			menu.AddItem("cp_height_rem", "Height -\n ");
 		}
 
 		case ZONE_TYPE_POLY:
 		{
-			menu.AddItem("add", "Add Zone Point", ITEMDRAW_DEFAULT);
-			menu.AddItem("remove", "Remove Last Point", ITEMDRAW_DEFAULT);
-			menu.AddItem("clear", "Clear All Points", ITEMDRAW_DEFAULT);
-			AddMenuItemFormat(menu, "cp_height_add", ITEMDRAW_DEFAULT, "Height +");
-			AddMenuItemFormat(menu, "cp_height_rem", ITEMDRAW_DEFAULT, "Height -");
+			menu.AddItem("add", "Add Zone Point");
+			menu.AddItem("remove", "Remove Last Point");
+			menu.AddItem("clear", "Clear All Points");
+			menu.AddItem("cp_height_add", "Height +");
+			menu.AddItem("cp_height_rem", "Height -\n ");
 		}
 	}
 
@@ -4851,4 +4870,28 @@ int SpawnZone(const char[] name)
 	g_bSelectedZone[iEntity] = false;
 
 	return iEntity;
+}
+
+bool GetColorNameByCode(int iColor[4], char[] color, int maxlen)
+{
+	StringMapSnapshot snap = g_smColorData.Snapshot();
+
+	char sBuffer[32];
+	int iBuffer[4];
+
+	for (int i = 0; i < snap.Length; i++)
+	{
+		snap.GetKey(i, sBuffer, sizeof(sBuffer));
+		g_smColorData.GetArray(sBuffer, iBuffer, sizeof(iBuffer));
+
+		if (iBuffer[0] == iColor[0] && iBuffer[1] == iColor[1] && iBuffer[2] == iColor[2] && iBuffer[3] == iColor[3])
+		{
+			strcopy(color, maxlen, sBuffer);
+			delete snap;
+			return true;
+		}
+	}
+
+	delete snap;
+	return false;
 }
