@@ -1037,7 +1037,7 @@ public int MenuHandle_ZonesMenu(Menu menu, MenuAction action, int param1, int pa
 void OpenTeleportToZoneMenu(int client)
 {
 	Menu menu = new Menu(MenuHandle_TeleportToZoneMenu);
-	menu.SetTitle("Teleport to which zone:");
+	menu.SetTitle("Teleport to zone");
 
 	for (int i = 0; i < g_aZoneEntities.Length; i++)
 	{
@@ -1133,7 +1133,7 @@ void DeleteAllZones(int client = -1, bool confirmation = true)
 	}
 
 	Menu menu = new Menu(MenuHandle_ConfirmDeleteAllZones);
-	menu.SetTitle("Are you sure you want to delete all zones on this map?");
+	menu.SetTitle("Are you sure to delete all zones on this map?");
 
 	menu.AddItem("No", "No");
 	menu.AddItem("Yes", "Yes");
@@ -1169,7 +1169,7 @@ public int MenuHandle_ConfirmDeleteAllZones(Menu menu, MenuAction action, int pa
 void OpenManageZonesMenu(int client)
 {
 	Menu menu = new Menu(MenuHandle_ManageZonesMenu);
-	menu.SetTitle("Manage Zones:");
+	menu.SetTitle("Manage Zones");
 
 	for (int i = 0; i < g_aZoneEntities.Length; i++)
 	{
@@ -1231,7 +1231,7 @@ void OpenEditZoneMenu(int client, int entity)
 	g_bSelectedZone[entity] = true;
 
 	Menu menu = new Menu(MenuHandle_ManageEditMenu);
-	menu.SetTitle("Manage Zone '%s':", sName);
+	menu.SetTitle("Manage Zone (%s)", sName);
 
 	menu.AddItem("edit", "Edit Zone");
 	menu.AddItem("delete", "Delete Zone\n ");
@@ -1356,17 +1356,15 @@ void OpenZonePropertiesMenu(int client, int entity)
 
 	g_bSelectedZone[entity] = true;
 
-	char sRadiusAmount[64];
-	FormatEx(sRadiusAmount, sizeof(sRadiusAmount), "\nRadius is currently: %.2f", Zone[entity].Radius);
-
 	int iType = GetZoneTypeByIndex(entity);
 
 	char sType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneNameByType(iType, sType, sizeof(sType));
 
 	Menu menu = new Menu(MenuHandle_ZonePropertiesMenu);
-	menu.SetTitle("Edit properties for zone '%s':%s", sName, iType == ZONE_TYPE_CIRCLE ? sRadiusAmount : "");
+	menu.SetTitle("Edit zone (%s)", sName);
 
+	// Merge Start
 	char sBuffer[256];
 	if (iType== ZONE_TYPE_POLY)
 	{
@@ -1418,6 +1416,7 @@ void OpenZonePropertiesMenu(int client, int entity)
 	
 	GetDisplayNameByType(Zone[entity].Display, sType, sizeof(sType));
 	AddMenuItemFormat(menu, "display", ITEMDRAW_DEFAULT, "Display: %s", sType);
+	// Merge End
 
 	PushMenuCell(menu, "entity", entity);
 
@@ -1647,7 +1646,7 @@ void OpenEditZoneStartPointAMenu(int client, int entity, bool whichpoint)
 	g_bSelectedZone[entity] = true;
 
 	Menu menu = new Menu(MenuHandle_ZoneEditStartPointMenu);
-	menu.SetTitle("Edit start point %s properties for zone '%s':", whichpoint ? "A" : "B", sName);
+	menu.SetTitle("Edit %s point for zone (%s)", whichpoint ? "starting" : "ending", sName);
 
 	if (whichpoint)
 	{
@@ -1963,7 +1962,7 @@ void OpenEditZoneTypeMenu(int client, int entity)
 	FormatEx(sAddendum, sizeof(sAddendum), " for %s", sName);
 
 	Menu menu = new Menu(MenuHandler_EditZoneTypeMenu);
-	menu.SetTitle("Choose a new zone type%s:", sAddendum);
+	menu.SetTitle("Choose zone type%s", sAddendum);
 
 	for (int i = 1; i < ZONE_TYPES; i++)
 	{
@@ -2021,11 +2020,8 @@ void OpenEditZoneDisplayMenu(int client, int entity)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	char sAddendum[256];
-	FormatEx(sAddendum, sizeof(sAddendum), " %s", sName);
-
 	Menu menu = new Menu(MenuHandler_EditZoneDisplayMenu);
-	menu.SetTitle("How should be zone %s shown:", sAddendum);
+	menu.SetTitle("Choose display type for %s", sName);
 
 	for (int i = 0; i < DISPLAY_TYPE_TYPES; i++)
 	{
@@ -2086,7 +2082,7 @@ void OpenEditZoneColorMenu(int client, int entity)
 	FormatEx(sAddendum, sizeof(sAddendum), " for %s", sName);
 
 	Menu menu = new Menu(MenuHandler_EditZoneColorMenu);
-	menu.SetTitle("Choose a new zone color%s:", sAddendum);
+	menu.SetTitle("Choose zone color%s", sAddendum);
 
 	for (int i = 0; i < g_aColors.Length; i++)
 	{
@@ -2149,7 +2145,7 @@ void DisplayConfirmDeleteZoneMenu(int client, int entity)
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandle_ManageConfirmDeleteZoneMenu);
-	menu.SetTitle("Are you sure you want to delete '%s':", sName);
+	menu.SetTitle("Are you sure to delete this zone (%s)?", sName);
 
 	menu.AddItem("yes", "Yes");
 	menu.AddItem("no", "No");
@@ -2249,6 +2245,7 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 
 	menu.AddItem("create", "Create Zone\n ", (bValidPoints && CZone[client].Type > ZONE_TYPE_NONE && strlen(CZone[client].Name) > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 
+	// Merge Start
 	char sBuffer[256];
 	if (CZone[client].Type == ZONE_TYPE_POLY)
 	{
@@ -2296,6 +2293,7 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 
 	GetDisplayNameByType(CZone[client].Display, sType, sizeof(sType));
 	AddMenuItemFormat(menu, "display", ITEMDRAW_DEFAULT, "Display: %s", sType);
+	// Merge End
 
 	menu.ExitBackButton = true;
 	menu.Display(client, MENU_TIME_FOREVER);
@@ -2440,7 +2438,7 @@ bool AddZoneEffectMenu(int client, int entity)
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandler_AddZoneEffect);
-	menu.SetTitle("Add a zone effect to %s:", sName);
+	menu.SetTitle("Add zone effect to zone (%s)", sName);
 
 	for (int i = 0; i < g_aEffectsList.Length; i++)
 	{
@@ -2507,7 +2505,7 @@ bool EditZoneEffectMenu(int client, int entity)
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandler_EditZoneEffect);
-	menu.SetTitle("Pick a zone effect to edit for %s:", sName);
+	menu.SetTitle("Pick zone effect to edit for zone (%s)", sName);
 
 	for (int i = 0; i < g_aEffectsList.Length; i++)
 	{
@@ -2565,7 +2563,7 @@ bool ListZoneEffectKeys(int client, int entity, const char[] effect)
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandler_EditZoneEffectKeyVaue);
-	menu.SetTitle("Pick effect key to edit for %s:", sName);
+	menu.SetTitle("Pick zone effect to edit for zone (%s)", sName);
 
 	StringMap smEffects = null;
 	Zone[entity].Effects.GetValue(effect, smEffects);
@@ -2737,7 +2735,7 @@ bool RemoveZoneEffectMenu(int client, int entity)
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandler_RemoveZoneEffect);
-	menu.SetTitle("Add a zone type to %s to remove:", sName);
+	menu.SetTitle("Pick zone effect to remove it from zone (%s)", sName);
 
 	for (int i = 0; i < g_aEffectsList.Length; i++)
 	{
@@ -2827,7 +2825,7 @@ void OpenZoneTypeMenu(int client)
 	FormatEx(sAddendum, sizeof(sAddendum), " for %s", CZone[client].Name);
 
 	Menu menu = new Menu(MenuHandler_ZoneTypeMenu);
-	menu.SetTitle("Choose a zone type%s:", strlen(CZone[client].Name) > 0 ? sAddendum : "");
+	menu.SetTitle("Choose zone type%s", strlen(CZone[client].Name) > 0 ? sAddendum : "");
 
 	for (int i = 1; i < ZONE_TYPES; i++)
 	{
@@ -2882,7 +2880,7 @@ void OpenZoneDisplayMenu(int client)
 	FormatEx(sAddendum, sizeof(sAddendum), " %s", CZone[client].Name);
 
 	Menu menu = new Menu(MenuHandler_ZoneDisplayMenu);
-	menu.SetTitle("How should be zone %s shown:", strlen(CZone[client].Name) > 0 ? sAddendum : "");
+	menu.SetTitle("Choose display type for %s", strlen(CZone[client].Name) > 0 ? sAddendum : "");
 
 	for (int i = 0; i < DISPLAY_TYPE_TYPES; i++)
 	{
@@ -2934,7 +2932,7 @@ public int MenuHandler_ZoneDisplayMenu(Menu menu, MenuAction action, int param1,
 void OpenZonesColorMenu(int client)
 {
 	Menu menu = new Menu(MenuHandler_ZoneColorMenu);
-	menu.SetTitle("Choose a color:");
+	menu.SetTitle("Choose color");
 
 	for (int i = 0; i < g_aColors.Length; i++)
 	{
