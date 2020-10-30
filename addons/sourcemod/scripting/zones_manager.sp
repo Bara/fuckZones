@@ -1384,31 +1384,31 @@ void OpenZonePropertiesMenu(int client, int entity)
 	{
 		case ZONE_TYPE_BOX:
 		{
-			menu.AddItem("edit_startpoint_a", "Set Starting Point");
-			menu.AddItem("edit_startpoint_a_no_z", "Set Starting Point (Ignore Z/Height)");
-			menu.AddItem("edit_startpoint_a_precision", "Move Starting Point (Precision)");
-			menu.AddItem("edit_startpoint_b", "Set Ending Point");
-			menu.AddItem("edit_startpoint_b_no_z", "Set Ending Point (Ignore Z/Height)");
-			menu.AddItem("edit_startpoint_b_precision", "Move Ending Point (Precision)\n ");
+			menu.AddItem("startpoint_a", "Set Starting Point");
+			menu.AddItem("startpoint_a_no_z", "Set Starting Point (Ignore Z/Height)");
+			menu.AddItem("startpoint_a_precision", "Move Starting Point (Precision)");
+			menu.AddItem("startpoint_b", "Set Ending Point");
+			menu.AddItem("startpoint_b_no_z", "Set Ending Point (Ignore Z/Height)");
+			menu.AddItem("startpoint_b_precision", "Move Ending Point (Precision)\n ");
 		}
 
 		case ZONE_TYPE_CIRCLE:
 		{
-			menu.AddItem("edit_startpoint", "Set Center Point");
-			menu.AddItem("edit_startpoint_a_precision", "Move Center Point Precision");
-			menu.AddItem("edit_add_radius", "Radius +");
-			menu.AddItem("edit_remove_radius", "Radius -");
-			menu.AddItem("edit_add_height", "Height +");
-			menu.AddItem("edit_remove_height", "Height -\n ");
+			menu.AddItem("startpoint", "Set Center Point");
+			menu.AddItem("startpoint_a_precision", "Move Center Point Precision");
+			menu.AddItem("add_radius", "Radius +");
+			menu.AddItem("remove_radius", "Radius -");
+			menu.AddItem("add_height", "Height +");
+			menu.AddItem("remove_height", "Height -\n ");
 		}
 
 		case ZONE_TYPE_POLY:
 		{
-			menu.AddItem("edit_add_point", "Add a Point");
-			menu.AddItem("edit_remove_point", "Remove last Point");
-			menu.AddItem("edit_clear_points", "Clear all Points");
-			menu.AddItem("edit_add_height", "Height +");
-			menu.AddItem("edit_remove_height", "Height -\n ");
+			menu.AddItem("add_point", "Add a Point");
+			menu.AddItem("remove_point", "Remove last Point");
+			menu.AddItem("clear_points", "Clear all Points");
+			menu.AddItem("add_height", "Height +");
+			menu.AddItem("remove_height", "Height -\n ");
 		}
 	}
 
@@ -1439,24 +1439,24 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			char sName[MAX_ZONE_NAME_LENGTH];
 			GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-			if (StrEqual(sInfo, "edit_name"))
+			if (StrEqual(sInfo, "name"))
 			{
 				g_iEditingName[param1] = EntIndexToEntRef(entity);
 				CPrintToChat(param1, "Type the new name for the zone '%s' in chat. Type \"!cancel\" to cancel this process.", sName);
 			}
-			else if (StrEqual(sInfo, "edit_type"))
+			else if (StrEqual(sInfo, "type"))
 			{
 				OpenEditZoneTypeMenu(param1, entity);
 			}
-			else if (StrEqual(sInfo, "edit_display"))
+			else if (StrEqual(sInfo, "display"))
 			{
 				OpenEditZoneDisplayMenu(param1, entity);
 			}
-			else if (StrEqual(sInfo, "edit_color"))
+			else if (StrEqual(sInfo, "color"))
 			{
 				OpenEditZoneColorMenu(param1, entity);
 			}
-			else if (StrEqual(sInfo, "edit_startpoint_a"))
+			else if (StrEqual(sInfo, "startpoint_a"))
 			{
 				float vecLook[3];
 				GetClientLookPoint(param1, vecLook);
@@ -1468,7 +1468,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 
 				OpenZonePropertiesMenu(param1, entity);
 			}
-			else if (StrEqual(sInfo, "edit_startpoint_b"))
+			else if (StrEqual(sInfo, "startpoint_b"))
 			{
 				float vecLook[3];
 				GetClientLookPoint(param1, vecLook);
@@ -1480,7 +1480,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 
 				OpenZonePropertiesMenu(param1, entity);
 			}
-			else if (StrEqual(sInfo, "edit_startpoint_a_no_z"))
+			else if (StrEqual(sInfo, "startpoint_a_no_z"))
 			{
 				float vecStart[3], vecEnd[3];
 				GetAbsBoundingBox(entity, vecStart, vecEnd);
@@ -1497,7 +1497,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 
 				OpenZonePropertiesMenu(param1, entity);
 			}
-			else if (StrEqual(sInfo, "edit_startpoint_b_no_z"))
+			else if (StrEqual(sInfo, "startpoint_b_no_z"))
 			{
 				float vecStart[3], vecEnd[3];
 				GetAbsBoundingBox(entity, vecStart, vecEnd);
@@ -1514,15 +1514,15 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 
 				OpenZonePropertiesMenu(param1, entity);
 			}
-			else if (StrEqual(sInfo, "edit_startpoint_a_precision"))
+			else if (StrEqual(sInfo, "startpoint_a_precision"))
 			{
 				OpenEditZoneStartPointAMenu(param1, entity, true);
 			}
-			else if (StrEqual(sInfo, "edit_startpoint_b_precision"))
+			else if (StrEqual(sInfo, "startpoint_b_precision"))
 			{
 				OpenEditZoneStartPointAMenu(param1, entity, false);
 			}
-			else if (StrEqual(sInfo, "edit_startpoint"))
+			else if (StrEqual(sInfo, "startpoint"))
 			{
 				float start[3];
 				GetClientLookPoint(param1, start);
@@ -1534,7 +1534,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 				
 				OpenZonePropertiesMenu(param1, entity);
 			}
-			else if (StrEqual(sInfo, "edit_add_radius"))
+			else if (StrEqual(sInfo, "add_radius"))
 			{
 				Zone[entity].Radius += g_fPrecision[param1];
 				Zone[entity].Radius = ClampCell(Zone[entity].Radius, 0.0, 430.0);
@@ -1547,7 +1547,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 				
 				OpenZonePropertiesMenu(param1, entity);
 			}
-			else if (StrEqual(sInfo, "edit_remove_radius"))
+			else if (StrEqual(sInfo, "remove_radius"))
 			{
 				Zone[entity].Radius -= g_fPrecision[param1];
 				Zone[entity].Radius = ClampCell(Zone[entity].Radius, 0.0, 430.0);
@@ -1560,7 +1560,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 				
 				OpenZonePropertiesMenu(param1, entity);
 			}
-			else if (StrEqual(sInfo, "edit_add_height"))
+			else if (StrEqual(sInfo, "add_height"))
 			{
 				Zone[entity].PointsHeight += g_fPrecision[param1];
 
@@ -1572,7 +1572,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 				
 				OpenZonePropertiesMenu(param1, entity);
 			}
-			else if (StrEqual(sInfo, "edit_remove_height"))
+			else if (StrEqual(sInfo, "remove_height"))
 			{
 				Zone[entity].PointsHeight -= g_fPrecision[param1];
 
@@ -1584,7 +1584,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 				
 				OpenZonePropertiesMenu(param1, entity);
 			}
-			else if (StrEqual(sInfo, "edit_add_point"))
+			else if (StrEqual(sInfo, "add_point"))
 			{
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
@@ -1596,7 +1596,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 
 				OpenZonePropertiesMenu(param1, entity);
 			}
-			else if (StrEqual(sInfo, "edit_remove_point"))
+			else if (StrEqual(sInfo, "remove_point"))
 			{
 				int size = Zone[entity].PointsData.Length;
 				int actual = size - 1;
@@ -1609,7 +1609,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 
 				OpenZonePropertiesMenu(param1, entity);
 			}
-			else if (StrEqual(sInfo, "edit_clear_points"))
+			else if (StrEqual(sInfo, "clear_points"))
 			{
 				Zone[entity].PointsData.Clear();
 				SaveZonePointsData(entity);
@@ -2266,26 +2266,26 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	{
 		case ZONE_TYPE_BOX:
 		{
-			menu.AddItem("start", "Set Starting Point");
-			menu.AddItem("end", "Set Ending Point\n ");
+			menu.AddItem("startpoint_a", "Set Starting Point");
+			menu.AddItem("startpoint_b", "Set Ending Point\n ");
 		}
 
 		case ZONE_TYPE_CIRCLE:
 		{
-			menu.AddItem("start", "Set Center Point");
+			menu.AddItem("startpoint_a", "Set Center Point");
 			menu.AddItem("add_radius", "Radius +");
-			menu.AddItem("rem_radius", "Radius -");
-			menu.AddItem("cp_height_add", "Height +");
-			menu.AddItem("cp_height_rem", "Height -\n ");
+			menu.AddItem("remove_radius", "Radius -");
+			menu.AddItem("add_height", "Height +");
+			menu.AddItem("remove_height", "Height -\n ");
 		}
 
 		case ZONE_TYPE_POLY:
 		{
-			menu.AddItem("add", "Add Zone Point");
-			menu.AddItem("remove", "Remove Last Point");
-			menu.AddItem("clear", "Clear All Points");
-			menu.AddItem("cp_height_add", "Height +");
-			menu.AddItem("cp_height_rem", "Height -\n ");
+			menu.AddItem("add_point", "Add Zone Point");
+			menu.AddItem("remove_point", "Remove Last Point");
+			menu.AddItem("clear_points", "Clear All Points");
+			menu.AddItem("add_height", "Height +");
+			menu.AddItem("remove_height", "Height -\n ");
 		}
 	}
 
@@ -2326,7 +2326,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 
 				OpenZoneTypeMenu(param1);
 			}
-			else if (StrEqual(sInfo, "start"))
+			else if (StrEqual(sInfo, "startpoint_a"))
 			{
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
@@ -2336,7 +2336,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 
 				OpenCreateZonesMenu(param1);
 			}
-			else if (StrEqual(sInfo, "end"))
+			else if (StrEqual(sInfo, "startpoint_b"))
 			{
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
@@ -2352,23 +2352,23 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 				CZone[param1].Radius = ClampCell(CZone[param1].Radius, 0.0, 430.0);
 				OpenCreateZonesMenu(param1);
 			}
-			else if (StrEqual(sInfo, "rem_radius"))
+			else if (StrEqual(sInfo, "remove_radius"))
 			{
 				CZone[param1].Radius -= g_fPrecision[param1];
 				CZone[param1].Radius = ClampCell(CZone[param1].Radius, 0.0, 430.0);
 				OpenCreateZonesMenu(param1);
 			}
-			else if (StrEqual(sInfo, "cp_height_add"))
+			else if (StrEqual(sInfo, "add_height"))
 			{
 				CZone[param1].PointsHeight += g_fPrecision[param1];
 				OpenCreateZonesMenu(param1);
 			}
-			else if (StrEqual(sInfo, "cp_height_rem"))
+			else if (StrEqual(sInfo, "remove_height"))
 			{
 				CZone[param1].PointsHeight -= g_fPrecision[param1];
 				OpenCreateZonesMenu(param1);
 			}
-			else if (StrEqual(sInfo, "add"))
+			else if (StrEqual(sInfo, "add_point"))
 			{
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
@@ -2378,7 +2378,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 
 				OpenCreateZonesMenu(param1);
 			}
-			else if (StrEqual(sInfo, "remove"))
+			else if (StrEqual(sInfo, "remove_point"))
 			{
 				int size = CZone[param1].PointsData.Length;
 
@@ -2389,7 +2389,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 
 				OpenCreateZonesMenu(param1);
 			}
-			else if (StrEqual(sInfo, "clear"))
+			else if (StrEqual(sInfo, "clear_points"))
 			{
 				CZone[param1].PointsData.Clear();
 
