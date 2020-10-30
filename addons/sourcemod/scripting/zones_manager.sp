@@ -54,6 +54,7 @@ ConVar g_cRegenerateSpam = null;
 ConVar g_cDefaultHeight = null;
 ConVar g_cDefaultRadius = null;
 ConVar g_cDefaultZOffset = null;
+ConVar g_cDefaultColor = null;
 
 enum struct eForwards
 {
@@ -177,6 +178,7 @@ public void OnPluginStart()
 	g_cDefaultHeight = CreateConVar("zones_manager_default_height", "256", "Default height for circles and polygons zones (Default: 256)");
 	g_cDefaultRadius = CreateConVar("zones_manager_default_radius", "150", "Default radius for circle zones (Default: 150)");
 	g_cDefaultZOffset = CreateConVar("zones_manager_default_z_offset", "5", "Adds an offset of X to all points while creating/editing a zone. (Default: 5)");
+	g_cDefaultColor = CreateConVar("zones_manager_default_color", "Pink", "Default color for new zones, when no color was set. (Default: Pink)");
 
 	HookEventEx("teamplay_round_start", Event_OnRoundStart);
 	HookEventEx("round_start", Event_OnRoundStart);
@@ -2268,7 +2270,10 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 		}
 	}
 
-	AddMenuItemFormat(menu, "color", ITEMDRAW_DEFAULT, "Color: %s", (strlen(CZone[client].Color) > 0) ? CZone[client].Color : "Pink");
+	char sColor[32];
+	g_cDefaultColor.GetString(sColor, sizeof(sColor));
+
+	AddMenuItemFormat(menu, "color", ITEMDRAW_DEFAULT, "Color: %s", (strlen(CZone[client].Color) > 0) ? CZone[client].Color : sColor);
 
 	GetDisplayNameByType(CZone[client].Display, sType, sizeof(sType));
 	AddMenuItemFormat(menu, "display", ITEMDRAW_DEFAULT, "Display: %s", sType);
