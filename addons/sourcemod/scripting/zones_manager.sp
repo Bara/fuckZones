@@ -122,20 +122,27 @@ enum struct eCreateZone
 	bool Show;
 }
 
-eCreateZone CZone[MAXPLAYERS + 1];
-
-bool g_bEffectKeyValue[MAXPLAYERS + 1];
-int g_iEffectKeyValue_Entity[MAXPLAYERS + 1];
-char g_sEffectKeyValue_Effect[MAXPLAYERS + 1][MAX_EFFECT_NAME_LENGTH];
-char g_sEffectKeyValue_EffectKey[MAXPLAYERS + 1][MAX_KEY_NAME_LENGTH];
-int g_iEditingName[MAXPLAYERS + 1] = {INVALID_ENT_REFERENCE, ...};
-bool g_bIsInZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
-bool g_bIsInsideZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
-bool g_bIsInsideZone_Post[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 bool g_bSelectedZone[MAX_ENTITY_LIMIT] = { false, ... };
 
 Handle g_coPrecision = null;
-float g_fPrecision[MAXPLAYERS + 1] = { 0.0, ... };
+
+enum struct PlayerData
+{
+	eCreateZone CZone;
+	bool EffectKeyValue;
+	int EffectKeyValue_Entity;
+	char EffectKeyValue_Effect[MAX_EFFECT_NAME_LENGTH];
+	char EffectKeyValue_EffectKey[MAX_KEY_NAME_LENGTH];
+	int EditingName;
+	bool IsInZone[MAX_ENTITY_LIMIT];
+	bool IsInsideZone[MAX_ENTITY_LIMIT];
+	bool IsInsideZone_Post[MAX_ENTITY_LIMIT];
+	float Precision;
+}
+
+PlayerData Player[MAXPLAYERS + 1];
+
+#include "zones_manager/natives.sp"
 
 public Plugin myinfo =
 {
@@ -211,7 +218,7 @@ public void OnPluginStart()
 	{
 		for (int x = MaxClients; x < MAX_ENTITY_LIMIT; x++)
 		{
-			g_bIsInZone[i][x] = false;
+			Player[i].IsInZone[x] = false;
 		}
 	}
 
@@ -235,7 +242,7 @@ public void OnMapStart()
 	{
 		for (int x = MaxClients; x < MAX_ENTITY_LIMIT; x++)
 		{
-			g_bIsInZone[i][x] = false;
+			Player[i].IsInZone[x] = false;
 		}
 	}
 }
@@ -345,7 +352,7 @@ public void OnPluginEnd()
 
 public void OnClientConnected(int client)
 {
-	g_fPrecision[client] = g_cPrecisionValue.FloatValue;
+	Player[client].Precision = g_cPrecisionValue.FloatValue;
 }
 
 public void OnClientCookiesCached(int client)
@@ -355,7 +362,7 @@ public void OnClientCookiesCached(int client)
 
 	if (strlen(sValue) == 0)
 	{
-		g_fPrecision[client] = g_cPrecisionValue.FloatValue;
+		Player[client].Precision = g_cPrecisionValue.FloatValue;
 
 		char sBuffer[12];
 		g_cPrecisionValue.GetString(sBuffer, sizeof(sBuffer));
@@ -363,7 +370,7 @@ public void OnClientCookiesCached(int client)
 	}
 	else
 	{
-		g_fPrecision[client] = StringToFloat(sValue);
+		Player[client].Precision = StringToFloat(sValue);
 	}
 }
 
@@ -371,7 +378,7 @@ public void OnClientDisconnect(int client)
 {
 	for (int i = 0; i < MAX_ENTITY_LIMIT; i++)
 	{
-		g_bIsInZone[client][i] = false;
+		Player[client].IsInZone[i] = false;
 	}
 }
 
@@ -460,27 +467,27 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 
 	if (StrContains(sArgs, "!cancel", true) != -1)
 	{
-		if (CZone[client].SetName)
+		if (Player[client].CZone.SetName)
 		{
-			CZone[client].SetName = false;
+			Player[client].CZone.SetName = false;
 			OpenCreateZonesMenu(client);
 		}
-		else if (g_bEffectKeyValue[client])
+		else if (Player[client].EffectKeyValue)
 		{
-			g_bEffectKeyValue[client] = false;
-			ListZoneEffectKeys(client, g_iEffectKeyValue_Entity[client], g_sEffectKeyValue_Effect[client]);
+			Player[client].EffectKeyValue = false;
+			ListZoneEffectKeys(client, Player[client].EffectKeyValue_Entity, Player[client].EffectKeyValue_Effect);
 		}
-		else if (g_iEditingName[client] != INVALID_ENT_REFERENCE)
+		else if (Player[client].EditingName != INVALID_ENT_REFERENCE)
 		{
-			int entity = EntRefToEntIndex(g_iEditingName[client]);
-			g_iEditingName[client] = INVALID_ENT_REFERENCE;
+			int entity = EntRefToEntIndex(Player[client].EditingName);
+			Player[client].EditingName = INVALID_ENT_REFERENCE;
 			OpenZonePropertiesMenu(client, entity);
 		}
 
 		return;
 	}
 
-	if (CZone[client].SetName)
+	if (Player[client].CZone.SetName)
 	{
 		g_kvConfig.Rewind();
 
@@ -491,37 +498,37 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 			return;
 		}
 		
-		strcopy(CZone[client].Name, MAX_ZONE_NAME_LENGTH, sArgs);
-		CZone[client].SetName = false;
+		strcopy(Player[client].CZone.Name, MAX_ZONE_NAME_LENGTH, sArgs);
+		Player[client].CZone.SetName = false;
 		OpenCreateZonesMenu(client);
 	}
-	else if (g_bEffectKeyValue[client])
+	else if (Player[client].EffectKeyValue)
 	{
-		g_bEffectKeyValue[client] = false;
+		Player[client].EffectKeyValue = false;
 
 		char sValue[MAX_KEY_VALUE_LENGTH];
 		strcopy(sValue, sizeof(sValue), sArgs);
 
-		UpdateZoneEffectKey(g_iEffectKeyValue_Entity[client], g_sEffectKeyValue_Effect[client], g_sEffectKeyValue_EffectKey[client], sValue);
+		UpdateZoneEffectKey(Player[client].EffectKeyValue_Entity, Player[client].EffectKeyValue_Effect, Player[client].EffectKeyValue_EffectKey, sValue);
 
 		char sName[MAX_ZONE_NAME_LENGTH];
-		GetEntPropString(g_iEffectKeyValue_Entity[client], Prop_Data, "m_iName", sName, sizeof(sName));
+		GetEntPropString(Player[client].EffectKeyValue_Entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-		CPrintToChat(client, "Effect '%s' key '%s' for zone '%s' has been successfully updated to '%s'.", g_sEffectKeyValue_Effect[client], g_sEffectKeyValue_EffectKey[client], sName, sValue);
+		CPrintToChat(client, "Effect '%s' key '%s' for zone '%s' has been successfully updated to '%s'.", Player[client].EffectKeyValue_Effect, Player[client].EffectKeyValue_EffectKey, sName, sValue);
 
-		ListZoneEffectKeys(client, g_iEffectKeyValue_Entity[client], g_sEffectKeyValue_Effect[client]);
+		ListZoneEffectKeys(client, Player[client].EffectKeyValue_Entity, Player[client].EffectKeyValue_Effect);
 	}
 
-	if (g_iEditingName[client] != INVALID_ENT_REFERENCE)
+	if (Player[client].EditingName != INVALID_ENT_REFERENCE)
 	{
-		int entity = EntRefToEntIndex(g_iEditingName[client]);
+		int entity = EntRefToEntIndex(Player[client].EditingName);
 
 		char sName[MAX_ZONE_NAME_LENGTH];
 		GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 		UpdateZonesSectionName(entity, sArgs);
 		CPrintToChat(client, "Zone '%s' has been renamed successfully to '%s'.", sName, sArgs);
-		g_iEditingName[client] = INVALID_ENT_REFERENCE;
+		Player[client].EditingName = INVALID_ENT_REFERENCE;
 
 		OpenZonePropertiesMenu(client, entity);
 	}
@@ -635,9 +642,9 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			}
 		}
 
-		if (CZone[client].Show && CZone[client].Display > DISPLAY_TYPE_HIDE && CZone[client].Type > ZONE_TYPE_NONE)
+		if (Player[client].CZone.Show && Player[client].CZone.Display > DISPLAY_TYPE_HIDE && Player[client].CZone.Type > ZONE_TYPE_NONE)
 		{
-			CZone[client].Show = false;
+			Player[client].CZone.Show = false;
 			int iColor[4];
 
 			iColor[0] = 255;
@@ -645,29 +652,29 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			iColor[2] = 147;
 			iColor[3] = 255;
 
-			if (strlen(CZone[client].Color) > 0)
+			if (strlen(Player[client].CZone.Color) > 0)
 			{
-				g_smColorData.GetArray(CZone[client].Color, iColor, sizeof(iColor));
+				g_smColorData.GetArray(Player[client].CZone.Color, iColor, sizeof(iColor));
 			}
 
 			/*
-				if (CZone[client].Type == ZONE_TYPE_POLY && CZone[client].PointsData != null)
+				if (Player[client].CZone.Type == ZONE_TYPE_POLY && Player[client].CZone.PointsData != null)
 				{
-					if (CZone[client].PointsData.Length > 2)
+					if (Player[client].CZone.PointsData.Length > 2)
 					{
 						bValidPoints = true;
 					}
 				}
-				else if (CZone[client].Type == ZONE_TYPE_BOX)
+				else if (Player[client].CZone.Type == ZONE_TYPE_BOX)
 				{
-					if (!IsPositionNull(CZone[client].Start) && !IsPositionNull(CZone[client].End))
+					if (!IsPositionNull(Player[client].CZone.Start) && !IsPositionNull(Player[client].CZone.End))
 					{
 						bValidPoints = true;
 					}
 				}
-				else if (CZone[client].Type == ZONE_TYPE_CIRCLE)
+				else if (Player[client].CZone.Type == ZONE_TYPE_CIRCLE)
 				{
-					if (!IsPositionNull(CZone[client].Start))
+					if (!IsPositionNull(Player[client].CZone.Start))
 					{
 						bValidPoints = true;
 					}
@@ -678,13 +685,13 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			GetClientLookPoint(client, fPoint);
 			fPoint[2] += g_cDefaultZOffset.FloatValue;
 
-			switch (CZone[client].Type)
+			switch (Player[client].CZone.Type)
 			{
 				case ZONE_TYPE_CIRCLE:
 				{
-					if (IsPositionNull(CZone[client].Start))
+					if (IsPositionNull(Player[client].CZone.Start))
 					{
-						TE_SetupBeamRingPointToClient(client, fPoint, CZone[client].Radius, CZone[client].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
+						TE_SetupBeamRingPointToClient(client, fPoint, Player[client].CZone.Radius, Player[client].CZone.Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 
 						float fStart[3], fEnd[3];
 						for (int j = 0; j < 4; j++)
@@ -694,15 +701,15 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 
 							if (j < 2)
 							{
-								fStart[j] += CZone[client].Radius / 2;
-								fEnd[j] += CZone[client].Radius / 2;
-								fEnd[2] += CZone[client].PointsHeight;
+								fStart[j] += Player[client].CZone.Radius / 2;
+								fEnd[j] += Player[client].CZone.Radius / 2;
+								fEnd[2] += Player[client].CZone.PointsHeight;
 							}
 							else
 							{
-								fStart[j - 2] -= CZone[client].Radius / 2;
-								fEnd[j - 2] -= CZone[client].Radius / 2;
-								fEnd[2] += CZone[client].PointsHeight;
+								fStart[j - 2] -= Player[client].CZone.Radius / 2;
+								fEnd[j - 2] -= Player[client].CZone.Radius / 2;
+								fEnd[2] += Player[client].CZone.PointsHeight;
 							}
 
 							TE_SetupBeamPointsToClient(client, fStart, fEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
@@ -710,24 +717,24 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 
 						float fUpper[3];
 						fUpper = fPoint;
-						fUpper[2] = fPoint[2] + CZone[client].PointsHeight;
-						TE_SetupBeamRingPointToClient(client, fUpper, CZone[client].Radius, CZone[client].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
+						fUpper[2] = fPoint[2] + Player[client].CZone.PointsHeight;
+						TE_SetupBeamRingPointToClient(client, fUpper, Player[client].CZone.Radius, Player[client].CZone.Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 					}
 				}
 
 				case ZONE_TYPE_BOX:
 				{
-					if ((!IsPositionNull(CZone[client].Start) && IsPositionNull(CZone[client].End)) || (IsPositionNull(CZone[client].Start) && !IsPositionNull(CZone[client].End)))
+					if ((!IsPositionNull(Player[client].CZone.Start) && IsPositionNull(Player[client].CZone.End)) || (IsPositionNull(Player[client].CZone.Start) && !IsPositionNull(Player[client].CZone.End)))
 					{
 						float fStart[3];
 						
-						if (!IsPositionNull(CZone[client].Start))
+						if (!IsPositionNull(Player[client].CZone.Start))
 						{
-							fStart = CZone[client].Start;
+							fStart = Player[client].CZone.Start;
 						}
-						if (!IsPositionNull(CZone[client].End))
+						if (!IsPositionNull(Player[client].CZone.End))
 						{
-							fStart = CZone[client].End;
+							fStart = Player[client].CZone.End;
 						}
 
 						TE_DrawBeamBoxToClient(client, fStart, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
@@ -736,30 +743,30 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 
 				case ZONE_TYPE_POLY:
 				{
-					if (CZone[client].PointsData != null && CZone[client].PointsData.Length > 0)
+					if (Player[client].CZone.PointsData != null && Player[client].CZone.PointsData.Length > 0)
 					{
 						float fStart[3];
 						float fLast[3];
 
-						for (int x = 0; x < CZone[client].PointsData.Length; x++)
+						for (int x = 0; x < Player[client].CZone.PointsData.Length; x++)
 						{
 							float fBottomStart[3];
-							CZone[client].PointsData.GetArray(x, fBottomStart, sizeof(fBottomStart));
+							Player[client].CZone.PointsData.GetArray(x, fBottomStart, sizeof(fBottomStart));
 
 							if (x == 0)
 							{
-								CZone[client].PointsData.GetArray(x, fStart, sizeof(fStart));
+								Player[client].CZone.PointsData.GetArray(x, fStart, sizeof(fStart));
 							}
 
-							CZone[client].PointsData.GetArray(x, fLast, sizeof(fLast));
+							Player[client].CZone.PointsData.GetArray(x, fLast, sizeof(fLast));
 
 							int index;
 
-							if (x + 1 == CZone[client].PointsData.Length)
+							if (x + 1 == Player[client].CZone.PointsData.Length)
 							{
 								float fLastStart[3];
 								fLastStart = fBottomStart;
-								fLastStart[2] += CZone[client].PointsHeight;
+								fLastStart[2] += Player[client].CZone.PointsHeight;
 								TE_SetupBeamPointsToClient(client, fLastStart, fBottomStart, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 							}
 							else
@@ -768,17 +775,17 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							}
 
 							float fBottomNext[3];
-							CZone[client].PointsData.GetArray(index, fBottomNext, sizeof(fBottomNext));
+							Player[client].CZone.PointsData.GetArray(index, fBottomNext, sizeof(fBottomNext));
 
 							TE_SetupBeamPointsToClient(client, fBottomStart, fBottomNext, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 
 							float fUpperStart[3];
 							fUpperStart = fBottomStart;
-							fUpperStart[2] += CZone[client].PointsHeight;
+							fUpperStart[2] += Player[client].CZone.PointsHeight;
 
 							float fUpperNext[3];
 							fUpperNext = fBottomNext;
-							fUpperNext[2] += CZone[client].PointsHeight;
+							fUpperNext[2] += Player[client].CZone.PointsHeight;
 
 							TE_SetupBeamPointsToClient(client, fUpperStart, fUpperNext, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 							TE_SetupBeamPointsToClient(client, fBottomStart, fUpperStart, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
@@ -794,15 +801,15 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 
 						float fUpperLast[3];
 						fUpperLast = fLast;
-						fUpperLast[2] += CZone[client].PointsHeight;
+						fUpperLast[2] += Player[client].CZone.PointsHeight;
 
 						float fUpperPoint[3];
 						fUpperPoint = fPoint;
-						fUpperPoint[2] += CZone[client].PointsHeight;
+						fUpperPoint[2] += Player[client].CZone.PointsHeight;
 
 						float fUpperStart[3];
 						fUpperStart = fStart;
-						fUpperStart[2] += CZone[client].PointsHeight;
+						fUpperStart[2] += Player[client].CZone.PointsHeight;
 
 						TE_SetupBeamPointsToClient(client, fUpperLast, fUpperPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 						TE_SetupBeamPointsToClient(client, fUpperStart, fUpperPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
@@ -825,7 +832,7 @@ public Action Timer_ResetShow(Handle timer, int userid)
 
 	if (IsClientValid(client))
 	{
-		CZone[client].Show = true;
+		Player[client].CZone.Show = true;
 	}
 
 	return Plugin_Handled;
@@ -944,13 +951,13 @@ public Action Command_SetPrecision(int client, int args)
 		}
 	}
 
-	g_fPrecision[client] = StringToFloat(sArg);
+	Player[client].Precision = StringToFloat(sArg);
 
 	char sBuffer[12];
-	FloatToString(g_fPrecision[client], sBuffer, sizeof(sBuffer));
+	FloatToString(Player[client].Precision, sBuffer, sizeof(sBuffer));
 	SetClientCookie(client, g_coPrecision, sBuffer);
 
-	CReplyToCommand(client, "Precision set to %.1f", g_fPrecision[client]);
+	CReplyToCommand(client, "Precision set to %.1f", Player[client].Precision);
 
 	return Plugin_Handled;
 }
@@ -977,7 +984,7 @@ int GetEarliestTouchZone(int client)
 	{
 		int zone = EntRefToEntIndex(g_aZoneEntities.Get(i));
 
-		if (IsValidEntity(zone) && g_bIsInZone[client][zone])
+		if (IsValidEntity(zone) && Player[client].IsInZone[zone])
 		{
 			return zone;
 		}
@@ -1395,7 +1402,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 
 			if (StrEqual(sInfo, "name"))
 			{
-				g_iEditingName[param1] = EntIndexToEntRef(entity);
+				Player[param1].EditingName = EntIndexToEntRef(entity);
 				CPrintToChat(param1, "Type the new name for the zone '%s' in chat. Type \"!cancel\" to cancel this process.", sName);
 			}
 			else if (StrEqual(sInfo, "type"))
@@ -1490,7 +1497,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			}
 			else if (StrEqual(sInfo, "add_radius"))
 			{
-				Zone[entity].Radius += g_fPrecision[param1];
+				Zone[entity].Radius += Player[param1].Precision;
 				Zone[entity].Radius = ClampCell(Zone[entity].Radius, 0.0, 430.0);
 
 				char sValue[64];
@@ -1503,7 +1510,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			}
 			else if (StrEqual(sInfo, "remove_radius"))
 			{
-				Zone[entity].Radius -= g_fPrecision[param1];
+				Zone[entity].Radius -= Player[param1].Precision;
 				Zone[entity].Radius = ClampCell(Zone[entity].Radius, 0.0, 430.0);
 
 				char sValue[64];
@@ -1516,7 +1523,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			}
 			else if (StrEqual(sInfo, "add_height"))
 			{
-				Zone[entity].PointsHeight += g_fPrecision[param1];
+				Zone[entity].PointsHeight += Player[param1].Precision;
 
 				char sValue[64];
 				FloatToString(Zone[entity].PointsHeight, sValue, sizeof(sValue));
@@ -1528,7 +1535,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			}
 			else if (StrEqual(sInfo, "remove_height"))
 			{
-				Zone[entity].PointsHeight -= g_fPrecision[param1];
+				Zone[entity].PointsHeight -= Player[param1].Precision;
 
 				char sValue[64];
 				FloatToString(Zone[entity].PointsHeight, sValue, sizeof(sValue));
@@ -1681,7 +1688,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 					float vecPointA[3];
 					GetZonesVectorData(entity, "start", vecPointA);
 
-					vecPointA[0] += g_fPrecision[param1];
+					vecPointA[0] += Player[param1].Precision;
 
 					UpdateZonesConfigKeyVector(entity, "start", vecPointA);
 
@@ -1691,7 +1698,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				}
 				else
 				{
-					CZone[param1].Start[0] += g_fPrecision[param1];
+					Player[param1].CZone.Start[0] += Player[param1].Precision;
 					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
 				}
 			}
@@ -1702,7 +1709,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 					float vecPointA[3];
 					GetZonesVectorData(entity, "start", vecPointA);
 
-					vecPointA[1] += g_fPrecision[param1];
+					vecPointA[1] += Player[param1].Precision;
 
 					UpdateZonesConfigKeyVector(entity, "start", vecPointA);
 
@@ -1712,7 +1719,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				}
 				else
 				{
-					CZone[param1].Start[1] += g_fPrecision[param1];
+					Player[param1].CZone.Start[1] += Player[param1].Precision;
 					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
 				}
 			}
@@ -1723,7 +1730,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 					float vecPointA[3];
 					GetZonesVectorData(entity, "start", vecPointA);
 
-					vecPointA[2] += g_fPrecision[param1];
+					vecPointA[2] += Player[param1].Precision;
 
 					UpdateZonesConfigKeyVector(entity, "start", vecPointA);
 
@@ -1733,7 +1740,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				}
 				else
 				{
-					CZone[param1].Start[2] += g_fPrecision[param1];
+					Player[param1].CZone.Start[2] += Player[param1].Precision;
 					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
 				}
 			}
@@ -1744,7 +1751,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 					float vecPointA[3];
 					GetZonesVectorData(entity, "start", vecPointA);
 
-					vecPointA[0] -= g_fPrecision[param1];
+					vecPointA[0] -= Player[param1].Precision;
 
 					UpdateZonesConfigKeyVector(entity, "start", vecPointA);
 
@@ -1754,7 +1761,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				}
 				else
 				{
-					CZone[param1].Start[0] -= g_fPrecision[param1];
+					Player[param1].CZone.Start[0] -= Player[param1].Precision;
 					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
 				}
 			}
@@ -1765,7 +1772,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 					float vecPointA[3];
 					GetZonesVectorData(entity, "start", vecPointA);
 
-					vecPointA[1] -= g_fPrecision[param1];
+					vecPointA[1] -= Player[param1].Precision;
 
 					UpdateZonesConfigKeyVector(entity, "start", vecPointA);
 
@@ -1775,7 +1782,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				}
 				else
 				{
-					CZone[param1].Start[1] -= g_fPrecision[param1];
+					Player[param1].CZone.Start[1] -= Player[param1].Precision;
 					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
 				}
 			}
@@ -1786,7 +1793,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 					float vecPointA[3];
 					GetZonesVectorData(entity, "start", vecPointA);
 
-					vecPointA[2] -= g_fPrecision[param1];
+					vecPointA[2] -= Player[param1].Precision;
 
 					UpdateZonesConfigKeyVector(entity, "start", vecPointA);
 
@@ -1796,7 +1803,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				}
 				else
 				{
-					CZone[param1].Start[2] -= g_fPrecision[param1];
+					Player[param1].CZone.Start[2] -= Player[param1].Precision;
 					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
 				}
 			}
@@ -1807,7 +1814,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 					float vecPointB[3];
 					GetZonesVectorData(entity, "end", vecPointB);
 
-					vecPointB[0] += g_fPrecision[param1];
+					vecPointB[0] += Player[param1].Precision;
 
 					UpdateZonesConfigKeyVector(entity, "end", vecPointB);
 
@@ -1817,7 +1824,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				}
 				else
 				{
-					CZone[param1].End[0] += g_fPrecision[param1];
+					Player[param1].CZone.End[0] += Player[param1].Precision;
 					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
 				}
 			}
@@ -1828,7 +1835,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 					float vecPointB[3];
 					GetZonesVectorData(entity, "end", vecPointB);
 
-					vecPointB[1] += g_fPrecision[param1];
+					vecPointB[1] += Player[param1].Precision;
 
 					UpdateZonesConfigKeyVector(entity, "end", vecPointB);
 
@@ -1838,7 +1845,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				}
 				else
 				{
-					CZone[param1].End[1] += g_fPrecision[param1];
+					Player[param1].CZone.End[1] += Player[param1].Precision;
 					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
 				}
 			}
@@ -1849,7 +1856,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 					float vecPointB[3];
 					GetZonesVectorData(entity, "end", vecPointB);
 
-					vecPointB[2] += g_fPrecision[param1];
+					vecPointB[2] += Player[param1].Precision;
 
 					UpdateZonesConfigKeyVector(entity, "end", vecPointB);
 
@@ -1859,7 +1866,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				}
 				else
 				{
-					CZone[param1].End[2] += g_fPrecision[param1];
+					Player[param1].CZone.End[2] += Player[param1].Precision;
 					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
 				}
 			}
@@ -1870,7 +1877,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 					float vecPointB[3];
 					GetZonesVectorData(entity, "end", vecPointB);
 
-					vecPointB[0] -= g_fPrecision[param1];
+					vecPointB[0] -= Player[param1].Precision;
 
 					UpdateZonesConfigKeyVector(entity, "end", vecPointB);
 
@@ -1880,7 +1887,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				}
 				else
 				{
-					CZone[param1].End[0] -= g_fPrecision[param1];
+					Player[param1].CZone.End[0] -= Player[param1].Precision;
 					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
 				}
 			}
@@ -1891,7 +1898,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 					float vecPointB[3];
 					GetZonesVectorData(entity, "end", vecPointB);
 
-					vecPointB[1] -= g_fPrecision[param1];
+					vecPointB[1] -= Player[param1].Precision;
 
 					UpdateZonesConfigKeyVector(entity, "end", vecPointB);
 
@@ -1901,7 +1908,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				}
 				else
 				{
-					CZone[param1].End[1] -= g_fPrecision[param1];
+					Player[param1].CZone.End[1] -= Player[param1].Precision;
 					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
 				}
 			}
@@ -1912,7 +1919,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 					float vecPointB[3];
 					GetZonesVectorData(entity, "end", vecPointB);
 
-					vecPointB[2] -= g_fPrecision[param1];
+					vecPointB[2] -= Player[param1].Precision;
 
 					UpdateZonesConfigKeyVector(entity, "end", vecPointB);
 
@@ -1922,7 +1929,7 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 				}
 				else
 				{
-					CZone[param1].End[2] -= g_fPrecision[param1];
+					Player[param1].CZone.End[2] -= Player[param1].Precision;
 					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
 				}
 			}
@@ -2338,37 +2345,37 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 		ResetCreateZoneVariables(client);
 	}
 
-	if (CZone[client].Type == ZONE_TYPE_POLY && CZone[client].PointsData == null)
+	if (Player[client].CZone.Type == ZONE_TYPE_POLY && Player[client].CZone.PointsData == null)
 	{
-		CZone[client].PointsData = new ArrayList(3);
+		Player[client].CZone.PointsData = new ArrayList(3);
 	}
-	else if (CZone[client].Type != ZONE_TYPE_POLY)
+	else if (Player[client].CZone.Type != ZONE_TYPE_POLY)
 	{
-		delete CZone[client].PointsData;
+		delete Player[client].CZone.PointsData;
 	}
 
 	bool bValidPoints = false;
 	int iLength = 0;
 
-	if (CZone[client].Type == ZONE_TYPE_POLY && CZone[client].PointsData != null)
+	if (Player[client].CZone.Type == ZONE_TYPE_POLY && Player[client].CZone.PointsData != null)
 	{
-		iLength = CZone[client].PointsData.Length;
+		iLength = Player[client].CZone.PointsData.Length;
 
-		if (CZone[client].PointsData.Length > 2)
+		if (Player[client].CZone.PointsData.Length > 2)
 		{
 			bValidPoints = true;
 		}
 	}
-	else if (CZone[client].Type == ZONE_TYPE_BOX)
+	else if (Player[client].CZone.Type == ZONE_TYPE_BOX)
 	{
-		if (!IsPositionNull(CZone[client].Start) && !IsPositionNull(CZone[client].End))
+		if (!IsPositionNull(Player[client].CZone.Start) && !IsPositionNull(Player[client].CZone.End))
 		{
 			bValidPoints = true;
 		}
 	}
-	else if (CZone[client].Type == ZONE_TYPE_CIRCLE)
+	else if (Player[client].CZone.Type == ZONE_TYPE_CIRCLE)
 	{
-		if (!IsPositionNull(CZone[client].Start))
+		if (!IsPositionNull(Player[client].CZone.Start))
 		{
 			bValidPoints = true;
 		}
@@ -2377,8 +2384,8 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	Menu menu = new Menu(MenuHandle_CreateZonesMenu);
 	menu.SetTitle("Create a Zone");
 
-	menu.AddItem("create", "Create Zone\n ", (bValidPoints && CZone[client].Type > ZONE_TYPE_NONE && strlen(CZone[client].Name) > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-	AddZoneMenuItems(menu, CZone[client].Type, iLength, CZone[client].Radius, CZone[client].Name, CZone[client].Color, CZone[client].Display);
+	menu.AddItem("create", "Create Zone\n ", (bValidPoints && Player[client].CZone.Type > ZONE_TYPE_NONE && strlen(Player[client].CZone.Name) > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+	AddZoneMenuItems(menu, Player[client].CZone.Type, iLength, Player[client].CZone.Radius, Player[client].CZone.Name, Player[client].CZone.Color, Player[client].CZone.Display);
 	menu.ExitBackButton = true;
 	menu.Display(client, MENU_TIME_FOREVER);
 }
@@ -2394,16 +2401,16 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 
 			if (StrEqual(sInfo, "name"))
 			{
-				CZone[param1].SetName = true;
+				Player[param1].CZone.SetName = true;
 				CPrintToChat(param1, "Type the name of this new zone in chat. Type \"!cancel\" to cancel this process.");
 			}
 			else if (StrEqual(sInfo, "type"))
 			{
-				CZone[param1].Type++;
+				Player[param1].CZone.Type++;
 
-				if (CZone[param1].Type > ZONE_TYPES)
+				if (Player[param1].CZone.Type > ZONE_TYPES)
 				{
-					CZone[param1].Type = ZONE_TYPE_BOX;
+					Player[param1].CZone.Type = ZONE_TYPE_BOX;
 				}
 
 				OpenZoneTypeMenu(param1);
@@ -2413,8 +2420,8 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
 				vLookPoint[2] += g_cDefaultZOffset.FloatValue;
-				Array_Copy(vLookPoint, CZone[param1].Start, 3);
-				CPrintToChat(param1, "Starting point: %.2f/%.2f/%.2f", CZone[param1].Start[0], CZone[param1].Start[1], CZone[param1].Start[2]);
+				Array_Copy(vLookPoint, Player[param1].CZone.Start, 3);
+				CPrintToChat(param1, "Starting point: %.2f/%.2f/%.2f", Player[param1].CZone.Start[0], Player[param1].CZone.Start[1], Player[param1].CZone.Start[2]);
 
 				OpenCreateZonesMenu(param1);
 			}
@@ -2423,8 +2430,8 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
 				vLookPoint[2] += g_cDefaultZOffset.FloatValue;
-				Array_Copy(vLookPoint, CZone[param1].End, 3);
-				CPrintToChat(param1, "Ending point: %.2f/%.2f/%.2f", CZone[param1].End[0], CZone[param1].End[1], CZone[param1].End[2]);
+				Array_Copy(vLookPoint, Player[param1].CZone.End, 3);
+				CPrintToChat(param1, "Ending point: %.2f/%.2f/%.2f", Player[param1].CZone.End[0], Player[param1].CZone.End[1], Player[param1].CZone.End[2]);
 
 				OpenCreateZonesMenu(param1);
 			}
@@ -2433,8 +2440,8 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 				float vecLook[3];
 				GetClientLookPoint(param1, vecLook);
 				
-				CZone[param1].Start[0] = vecLook[0];
-				CZone[param1].Start[1] = vecLook[1];
+				Player[param1].CZone.Start[0] = vecLook[0];
+				Player[param1].CZone.Start[1] = vecLook[1];
 
 				OpenCreateZonesMenu(param1);
 			}
@@ -2443,39 +2450,39 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 				float vecLook[3];
 				GetClientLookPoint(param1, vecLook);
 				
-				CZone[param1].End[0] = vecLook[0];
-				CZone[param1].End[1] = vecLook[1];
+				Player[param1].CZone.End[0] = vecLook[0];
+				Player[param1].CZone.End[1] = vecLook[1];
 
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "startpoint_a_precision"))
 			{
-				OpenEditZoneStartPointMenu(param1, -1, true, true, CZone[param1].Name);
+				OpenEditZoneStartPointMenu(param1, -1, true, true, Player[param1].CZone.Name);
 			}
 			else if (StrEqual(sInfo, "startpoint_b_precision"))
 			{
-				OpenEditZoneStartPointMenu(param1, -1, false, true, CZone[param1].Name);
+				OpenEditZoneStartPointMenu(param1, -1, false, true, Player[param1].CZone.Name);
 			}
 			else if (StrEqual(sInfo, "add_radius"))
 			{
-				CZone[param1].Radius += g_fPrecision[param1];
-				CZone[param1].Radius = ClampCell(CZone[param1].Radius, 0.0, 430.0);
+				Player[param1].CZone.Radius += Player[param1].Precision;
+				Player[param1].CZone.Radius = ClampCell(Player[param1].CZone.Radius, 0.0, 430.0);
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "remove_radius"))
 			{
-				CZone[param1].Radius -= g_fPrecision[param1];
-				CZone[param1].Radius = ClampCell(CZone[param1].Radius, 0.0, 430.0);
+				Player[param1].CZone.Radius -= Player[param1].Precision;
+				Player[param1].CZone.Radius = ClampCell(Player[param1].CZone.Radius, 0.0, 430.0);
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "add_height"))
 			{
-				CZone[param1].PointsHeight += g_fPrecision[param1];
+				Player[param1].CZone.PointsHeight += Player[param1].Precision;
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "remove_height"))
 			{
-				CZone[param1].PointsHeight -= g_fPrecision[param1];
+				Player[param1].CZone.PointsHeight -= Player[param1].Precision;
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "add_point"))
@@ -2484,24 +2491,24 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 				GetClientLookPoint(param1, vLookPoint);
 				vLookPoint[2] += g_cDefaultZOffset.FloatValue;
 
-				CZone[param1].PointsData.PushArray(vLookPoint, 3);
+				Player[param1].CZone.PointsData.PushArray(vLookPoint, 3);
 
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "remove_point"))
 			{
-				int size = CZone[param1].PointsData.Length;
+				int size = Player[param1].CZone.PointsData.Length;
 
 				if (size > 0)
 				{
-					CZone[param1].PointsData.Erase(size-1);
+					Player[param1].CZone.PointsData.Erase(size-1);
 				}
 
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "clear_points"))
 			{
-				CZone[param1].PointsData.Clear();
+				Player[param1].CZone.PointsData.Clear();
 
 				OpenCreateZonesMenu(param1);
 			}
@@ -2511,11 +2518,11 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			}
 			else if (StrEqual(sInfo, "display"))
 			{
-				CZone[param1].Display++;
+				Player[param1].CZone.Display++;
 
-				if (CZone[param1].Display > DISPLAY_TYPE_TYPES)
+				if (Player[param1].CZone.Display > DISPLAY_TYPE_TYPES)
 				{
-					CZone[param1].Display = DISPLAY_TYPE_HIDE;
+					Player[param1].CZone.Display = DISPLAY_TYPE_HIDE;
 				}
 
 				OpenZoneDisplayMenu(param1);
@@ -2710,9 +2717,9 @@ bool ListZoneEffectKeys(int client, int entity, const char[] effect)
 	PushMenuCell(menu, "entity", entity);
 	PushMenuString(menu, "effect", effect);
 
-	g_iEffectKeyValue_Entity[client] = -1;
-	g_sEffectKeyValue_Effect[client][0] = '\0';
-	g_sEffectKeyValue_EffectKey[client][0] = '\0';
+	Player[client].EffectKeyValue_Entity = -1;
+	Player[client].EffectKeyValue_Effect[0] = '\0';
+	Player[client].EffectKeyValue_EffectKey[0] = '\0';
 
 	menu.ExitBackButton = true;
 	menu.Display(client, MENU_TIME_FOREVER);
@@ -2726,16 +2733,15 @@ public int MenuHandler_EditZoneEffectKeyVaue(Menu menu, MenuAction action, int p
 	{
 		case MenuAction_Select:
 		{
-			g_iEffectKeyValue_Entity[param1] = GetMenuCell(menu, "entity");
-			GetMenuString(menu, "effect", g_sEffectKeyValue_Effect[param1], sizeof(g_sEffectKeyValue_Effect[]));
-			menu.GetItem(param2, g_sEffectKeyValue_EffectKey[param1], sizeof(g_sEffectKeyValue_EffectKey[]));
-
+			Player[param1].EffectKeyValue_Entity = GetMenuCell(menu, "entity");
+			GetMenuString(menu, "effect", Player[param1].EffectKeyValue_Effect, sizeof(PlayerData::EffectKeyValue_Effect));
+			menu.GetItem(param2, Player[param1].EffectKeyValue_EffectKey, sizeof(PlayerData::EffectKeyValue_EffectKey));
 			char sName[MAX_ZONE_NAME_LENGTH];
-			GetEntPropString(g_iEffectKeyValue_Entity[param1], Prop_Data, "m_iName", sName, sizeof(sName));
+			GetEntPropString(Player[param1].EffectKeyValue_Entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-			g_bEffectKeyValue[param1] = true;
+			Player[param1].EffectKeyValue = true;
 
-			CPrintToChat(param1, "Type the new value for the effect '%s' key '%s' on zone '%s' in chat. Type \"!cancel\" to cancel this process.", g_sEffectKeyValue_Effect[param1], g_sEffectKeyValue_EffectKey[param1], sName);
+			CPrintToChat(param1, "Type the new value for the effect '%s' key '%s' on zone '%s' in chat. Type \"!cancel\" to cancel this process.", Player[param1].EffectKeyValue_Effect, Player[param1].EffectKeyValue_EffectKey, sName);
 		}
 		case MenuAction_Cancel:
 		{
@@ -2934,10 +2940,10 @@ void RemoveEffectFromZone(int entity, const char[] effect)
 void OpenZoneTypeMenu(int client)
 {
 	char sAddendum[256];
-	FormatEx(sAddendum, sizeof(sAddendum), " for %s", CZone[client].Name);
+	FormatEx(sAddendum, sizeof(sAddendum), " for %s", Player[client].CZone.Name);
 
 	Menu menu = new Menu(MenuHandler_ZoneTypeMenu);
-	menu.SetTitle("Choose zone type%s", strlen(CZone[client].Name) > 0 ? sAddendum : "");
+	menu.SetTitle("Choose zone type%s", strlen(Player[client].CZone.Name) > 0 ? sAddendum : "");
 
 	for (int i = 1; i < ZONE_TYPES; i++)
 	{
@@ -2964,9 +2970,9 @@ public int MenuHandler_ZoneTypeMenu(Menu menu, MenuAction action, int param1, in
 			int type = StringToInt(sID);
 
 			char sAddendum[256];
-			FormatEx(sAddendum, sizeof(sAddendum), " for %s", CZone[param1].Name);
+			FormatEx(sAddendum, sizeof(sAddendum), " for %s", Player[param1].CZone.Name);
 
-			CZone[param1].Type = type;
+			Player[param1].CZone.Type = type;
 			CPrintToChat(param1, "Zone type%s set to %s.", sAddendum, sType);
 			OpenCreateZonesMenu(param1);
 		}
@@ -2989,10 +2995,10 @@ public int MenuHandler_ZoneTypeMenu(Menu menu, MenuAction action, int param1, in
 void OpenZoneDisplayMenu(int client)
 {
 	char sAddendum[256];
-	FormatEx(sAddendum, sizeof(sAddendum), " %s", CZone[client].Name);
+	FormatEx(sAddendum, sizeof(sAddendum), " %s", Player[client].CZone.Name);
 
 	Menu menu = new Menu(MenuHandler_ZoneDisplayMenu);
-	menu.SetTitle("Choose display type for %s", strlen(CZone[client].Name) > 0 ? sAddendum : "");
+	menu.SetTitle("Choose display type for %s", strlen(Player[client].CZone.Name) > 0 ? sAddendum : "");
 
 	for (int i = 0; i < DISPLAY_TYPE_TYPES; i++)
 	{
@@ -3019,9 +3025,9 @@ public int MenuHandler_ZoneDisplayMenu(Menu menu, MenuAction action, int param1,
 			int type = StringToInt(sID);
 
 			char sAddendum[256];
-			FormatEx(sAddendum, sizeof(sAddendum), " for %s", CZone[param1].Name);
+			FormatEx(sAddendum, sizeof(sAddendum), " for %s", Player[param1].CZone.Name);
 
-			CZone[param1].Display = type;
+			Player[param1].CZone.Display = type;
 			CPrintToChat(param1, "Display type%s set to %s.", sAddendum, sType);
 			OpenCreateZonesMenu(param1);
 		}
@@ -3064,8 +3070,8 @@ public int MenuHandler_ZoneColorMenu(Menu menu, MenuAction action, int param1, i
 	{
 		case MenuAction_Select:
 		{
-			menu.GetItem(param2, CZone[param1].Color, sizeof(eCreateZone::Color));
-			CPrintToChat(param1, "Zone color set to %s.", CZone[param1].Color);
+			menu.GetItem(param2, Player[param1].CZone.Color, sizeof(eCreateZone::Color));
+			CPrintToChat(param1, "Zone color set to %s.", Player[param1].CZone.Color);
 			OpenCreateZonesMenu(param1);
 		}
 
@@ -3086,7 +3092,7 @@ public int MenuHandler_ZoneColorMenu(Menu menu, MenuAction action, int param1, i
 
 void CreateNewZone(int client)
 {
-	if (strlen(CZone[client].Name) == 0)
+	if (strlen(Player[client].CZone.Name) == 0)
 	{
 		CPrintToChat(client, "You must set a zone name in order to create it.");
 		OpenCreateZonesMenu(client);
@@ -3095,7 +3101,7 @@ void CreateNewZone(int client)
 
 	g_kvConfig.Rewind();
 
-	if (g_kvConfig.JumpToKey(CZone[client].Name))
+	if (g_kvConfig.JumpToKey(Player[client].CZone.Name))
 	{
 		g_kvConfig.Rewind();
 		CPrintToChat(client, "Zone already exists, please pick a different name.");
@@ -3103,57 +3109,57 @@ void CreateNewZone(int client)
 		return;
 	}
 
-	g_kvConfig.JumpToKey(CZone[client].Name, true);
+	g_kvConfig.JumpToKey(Player[client].CZone.Name, true);
 
 	char sType[MAX_ZONE_TYPE_LENGTH];
-	GetZoneNameByType(CZone[client].Type, sType, sizeof(sType));
+	GetZoneNameByType(Player[client].CZone.Type, sType, sizeof(sType));
 	g_kvConfig.SetString("type", sType);
 
-	CZone[client].iColors[0] = 255;
-	CZone[client].iColors[1] = 20;
-	CZone[client].iColors[2] = 147;
-	CZone[client].iColors[3] = 255;
+	Player[client].CZone.iColors[0] = 255;
+	Player[client].CZone.iColors[1] = 20;
+	Player[client].CZone.iColors[2] = 147;
+	Player[client].CZone.iColors[3] = 255;
 
-	if (strlen(CZone[client].Color) > 0)
+	if (strlen(Player[client].CZone.Color) > 0)
 	{
-		g_smColorData.GetArray(CZone[client].Color, CZone[client].iColors, sizeof(eCreateZone::iColors));
+		g_smColorData.GetArray(Player[client].CZone.Color, Player[client].CZone.iColors, sizeof(eCreateZone::iColors));
 	}
 
 	char sColor[64];
-	FormatEx(sColor, sizeof(sColor), "%i %i %i %i", CZone[client].iColors[0], CZone[client].iColors[1], CZone[client].iColors[2], CZone[client].iColors[3]);
+	FormatEx(sColor, sizeof(sColor), "%i %i %i %i", Player[client].CZone.iColors[0], Player[client].CZone.iColors[1], Player[client].CZone.iColors[2], Player[client].CZone.iColors[3]);
 	g_kvConfig.SetString("color", sColor);
 
-	GetDisplayNameByType(CZone[client].Display, sType, sizeof(sType));
+	GetDisplayNameByType(Player[client].CZone.Display, sType, sizeof(sType));
 	g_kvConfig.SetString("display", sType);
 
-	switch (CZone[client].Type)
+	switch (Player[client].CZone.Type)
 	{
 		case ZONE_TYPE_BOX:
 		{
-			g_kvConfig.SetVector("start", CZone[client].Start);
-			g_kvConfig.SetVector("end", CZone[client].End);
+			g_kvConfig.SetVector("start", Player[client].CZone.Start);
+			g_kvConfig.SetVector("end", Player[client].CZone.End);
 		}
 
 		case ZONE_TYPE_CIRCLE:
 		{
-			g_kvConfig.SetVector("start", CZone[client].Start);
-			g_kvConfig.SetFloat("radius", CZone[client].Radius);
-			g_kvConfig.SetFloat("points_height", CZone[client].PointsHeight);
+			g_kvConfig.SetVector("start", Player[client].CZone.Start);
+			g_kvConfig.SetFloat("radius", Player[client].CZone.Radius);
+			g_kvConfig.SetFloat("points_height", Player[client].CZone.PointsHeight);
 		}
 
 		case ZONE_TYPE_POLY:
 		{
-			g_kvConfig.SetFloat("points_height", CZone[client].PointsHeight);
+			g_kvConfig.SetFloat("points_height", Player[client].CZone.PointsHeight);
 
 			if (g_kvConfig.JumpToKey("points", true))
 			{
-				for (int i = 0; i < CZone[client].PointsData.Length; i++)
+				for (int i = 0; i < Player[client].CZone.PointsData.Length; i++)
 				{
 					char sID[12];
 					IntToString(i, sID, sizeof(sID));
 
 					float coordinates[3];
-					CZone[client].PointsData.GetArray(i, coordinates, sizeof(coordinates));
+					Player[client].CZone.PointsData.GetArray(i, coordinates, sizeof(coordinates));
 					g_kvConfig.SetVector(sID, coordinates);
 				}
 			}
@@ -3162,28 +3168,28 @@ void CreateNewZone(int client)
 
 	SaveMapConfig();
 
-	CreateZone(CZone[client]);
-	CPrintToChat(client, "Zone '%s' has been created successfully.", CZone[client].Name);
+	CreateZone(Player[client].CZone);
+	CPrintToChat(client, "Zone '%s' has been created successfully.", Player[client].CZone.Name);
 	ResetCreateZoneVariables(client);
 }
 
 void ResetCreateZoneVariables(int client)
 {
-	CZone[client].Name[0] = '\0';
-	CZone[client].Color[0] = '\0';
-	CZone[client].Type = ZONE_TYPE_NONE;
-	CZone[client].Start[0] = 0.0;
-	CZone[client].Start[1] = 0.0;
-	CZone[client].Start[2] = 0.0;
-	CZone[client].End[0] = 0.0;
-	CZone[client].End[1] = 0.0;
-	CZone[client].End[2] = 0.0;
-	CZone[client].Radius = g_cDefaultRadius.FloatValue;
-	delete CZone[client].PointsData;
-	CZone[client].PointsHeight = g_cDefaultHeight.FloatValue;
-	CZone[client].SetName = false;
-	CZone[client].Display = DISPLAY_TYPE_BOTTOM;
-	CZone[client].Show = true;
+	Player[client].CZone.Name[0] = '\0';
+	Player[client].CZone.Color[0] = '\0';
+	Player[client].CZone.Type = ZONE_TYPE_NONE;
+	Player[client].CZone.Start[0] = 0.0;
+	Player[client].CZone.Start[1] = 0.0;
+	Player[client].CZone.Start[2] = 0.0;
+	Player[client].CZone.End[0] = 0.0;
+	Player[client].CZone.End[1] = 0.0;
+	Player[client].CZone.End[2] = 0.0;
+	Player[client].CZone.Radius = g_cDefaultRadius.FloatValue;
+	delete Player[client].CZone.PointsData;
+	Player[client].CZone.PointsHeight = g_cDefaultHeight.FloatValue;
+	Player[client].CZone.SetName = false;
+	Player[client].CZone.Display = DISPLAY_TYPE_BOTTOM;
+	Player[client].CZone.Show = true;
 }
 
 void GetZoneNameByType(int type, char[] buffer, int size)
@@ -3286,7 +3292,7 @@ public Action Timer_DisplayZones(Handle timer)
 			continue;
 		}
 
-		if (CZone[i].Display)
+		if (Player[i].CZone.Display)
 		{
 			int iColor[4];
 
@@ -3295,68 +3301,68 @@ public Action Timer_DisplayZones(Handle timer)
 			iColor[2] = 147;
 			iColor[3] = 255;
 
-			if (strlen(CZone[i].Color) > 0)
+			if (strlen(Player[i].CZone.Color) > 0)
 			{
-				g_smColorData.GetArray(CZone[i].Color, iColor, sizeof(iColor));
+				g_smColorData.GetArray(Player[i].CZone.Color, iColor, sizeof(iColor));
 			}
 			
-			switch (CZone[i].Type)
+			switch (Player[i].CZone.Type)
 			{
 				case ZONE_TYPE_BOX:
 				{
-					if (!IsPositionNull(CZone[i].Start) && !IsPositionNull(CZone[i].End))
+					if (!IsPositionNull(Player[i].CZone.Start) && !IsPositionNull(Player[i].CZone.End))
 					{
-						TE_DrawBeamBoxToClient(i, CZone[i].Start, CZone[i].End, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+						TE_DrawBeamBoxToClient(i, Player[i].CZone.Start, Player[i].CZone.End, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 					}
 				}
 
 				case ZONE_TYPE_CIRCLE:
 				{
-					if (!IsPositionNull(CZone[i].Start))
+					if (!IsPositionNull(Player[i].CZone.Start))
 					{
-						TE_SetupBeamRingPointToClient(i, CZone[i].Start, CZone[i].Radius, CZone[i].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
+						TE_SetupBeamRingPointToClient(i, Player[i].CZone.Start, Player[i].CZone.Radius, Player[i].CZone.Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 
 						float fStart[3], fEnd[3];
 						for (int j = 0; j < 4; j++)
 						{
-							fStart = CZone[i].Start;
-							fEnd = CZone[i].Start;
+							fStart = Player[i].CZone.Start;
+							fEnd = Player[i].CZone.Start;
 
 							if (j < 2)
 							{
-								fStart[j] += CZone[i].Radius / 2;
-								fEnd[j] += CZone[i].Radius / 2;
-								fEnd[2] += CZone[i].PointsHeight;
+								fStart[j] += Player[i].CZone.Radius / 2;
+								fEnd[j] += Player[i].CZone.Radius / 2;
+								fEnd[2] += Player[i].CZone.PointsHeight;
 							}
 							else
 							{
-								fStart[j - 2] -= CZone[i].Radius / 2;
-								fEnd[j - 2] -= CZone[i].Radius / 2;
-								fEnd[2] += CZone[i].PointsHeight;
+								fStart[j - 2] -= Player[i].CZone.Radius / 2;
+								fEnd[j - 2] -= Player[i].CZone.Radius / 2;
+								fEnd[2] += Player[i].CZone.PointsHeight;
 							}
 
 							TE_SetupBeamPointsToClient(i, fStart, fEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 						}
 
 						float fUpper[3];
-						fUpper = CZone[i].Start;
-						fUpper[2] = CZone[i].Start[2] + CZone[i].PointsHeight;
-						TE_SetupBeamRingPointToClient(i, fUpper, CZone[i].Radius, CZone[i].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
+						fUpper = Player[i].CZone.Start;
+						fUpper[2] = Player[i].CZone.Start[2] + Player[i].CZone.PointsHeight;
+						TE_SetupBeamRingPointToClient(i, fUpper, Player[i].CZone.Radius, Player[i].CZone.Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 					}
 				}
 
 				/* case ZONE_TYPE_POLY:
 				{
-					if (CZone[i].PointsData != null && CZone[i].PointsData.Length > 0)
+					if (Player[i].CZone.PointsData != null && Player[i].CZone.PointsData.Length > 0)
 					{
-						for (int x = 0; x < CZone[i].PointsData.Length; x++)
+						for (int x = 0; x < Player[i].CZone.PointsData.Length; x++)
 						{
 							float fBottomStart[3];
-							CZone[i].PointsData.GetArray(x, fBottomStart, sizeof(fBottomStart));
+							Player[i].CZone.PointsData.GetArray(x, fBottomStart, sizeof(fBottomStart));
 
 							int index;
 
-							if (x + 1 == CZone[i].PointsData.Length)
+							if (x + 1 == Player[i].CZone.PointsData.Length)
 							{
 								index = 0;
 							}
@@ -3366,17 +3372,17 @@ public Action Timer_DisplayZones(Handle timer)
 							}
 
 							float fStart[3];
-							CZone[i].PointsData.GetArray(index, fStart, sizeof(fStart));
+							Player[i].CZone.PointsData.GetArray(index, fStart, sizeof(fStart));
 
 							TE_SetupBeamPointsToClient(i, fBottomStart, fStart, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 
 							float fUpperStart[3];
 							fUpperStart = fBottomStart;
-							fUpperStart[2] += CZone[i].PointsHeight;
+							fUpperStart[2] += Player[i].CZone.PointsHeight;
 
 							float fUpperNext[3];
 							fUpperNext = fStart;
-							fUpperNext[2] += CZone[i].PointsHeight;
+							fUpperNext[2] += Player[i].CZone.PointsHeight;
 
 							TE_SetupBeamPointsToClient(i, fUpperStart, fUpperNext, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 							TE_SetupBeamPointsToClient(i, fBottomStart, fUpperStart, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
@@ -3717,7 +3723,7 @@ Action IsNearExternalZone(int client, int entity, int type)
 
 	Action result = Plugin_Continue;
 
-	if (!g_bIsInsideZone[client][entity])
+	if (!Player[client].IsInsideZone[entity])
 	{
 		Call_StartForward(Forward.StartTouchZone);
 		Call_PushCell(client);
@@ -3726,7 +3732,7 @@ Action IsNearExternalZone(int client, int entity, int type)
 		Call_PushCell(type);
 		Call_Finish(result);
 
-		g_bIsInsideZone[client][entity] = true;
+		Player[client].IsInsideZone[entity] = true;
 	}
 	else
 	{
@@ -3748,7 +3754,7 @@ Action IsNotNearExternalZone(int client, int entity, int type)
 
 	Action result = Plugin_Continue;
 
-	if (g_bIsInsideZone[client][entity])
+	if (Player[client].IsInsideZone[entity])
 	{
 		Call_StartForward(Forward.EndTouchZone);
 		Call_PushCell(client);
@@ -3757,7 +3763,7 @@ Action IsNotNearExternalZone(int client, int entity, int type)
 		Call_PushCell(type);
 		Call_Finish(result);
 
-		g_bIsInsideZone[client][entity] = false;
+		Player[client].IsInsideZone[entity] = false;
 	}
 
 	return result;
@@ -3768,7 +3774,7 @@ void IsNearExternalZone_Post(int client, int entity, int type)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	if (!g_bIsInsideZone_Post[client][entity])
+	if (!Player[client].IsInsideZone_Post[entity])
 	{
 		CallEffectCallback(entity, client, EFFECT_CALLBACK_ONENTERZONE);
 
@@ -3779,9 +3785,9 @@ void IsNearExternalZone_Post(int client, int entity, int type)
 		Call_PushCell(type);
 		Call_Finish();
 
-		g_bIsInsideZone_Post[client][entity] = true;
+		Player[client].IsInsideZone_Post[entity] = true;
 
-		g_bIsInZone[client][entity] = true;
+		Player[client].IsInZone[entity] = true;
 	}
 	else
 	{
@@ -3801,7 +3807,7 @@ void IsNotNearExternalZone_Post(int client, int entity, int type)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	if (g_bIsInsideZone_Post[client][entity])
+	if (Player[client].IsInsideZone_Post[entity])
 	{
 		CallEffectCallback(entity, client, EFFECT_CALLBACK_ONLEAVEZONE);
 
@@ -3812,9 +3818,9 @@ void IsNotNearExternalZone_Post(int client, int entity, int type)
 		Call_PushCell(type);
 		Call_Finish();
 
-		g_bIsInsideZone_Post[client][entity] = false;
+		Player[client].IsInsideZone_Post[entity] = false;
 
-		g_bIsInZone[client][entity] = false;
+		Player[client].IsInZone[entity] = false;
 	}
 }
 
@@ -3827,7 +3833,7 @@ public Action Zones_StartTouch(int entity, int other)
 		return Plugin_Continue;
 	}
 
-	g_bIsInZone[client][entity] = true;
+	Player[client].IsInZone[entity] = true;
 
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
@@ -3877,7 +3883,7 @@ public Action Zones_EndTouch(int entity, int other)
 		return Plugin_Continue;
 	}
 
-	g_bIsInZone[client][entity] = false;
+	Player[client].IsInZone[entity] = false;
 
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
@@ -4123,9 +4129,9 @@ bool GetClientLookPoint(int client, float lookposition[3], bool beam = false)
 		iColor[2] = 147;
 		iColor[3] = 255;
 
-		if (strlen(CZone[client].Color) > 0)
+		if (strlen(Player[client].CZone.Color) > 0)
 		{
-			g_smColorData.GetArray(CZone[client].Color, iColor, sizeof(iColor));
+			g_smColorData.GetArray(Player[client].CZone.Color, iColor, sizeof(iColor));
 		}
 		
 		TE_SetupBeamPointsToClient(client, vEyePos, lookposition, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
@@ -4702,102 +4708,6 @@ float CalculateHorizontalDistance(float vec1[3], float vec2[3], bool squared = f
 	}
 
 	return SquareRoot( Pow((vec1[0] - vec2[0]), 2.0) +  Pow((vec1[1] - vec2[1]), 2.0) );
-}
-
-//Natives
-public int Native_Register_Effect(Handle plugin, int numParams)
-{
-	int size;
-	GetNativeStringLength(1, size);
-
-	char[] sEffect = new char[size + 1];
-	GetNativeString(1, sEffect, size + 1);
-
-	Function function1 = GetNativeFunction(2);
-	Function function2 = GetNativeFunction(3);
-	Function function3 = GetNativeFunction(4);
-
-	RegisterNewEffect(plugin, sEffect, function1, function2, function3);
-}
-
-public int Native_Register_Effect_Key(Handle plugin, int numParams)
-{
-	int size;
-	GetNativeStringLength(1, size);
-
-	char[] sEffect = new char[size + 1];
-	GetNativeString(1, sEffect, size + 1);
-
-	size = 0;
-	GetNativeStringLength(2, size);
-
-	char[] sKey = new char[size + 1];
-	GetNativeString(2, sKey, size + 1);
-
-	size = 0;
-	GetNativeStringLength(3, size);
-
-	char[] sDefaultValue = new char[size + 1];
-	GetNativeString(3, sDefaultValue, size + 1);
-
-	RegisterNewEffectKey(sEffect, sKey, sDefaultValue);
-}
-
-public int Native_Request_QueueEffects(Handle plugin, int numParams)
-{
-	QueueEffects();
-}
-
-public int Native_IsClientInZone(Handle plugin, int numParams)
-{
-	int client = GetNativeCell(1);
-
-	if (!IsClientValid(client))
-	{
-		return false;
-	}
-
-	int size;
-	GetNativeStringLength(2, size);
-
-	char[] sName = new char[size + 1];
-	GetNativeString(2, sName, size + 1);
-
-	for (int i = 0; i < g_aZoneEntities.Length; i++)
-	{
-		int zone = EntRefToEntIndex(g_aZoneEntities.Get(i));
-
-		if (IsValidEntity(zone))
-		{
-			char sName2[64];
-			GetEntPropString(zone, Prop_Send, "m_iName", sName2, sizeof(sName2));
-
-			if (StrEqual(sName, sName2))
-			{
-				return g_bIsInZone[client][zone];
-			}
-		}
-	}
-
-	return false;
-}
-
-public int Native_TeleportClientToZone(Handle plugin, int numParams)
-{
-	int client = GetNativeCell(1);
-
-	if (!IsClientValid(client) || !IsPlayerAlive(client))
-	{
-		return false;
-	}
-
-	int size;
-	GetNativeStringLength(2, size);
-
-	char[] sName = new char[size + 1];
-	GetNativeString(2, sName, size + 1);
-
-	return TeleportToZone(client, sName);
 }
 
 bool AddMenuItemFormat(Menu& menu, const char[] info, int style = ITEMDRAW_DEFAULT, const char[] format, any ...)
