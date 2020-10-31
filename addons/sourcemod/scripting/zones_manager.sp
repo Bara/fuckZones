@@ -1364,7 +1364,14 @@ void OpenZonePropertiesMenu(int client, int entity)
 	Menu menu = new Menu(MenuHandle_ZonePropertiesMenu);
 	menu.SetTitle("Edit zone (%s)", sName);
 
-	AddZoneMenuItems(menu, iType, Zone[entity].PointsData.Length, Zone[entity].Radius, sName, sColor, Zone[entity].Display);
+	int iLength = 0;
+
+	if (iType == ZONE_TYPE_POLY)
+	{
+		iLength = Zone[entity].PointsData.Length;
+	}
+
+	AddZoneMenuItems(menu, iType, iLength, Zone[entity].Radius, sName, sColor, Zone[entity].Display);
 
 	PushMenuCell(menu, "entity", entity);
 
@@ -1463,11 +1470,11 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			}
 			else if (StrEqual(sInfo, "startpoint_a_precision"))
 			{
-				OpenEditZoneStartPointAMenu(param1, entity, true);
+				OpenEditZoneStartPointMenu(param1, entity, true);
 			}
 			else if (StrEqual(sInfo, "startpoint_b_precision"))
 			{
-				OpenEditZoneStartPointAMenu(param1, entity, false);
+				OpenEditZoneStartPointMenu(param1, entity, false);
 			}
 			else if (StrEqual(sInfo, "startpoint"))
 			{
@@ -1586,12 +1593,25 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 	}
 }
 
-void OpenEditZoneStartPointAMenu(int client, int entity, bool whichpoint)
+void OpenEditZoneStartPointMenu(int client, int entity, bool whichpoint, bool create = false, char[] name = "")
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	g_bSelectedZone[entity] = true;
+	if (!create)
+	{
+		GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+		g_bSelectedZone[entity] = true;
+	}
+	else
+	{
+		strcopy(sName, sizeof(sName), name);
+
+		if (strlen(sName) < 1)
+		{
+			Format(sName, sizeof(sName), "N/A");
+		}
+	}
 
 	Menu menu = new Menu(MenuHandle_ZoneEditStartPointMenu);
 	menu.SetTitle("Edit %s point for zone (%s)", whichpoint ? "starting" : "ending", sName);
@@ -1615,7 +1635,16 @@ void OpenEditZoneStartPointAMenu(int client, int entity, bool whichpoint)
 		menu.AddItem("b_remove_z", "Z -");
 	}
 
-	PushMenuCell(menu, "entity", entity);
+	if (!create)
+	{
+		PushMenuCell(menu, "entity", entity);
+	}
+	else
+	{
+		PushMenuCell(menu, "entity", -1);
+		PushMenuString(menu, "name", sName);
+	}
+
 	PushMenuCell(menu, "whichpoint", whichpoint);
 
 	menu.ExitBackButton = true;
@@ -1632,136 +1661,293 @@ public int MenuHandle_ZoneEditStartPointMenu(Menu menu, MenuAction action, int p
 			menu.GetItem(param2, sInfo, sizeof(sInfo));
 
 			int entity = GetMenuCell(menu, "entity");
-			bool whichpoint = view_as<bool>(GetMenuCell(menu, "whichpoint"));
 
 			char sName[MAX_ZONE_NAME_LENGTH];
-			GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+			GetMenuString(menu, "name", sName, sizeof(sName));
+
+			bool bCreate = false;
+
+			if (entity == -1)
+			{
+				bCreate = true;
+			}
+
+			bool whichpoint = view_as<bool>(GetMenuCell(menu, "whichpoint"));
 
 			if (StrEqual(sInfo, "a_add_x"))
 			{
-				float vecPointA[3];
-				GetZonesVectorData(entity, "start", vecPointA);
+				if (!bCreate)
+				{
+					float vecPointA[3];
+					GetZonesVectorData(entity, "start", vecPointA);
 
-				vecPointA[0] += g_fPrecision[param1];
+					vecPointA[0] += g_fPrecision[param1];
 
-				UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+					UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+
+					entity = RemakeZoneEntity(entity);
+
+					OpenEditZoneStartPointMenu(param1, entity, whichpoint);
+				}
+				else
+				{
+					CZone[param1].Start[0] += g_fPrecision[param1];
+					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
+				}
 			}
 			else if (StrEqual(sInfo, "a_add_y"))
 			{
-				float vecPointA[3];
-				GetZonesVectorData(entity, "start", vecPointA);
+				if (!bCreate)
+				{
+					float vecPointA[3];
+					GetZonesVectorData(entity, "start", vecPointA);
 
-				vecPointA[1] += g_fPrecision[param1];
+					vecPointA[1] += g_fPrecision[param1];
 
-				UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+					UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+
+					entity = RemakeZoneEntity(entity);
+
+					OpenEditZoneStartPointMenu(param1, entity, whichpoint);
+				}
+				else
+				{
+					CZone[param1].Start[1] += g_fPrecision[param1];
+					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
+				}
 			}
 			else if (StrEqual(sInfo, "a_add_z"))
 			{
-				float vecPointA[3];
-				GetZonesVectorData(entity, "start", vecPointA);
+				if (!bCreate)
+				{
+					float vecPointA[3];
+					GetZonesVectorData(entity, "start", vecPointA);
 
-				vecPointA[2] += g_fPrecision[param1];
+					vecPointA[2] += g_fPrecision[param1];
 
-				UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+					UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+
+					entity = RemakeZoneEntity(entity);
+
+					OpenEditZoneStartPointMenu(param1, entity, whichpoint);
+				}
+				else
+				{
+					CZone[param1].Start[2] += g_fPrecision[param1];
+					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
+				}
 			}
 			else if (StrEqual(sInfo, "a_remove_x"))
 			{
-				float vecPointA[3];
-				GetZonesVectorData(entity, "start", vecPointA);
+				if (!bCreate)
+				{
+					float vecPointA[3];
+					GetZonesVectorData(entity, "start", vecPointA);
 
-				vecPointA[0] -= g_fPrecision[param1];
+					vecPointA[0] -= g_fPrecision[param1];
 
-				UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+					UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+
+					entity = RemakeZoneEntity(entity);
+
+					OpenEditZoneStartPointMenu(param1, entity, whichpoint);
+				}
+				else
+				{
+					CZone[param1].Start[0] -= g_fPrecision[param1];
+					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
+				}
 			}
 			else if (StrEqual(sInfo, "a_remove_y"))
 			{
-				float vecPointA[3];
-				GetZonesVectorData(entity, "start", vecPointA);
+				if (!bCreate)
+				{
+					float vecPointA[3];
+					GetZonesVectorData(entity, "start", vecPointA);
 
-				vecPointA[1] -= g_fPrecision[param1];
+					vecPointA[1] -= g_fPrecision[param1];
 
-				UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+					UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+
+					entity = RemakeZoneEntity(entity);
+
+					OpenEditZoneStartPointMenu(param1, entity, whichpoint);
+				}
+				else
+				{
+					CZone[param1].Start[1] -= g_fPrecision[param1];
+					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
+				}
 			}
 			else if (StrEqual(sInfo, "a_remove_z"))
 			{
-				float vecPointA[3];
-				GetZonesVectorData(entity, "start", vecPointA);
+				if (!bCreate)
+				{
+					float vecPointA[3];
+					GetZonesVectorData(entity, "start", vecPointA);
 
-				vecPointA[2] -= g_fPrecision[param1];
+					vecPointA[2] -= g_fPrecision[param1];
 
-				UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+					UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+
+					entity = RemakeZoneEntity(entity);
+
+					OpenEditZoneStartPointMenu(param1, entity, whichpoint);
+				}
+				else
+				{
+					CZone[param1].Start[2] -= g_fPrecision[param1];
+					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
+				}
 			}
 			else if (StrEqual(sInfo, "b_add_x"))
 			{
-				float vecPointB[3];
-				GetZonesVectorData(entity, "end", vecPointB);
+				if (!bCreate)
+				{
+					float vecPointB[3];
+					GetZonesVectorData(entity, "end", vecPointB);
 
-				vecPointB[0] += g_fPrecision[param1];
+					vecPointB[0] += g_fPrecision[param1];
 
-				UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+					UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+
+					entity = RemakeZoneEntity(entity);
+
+					OpenEditZoneStartPointMenu(param1, entity, whichpoint);
+				}
+				else
+				{
+					CZone[param1].End[0] += g_fPrecision[param1];
+					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
+				}
 			}
 			else if (StrEqual(sInfo, "b_add_y"))
 			{
-				float vecPointB[3];
-				GetZonesVectorData(entity, "end", vecPointB);
+				if (!bCreate)
+				{
+					float vecPointB[3];
+					GetZonesVectorData(entity, "end", vecPointB);
 
-				vecPointB[1] += g_fPrecision[param1];
+					vecPointB[1] += g_fPrecision[param1];
 
-				UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+					UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+
+					entity = RemakeZoneEntity(entity);
+
+					OpenEditZoneStartPointMenu(param1, entity, whichpoint);
+				}
+				else
+				{
+					CZone[param1].End[1] += g_fPrecision[param1];
+					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
+				}
 			}
 			else if (StrEqual(sInfo, "b_add_z"))
 			{
-				float vecPointB[3];
-				GetZonesVectorData(entity, "end", vecPointB);
+				if (!bCreate)
+				{
+					float vecPointB[3];
+					GetZonesVectorData(entity, "end", vecPointB);
 
-				vecPointB[2] += g_fPrecision[param1];
+					vecPointB[2] += g_fPrecision[param1];
 
-				UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+					UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+
+					entity = RemakeZoneEntity(entity);
+
+					OpenEditZoneStartPointMenu(param1, entity, whichpoint);
+				}
+				else
+				{
+					CZone[param1].End[2] += g_fPrecision[param1];
+					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
+				}
 			}
 			else if (StrEqual(sInfo, "b_remove_x"))
 			{
-				float vecPointB[3];
-				GetZonesVectorData(entity, "end", vecPointB);
+				if (!bCreate)
+				{
+					float vecPointB[3];
+					GetZonesVectorData(entity, "end", vecPointB);
 
-				vecPointB[0] -= g_fPrecision[param1];
+					vecPointB[0] -= g_fPrecision[param1];
 
-				UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+					UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+
+					entity = RemakeZoneEntity(entity);
+
+					OpenEditZoneStartPointMenu(param1, entity, whichpoint);
+				}
+				else
+				{
+					CZone[param1].End[0] -= g_fPrecision[param1];
+					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
+				}
 			}
 			else if (StrEqual(sInfo, "b_remove_y"))
 			{
-				float vecPointB[3];
-				GetZonesVectorData(entity, "end", vecPointB);
+				if (!bCreate)
+				{
+					float vecPointB[3];
+					GetZonesVectorData(entity, "end", vecPointB);
 
-				vecPointB[1] -= g_fPrecision[param1];
+					vecPointB[1] -= g_fPrecision[param1];
 
-				UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+					UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+
+					entity = RemakeZoneEntity(entity);
+
+					OpenEditZoneStartPointMenu(param1, entity, whichpoint);
+				}
+				else
+				{
+					CZone[param1].End[1] -= g_fPrecision[param1];
+					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
+				}
 			}
 			else if (StrEqual(sInfo, "b_remove_z"))
 			{
-				float vecPointB[3];
-				GetZonesVectorData(entity, "end", vecPointB);
+				if (!bCreate)
+				{
+					float vecPointB[3];
+					GetZonesVectorData(entity, "end", vecPointB);
 
-				vecPointB[2] -= g_fPrecision[param1];
+					vecPointB[2] -= g_fPrecision[param1];
 
-				UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+					UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+
+					entity = RemakeZoneEntity(entity);
+
+					OpenEditZoneStartPointMenu(param1, entity, whichpoint);
+				}
+				else
+				{
+					CZone[param1].End[2] -= g_fPrecision[param1];
+					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
+				}
 			}
-			else
-			{
-				OpenZonePropertiesMenu(param1, entity);
-			}
-
-			entity = RemakeZoneEntity(entity);
-
-			OpenEditZoneStartPointAMenu(param1, entity, whichpoint);
+			
 		}
 
 		case MenuAction_Cancel:
 		{
-			g_bSelectedZone[GetMenuCell(menu, "entity")] = false;
+			int iEntity = GetMenuCell(menu, "entity");
+
+			if (iEntity != -1)
+			{
+				g_bSelectedZone[GetMenuCell(menu, "entity")] = false;
+			}
 
 			if (param2 == MenuCancel_ExitBack)
 			{
-				OpenZonePropertiesMenu(param1, GetMenuCell(menu, "entity"));
+				if (iEntity != -1)
+				{
+					OpenZonePropertiesMenu(param1, GetMenuCell(menu, "entity"));
+				}
+				else
+				{
+					OpenCreateZonesMenu(param1);
+				}
 			}
 		}
 
@@ -2162,9 +2348,12 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	}
 
 	bool bValidPoints = false;
+	int iLength = 0;
 
 	if (CZone[client].Type == ZONE_TYPE_POLY && CZone[client].PointsData != null)
 	{
+		iLength = CZone[client].PointsData.Length;
+
 		if (CZone[client].PointsData.Length > 2)
 		{
 			bValidPoints = true;
@@ -2189,7 +2378,7 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	menu.SetTitle("Create a Zone");
 
 	menu.AddItem("create", "Create Zone\n ", (bValidPoints && CZone[client].Type > ZONE_TYPE_NONE && strlen(CZone[client].Name) > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-	AddZoneMenuItems(menu, CZone[client].Type, CZone[client].PointsData.Length, CZone[client].Radius, CZone[client].Name, CZone[client].Color, CZone[client].Display);
+	AddZoneMenuItems(menu, CZone[client].Type, iLength, CZone[client].Radius, CZone[client].Name, CZone[client].Color, CZone[client].Display);
 	menu.ExitBackButton = true;
 	menu.Display(client, MENU_TIME_FOREVER);
 }
@@ -2238,6 +2427,34 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 				CPrintToChat(param1, "Ending point: %.2f/%.2f/%.2f", CZone[param1].End[0], CZone[param1].End[1], CZone[param1].End[2]);
 
 				OpenCreateZonesMenu(param1);
+			}
+			else if (StrEqual(sInfo, "startpoint_a_no_z"))
+			{
+				float vecLook[3];
+				GetClientLookPoint(param1, vecLook);
+				
+				CZone[param1].Start[0] = vecLook[0];
+				CZone[param1].Start[1] = vecLook[1];
+
+				OpenCreateZonesMenu(param1);
+			}
+			else if (StrEqual(sInfo, "startpoint_b_no_z"))
+			{
+				float vecLook[3];
+				GetClientLookPoint(param1, vecLook);
+				
+				CZone[param1].End[0] = vecLook[0];
+				CZone[param1].End[1] = vecLook[1];
+
+				OpenCreateZonesMenu(param1);
+			}
+			else if (StrEqual(sInfo, "startpoint_a_precision"))
+			{
+				OpenEditZoneStartPointMenu(param1, -1, true, true, CZone[param1].Name);
+			}
+			else if (StrEqual(sInfo, "startpoint_b_precision"))
+			{
+				OpenEditZoneStartPointMenu(param1, -1, false, true, CZone[param1].Name);
 			}
 			else if (StrEqual(sInfo, "add_radius"))
 			{
