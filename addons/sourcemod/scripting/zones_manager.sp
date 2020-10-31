@@ -1216,6 +1216,7 @@ public int MenuHandle_ManageZonesMenu(Menu menu, MenuAction action, int param1, 
 		case MenuAction_Select:
 		{
 			g_smSites[param1].SetValue("OpenManageZonesMenu", menu.Selection);
+			PrintToChat(param1, "Selection: %d", menu.Selection);
 
 			char sEntity[12]; char sName[MAX_ZONE_NAME_LENGTH];
 			menu.GetItem(param2, sEntity, sizeof(sEntity), _, sName, sizeof(sName));
@@ -1391,7 +1392,10 @@ void OpenZonePropertiesMenu(int client, int entity)
 	PushMenuCell(menu, "entity", entity);
 
 	menu.ExitBackButton = true;
-	menu.Display(client, MENU_TIME_FOREVER);
+
+	int iSite;
+	g_smSites[client].GetValue("OpenZonePropertiesMenu", iSite);
+	menu.DisplayAt(client, iSite, MENU_TIME_FOREVER);
 }
 
 public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param1, int param2)
@@ -1400,6 +1404,9 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 	{
 		case MenuAction_Select:
 		{
+			g_smSites[param1].SetValue("OpenZonePropertiesMenu", menu.Selection);
+			PrintToChat(param1, "Selection: %d", menu.Selection);
+
 			char sInfo[32];
 			menu.GetItem(param2, sInfo, sizeof(sInfo));
 
@@ -2395,7 +2402,10 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	menu.AddItem("create", "Create Zone\n ", (bValidPoints && CZone[client].Type > ZONE_TYPE_NONE && strlen(CZone[client].Name) > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 	AddZoneMenuItems(menu, CZone[client].Type, iLength, CZone[client].Radius, CZone[client].Name, CZone[client].Color, CZone[client].Display);
 	menu.ExitBackButton = true;
-	menu.Display(client, MENU_TIME_FOREVER);
+
+	int iSite;
+	g_smSites[client].GetValue("OpenCreateZonesMenu", iSite);
+	menu.DisplayAt(client, iSite, MENU_TIME_FOREVER);
 }
 
 public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, int param2)
@@ -2404,6 +2414,9 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 	{
 		case MenuAction_Select:
 		{
+			g_smSites[param1].SetValue("OpenCreateZonesMenu", menu.Selection);
+			PrintToChat(param1, "Selection: %d", menu.Selection);
+
 			char sInfo[32];
 			menu.GetItem(param2, sInfo, sizeof(sInfo));
 
