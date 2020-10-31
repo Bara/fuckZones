@@ -1498,18 +1498,6 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			{
 				OpenEditZoneStartPointMenu(param1, entity, false);
 			}
-			else if (StrEqual(sInfo, "startpoint"))
-			{
-				float start[3];
-				GetClientLookPoint(param1, start);
-				start[2] += g_cDefaultZOffset.FloatValue;
-
-				UpdateZonesConfigKeyVector(entity, "start", start);
-
-				entity = RemakeZoneEntity(entity);
-				
-				OpenZonePropertiesMenu(param1, entity);
-			}
 			else if (StrEqual(sInfo, "add_radius"))
 			{
 				Zone[entity].Radius += g_fPrecision[param1];
@@ -5066,7 +5054,7 @@ void AddZoneMenuItems(Menu menu, int type, int pointsLength, float radius, char[
 
 		case ZONE_TYPE_CIRCLE:
 		{
-			menu.AddItem("startpoint", "Set Center Point");
+			menu.AddItem("startpoint_a", "Set Center Point");
 			menu.AddItem("startpoint_a_precision", "Move Center Point Precision");
 			menu.AddItem("add_radius", "Radius +");
 			menu.AddItem("remove_radius", "Radius -");
