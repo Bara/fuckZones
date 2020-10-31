@@ -185,16 +185,16 @@ public void OnPluginStart()
 	HookEventEx("teamplay_round_start", Event_OnRoundStart);
 	HookEventEx("round_start", Event_OnRoundStart);
 
-	RegAdminCmd("sm_zone", Command_EditZoneMenu, ADMFLAG_ROOT, "Edit a certain zone that you're standing in.");
-	RegAdminCmd("sm_editzone", Command_EditZoneMenu, ADMFLAG_ROOT, "Edit a certain zone that you're standing in.");
-	RegAdminCmd("sm_editzonemenu", Command_EditZoneMenu, ADMFLAG_ROOT, "Edit a certain zone that you're standing in.");
-	RegAdminCmd("sm_zones", Command_OpenZonesMenu, ADMFLAG_ROOT, "Display the zones manager menu.");
-	RegAdminCmd("sm_zonesmenu", Command_OpenZonesMenu, ADMFLAG_ROOT, "Display the zones manager menu.");
-	RegAdminCmd("sm_teleporttozone", Command_TeleportToZone, ADMFLAG_ROOT, "Teleport to a specific zone by name or by menu.");
-	RegAdminCmd("sm_regeneratezones", Command_RegenerateZones, ADMFLAG_ROOT, "Regenerate all zones on the map.");
-	RegAdminCmd("sm_deleteallzones", Command_DeleteAllZones, ADMFLAG_ROOT, "Delete all zones on the map.");
-	RegAdminCmd("sm_reloadeffects", Command_ReloadEffects, ADMFLAG_ROOT, "Reload all effects data and their callbacks.");
-	RegAdminCmd("sm_setprecision", Command_SetPrecision, ADMFLAG_ROOT, "Set your precision value");
+	RegConsoleCmd("sm_zone", Command_EditZoneMenu, "Edit a certain zone that you're standing in.");
+	RegConsoleCmd("sm_editzone", Command_EditZoneMenu, "Edit a certain zone that you're standing in.");
+	RegConsoleCmd("sm_editzonemenu", Command_EditZoneMenu, "Edit a certain zone that you're standing in.");
+	RegConsoleCmd("sm_zones", Command_OpenZonesMenu, "Display the zones manager menu.");
+	RegConsoleCmd("sm_zonesmenu", Command_OpenZonesMenu, "Display the zones manager menu.");
+	RegConsoleCmd("sm_teleporttozone", Command_TeleportToZone, "Teleport to a specific zone by name or by menu.");
+	RegConsoleCmd("sm_regeneratezones", Command_RegenerateZones, "Regenerate all zones on the map.");
+	RegConsoleCmd("sm_deleteallzones", Command_DeleteAllZones, "Delete all zones on the map.");
+	RegConsoleCmd("sm_reloadeffects", Command_ReloadEffects, "Reload all effects data and their callbacks.");
+	RegConsoleCmd("sm_setprecision", Command_SetPrecision, "Set your precision value");
 
 	g_aZoneEntities = new ArrayList();
 
