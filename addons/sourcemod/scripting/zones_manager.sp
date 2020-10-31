@@ -138,6 +138,7 @@ enum struct PlayerData
 	bool IsInsideZone[MAX_ENTITY_LIMIT];
 	bool IsInsideZone_Post[MAX_ENTITY_LIMIT];
 	float Precision;
+	StringMap Site;
 }
 
 PlayerData Player[MAXPLAYERS + 1];
@@ -302,6 +303,7 @@ public void OnConfigsExecuted()
 			if (IsClientConnected(i))
 			{
 				OnClientConnected(i);
+				OnClientPutInServer(i);
 			}
 
 			if (AreClientCookiesCached(i))
@@ -355,6 +357,11 @@ public void OnClientConnected(int client)
 	Player[client].Precision = g_cPrecisionValue.FloatValue;
 }
 
+public void OnClientPutInServer(int client)
+{
+	Player[client].Site = new StringMap();
+}
+
 public void OnClientCookiesCached(int client)
 {
 	char sValue[12];
@@ -380,6 +387,8 @@ public void OnClientDisconnect(int client)
 	{
 		Player[client].IsInZone[i] = false;
 	}
+
+	delete Player[client].Site;
 }
 
 public void Event_OnRoundStart(Event event, const char[] name, bool dontBroadcast)
@@ -1200,7 +1209,10 @@ void OpenManageZonesMenu(int client)
 	}
 
 	menu.ExitBackButton = true;
-	menu.Display(client, MENU_TIME_FOREVER);
+
+	int iSite;
+	Player[client].Site.GetValue("OpenManageZonesMenu", iSite);
+	menu.DisplayAt(client, iSite, MENU_TIME_FOREVER);
 }
 
 public int MenuHandle_ManageZonesMenu(Menu menu, MenuAction action, int param1, int param2)
@@ -1209,6 +1221,8 @@ public int MenuHandle_ManageZonesMenu(Menu menu, MenuAction action, int param1, 
 	{
 		case MenuAction_Select:
 		{
+			Player[param1].Site.SetValue("OpenManageZonesMenu", menu.Selection);
+
 			char sEntity[12]; char sName[MAX_ZONE_NAME_LENGTH];
 			menu.GetItem(param2, sEntity, sizeof(sEntity), _, sName, sizeof(sName));
 
