@@ -2261,7 +2261,7 @@ public int MenuHandler_EditZoneColorMenu(Menu menu, MenuAction action, int param
 			g_smColorData.GetArray(sColor, color, sizeof(color));
 			Zone[entity].Color = color;
 
-			OpenEditZoneColorMenu(param1, entity);
+			OpenZonePropertiesMenu(param1, entity);
 		}
 
 		case MenuAction_Cancel:
