@@ -546,10 +546,9 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 
 	if (IsPlayerAlive(client))
 	{
-		float vecPosition[3];
+		float vecPosition[3], vecEyePosition[3];
 		GetClientAbsOrigin(client, vecPosition);
-
-		float vecOrigin[3];
+		GetClientEyePosition(client, vecEyePosition);
 
 		for (int i = 0; i < g_aZoneEntities.Length; i++)
 		{
@@ -561,10 +560,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				{
 					case ZONE_TYPE_CIRCLE:
 					{
-						GetEntPropVector(zone, Prop_Data, "m_vecOrigin", vecOrigin);
-						float distance = GetVectorDistance(vecOrigin, vecPosition);
-
-						if (distance <= (Zone[zone].Radius / 2.0))
+						if (IsPointInCircle(vecPosition, vecEyePosition, zone))
 						{
 							Action action = IsNearExternalZone(client, zone, ZONE_TYPE_CIRCLE);
 
@@ -4657,6 +4653,23 @@ bool IsPointInZone(float point[3], int zone)
 bool IsOriginInBox(float origin[3], int zone)
 {
 	if(origin[0] >= Zone[zone].PointsMin[0] && origin[1] >= Zone[zone].PointsMin[1] && origin[2] >= Zone[zone].PointsMin[2] && origin[0] <= Zone[zone].PointsMax[0] + Zone[zone].PointsHeight && origin[1] <= Zone[zone].PointsMax[1] + Zone[zone].PointsHeight && origin[2] <= Zone[zone].PointsMax[2] + Zone[zone].PointsHeight)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool IsPointInCircle(float origin[3], float origin2[3], int zone)
+{
+	float fDisX = FloatAbs((origin[0]) - Zone[zone].Start[0]);
+	float fDisY = FloatAbs((origin[1]) - Zone[zone].Start[1]);
+	float fRad = (Zone[zone].Radius / 2.0) + 10.0;
+
+	float fLowest = Zone[zone].Start[2] - 10.0;
+	float fHighest = Zone[zone].Start[2] + Zone[zone].PointsHeight;
+
+	if ( (((fDisX*fDisX) + (fDisY*fDisY)) <= fRad*fRad) && ((origin[2] >= fLowest || origin2[2] >= fLowest) && origin[2] <= fHighest))
 	{
 		return true;
 	}
