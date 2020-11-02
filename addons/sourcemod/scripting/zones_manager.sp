@@ -1162,7 +1162,7 @@ public int MenuHandle_ConfirmDeleteAllZones(Menu menu, MenuAction action, int pa
 				return;
 			}
 
-			DeleteAllZones(param1, false);
+			DeleteAllZones(param1);
 		}
 
 		case MenuAction_End:
