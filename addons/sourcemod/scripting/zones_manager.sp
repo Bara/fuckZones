@@ -2286,10 +2286,8 @@ void DisplayConfirmDeleteZoneMenu(int client, int entity)
 
 	Menu menu = new Menu(MenuHandle_ManageConfirmDeleteZoneMenu);
 	menu.SetTitle("Are you sure to delete this zone (%s)?", sName);
-
-	menu.AddItem("yes", "Yes");
 	menu.AddItem("no", "No");
-
+	menu.AddItem("yes", "Yes");
 	PushMenuCell(menu, "entity", entity);
 
 	menu.ExitBackButton = true;
