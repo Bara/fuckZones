@@ -3,7 +3,7 @@
 #pragma newdecls required
 
 #include <sourcemod>
-#include <zones_manager>
+#include <fuckZones>
 
 #define EFFECT_NAME "Timer"
 
@@ -11,16 +11,16 @@ float g_fTime[MAXPLAYERS + 1] = 0.0;
 
 public Plugin myinfo =
 {
-	name = "Zones Manager - Test Times",
+	name = "fuckZones - Test Times",
 	author = "Bara",
 	description = "A simple plugin to test the zones manager plugin and its API interface.",
 	version = "1.1.0",
 	url = "github.com/Bara"
 };
 
-public void ZonesManager_OnQueueEffects_Post()
+public void fuckZones_OnQueueEffects_Post()
 {
-	ZonesManager_Register_Effect(EFFECT_NAME, INVALID_FUNCTION, INVALID_FUNCTION, INVALID_FUNCTION);
+	fuckZones_Register_Effect(EFFECT_NAME, INVALID_FUNCTION, INVALID_FUNCTION, INVALID_FUNCTION);
 
 	/*
 		Start/End Zone: 0 = Disabled, 1 = 1st Start Zone, 2 = 2nd Start Zone (for Bonus)
@@ -29,18 +29,18 @@ public void ZonesManager_OnQueueEffects_Post()
 		Bonus: 0 = Disabled, 1 = Enabled
 	*/
 
-	ZonesManager_Register_Effect_Key(EFFECT_NAME, "Start Zone", "1");
-	ZonesManager_Register_Effect_Key(EFFECT_NAME, "End Zone", "1");
+	fuckZones_Register_Effect_Key(EFFECT_NAME, "Start Zone", "1");
+	fuckZones_Register_Effect_Key(EFFECT_NAME, "End Zone", "1");
 
-	ZonesManager_Register_Effect_Key(EFFECT_NAME, "Misc Zone", "0");
+	fuckZones_Register_Effect_Key(EFFECT_NAME, "Misc Zone", "0");
 
-	ZonesManager_Register_Effect_Key(EFFECT_NAME, "Stage", "0");
-	ZonesManager_Register_Effect_Key(EFFECT_NAME, "Checkpoint", "0");
+	fuckZones_Register_Effect_Key(EFFECT_NAME, "Stage", "0");
+	fuckZones_Register_Effect_Key(EFFECT_NAME, "Checkpoint", "0");
 
-	ZonesManager_Register_Effect_Key(EFFECT_NAME, "Bonus", "0");
+	fuckZones_Register_Effect_Key(EFFECT_NAME, "Bonus", "0");
 }
 
-public Action ZonesManager_OnStartTouchZone(int client, int entity, const char[] zone_name, int type)
+public Action fuckZones_OnStartTouchZone(int client, int entity, const char[] zone_name, int type)
 {
 	PrintToChat(client, "StartTouch: Entity: %i - Name: %s - Type: %i", entity, zone_name, type);
 
@@ -53,7 +53,7 @@ public Action ZonesManager_OnStartTouchZone(int client, int entity, const char[]
 	return Plugin_Continue;
 }
 
-public Action ZonesManager_OnEndTouchZone(int client, int entity, const char[] zone_name, int type)
+public Action fuckZones_OnEndTouchZone(int client, int entity, const char[] zone_name, int type)
 {
 	PrintToChat(client, "EndTouch: Entity: %i - Name: %s - Type: %i", entity, zone_name, type);
 

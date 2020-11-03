@@ -143,7 +143,7 @@ StringMap g_smSites[MAXPLAYERS + 1] = { null, ... };
 
 public Plugin myinfo =
 {
-	name = "Zones Manager - Core",
+	name = "fuckZones - Core",
 	author = "Bara (Original author: Drixevel)",
 	description = "A sourcemod plugin with rich features for dynamic zone development.",
 	version = "1.0.0",
@@ -152,21 +152,21 @@ public Plugin myinfo =
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
-	RegPluginLibrary("zones_manager");
+	RegPluginLibrary("fuckZones");
 
-	CreateNative("ZonesManager_Register_Effect", Native_Register_Effect);
-	CreateNative("ZonesManager_Register_Effect_Key", Native_Register_Effect_Key);
-	CreateNative("ZonesManager_Request_QueueEffects", Native_Request_QueueEffects);
-	CreateNative("ZonesManager_IsClientInZone", Native_IsClientInZone);
-	CreateNative("ZonesManager_TeleportClientToZone", Native_TeleportClientToZone);
+	CreateNative("fuckZones_Register_Effect", Native_Register_Effect);
+	CreateNative("fuckZones_Register_Effect_Key", Native_Register_Effect_Key);
+	CreateNative("fuckZones_Request_QueueEffects", Native_Request_QueueEffects);
+	CreateNative("fuckZones_IsClientInZone", Native_IsClientInZone);
+	CreateNative("fuckZones_TeleportClientToZone", Native_TeleportClientToZone);
 
-	Forward.QueueEffects_Post = new GlobalForward("ZonesManager_OnQueueEffects_Post", ET_Ignore);
-	Forward.StartTouchZone = new GlobalForward("ZonesManager_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
-	Forward.TouchZone = new GlobalForward("ZonesManager_OnTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
-	Forward.EndTouchZone = new GlobalForward("ZonesManager_OnEndTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
-	Forward.StartTouchZone_Post = new GlobalForward("ZonesManager_OnStartTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
-	Forward.TouchZone_Post = new GlobalForward("ZonesManager_OnTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
-	Forward.EndTouchZone_Post = new GlobalForward("ZonesManager_OnEndTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.QueueEffects_Post = new GlobalForward("fuckZones_OnQueueEffects_Post", ET_Ignore);
+	Forward.StartTouchZone = new GlobalForward("fuckZones_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.TouchZone = new GlobalForward("fuckZones_OnTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.EndTouchZone = new GlobalForward("fuckZones_OnEndTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.StartTouchZone_Post = new GlobalForward("fuckZones_OnStartTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.TouchZone_Post = new GlobalForward("fuckZones_OnTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.EndTouchZone_Post = new GlobalForward("fuckZones_OnEndTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
 
 	g_bLate = late;
 	return APLRes_Success;
@@ -175,18 +175,18 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
-	// LoadTranslations("fuck.zones.phrases");
+	// LoadTranslations("fuckZones.phrases");
 
 	AutoExecConfig_SetCreateDirectory(true);
 	AutoExecConfig_SetCreateFile(true);
-	AutoExecConfig_SetFile("fuck.zones");
-	g_cPrecisionValue = AutoExecConfig_CreateConVar("fuck_zones_precision_offset", "10.0", "Default precision value when setting a zones precision area (Default: 10.0).", _, true, 0.1);
-	g_cRegenerateSpam = AutoExecConfig_CreateConVar("fuck_zones_regenerate_spam", "10", "Interval between every zone regeneration (0 to disable this feature, Default: 10)", _, true, 0.0);
-	g_cDefaultHeight = AutoExecConfig_CreateConVar("fuck_zones_default_height", "256", "Default height (z-axis) for circles and polygons zones (Default: 256)");
-	g_cDefaultRadius = AutoExecConfig_CreateConVar("fuck_zones_default_radius", "150", "Default radius for circle zones (Default: 150)");
-	g_cDefaultZOffset = AutoExecConfig_CreateConVar("fuck_zones_default_z_offset", "5", "Adds a offset to the z-axis for all points. (Default: 5)");
-	g_cDefaultColor = AutoExecConfig_CreateConVar("fuck_zones_default_color", "Pink", "Default zone color (Default: Pink)");
-	g_cEnableLogging = AutoExecConfig_CreateConVar("fuck_zones_enable_logging", "1", "Enable logging? (Default: 1)", _, true, 0.0, true, 1.0);
+	AutoExecConfig_SetFile("fuckZones");
+	g_cPrecisionValue = AutoExecConfig_CreateConVar("fuckZones_precision_offset", "10.0", "Default precision value when setting a zones precision area (Default: 10.0).", _, true, 0.1);
+	g_cRegenerateSpam = AutoExecConfig_CreateConVar("fuckZones_regenerate_spam", "10", "Interval between every zone regeneration (0 to disable this feature, Default: 10)", _, true, 0.0);
+	g_cDefaultHeight = AutoExecConfig_CreateConVar("fuckZones_default_height", "256", "Default height (z-axis) for circles and polygons zones (Default: 256)");
+	g_cDefaultRadius = AutoExecConfig_CreateConVar("fuckZones_default_radius", "150", "Default radius for circle zones (Default: 150)");
+	g_cDefaultZOffset = AutoExecConfig_CreateConVar("fuckZones_default_z_offset", "5", "Adds a offset to the z-axis for all points. (Default: 5)");
+	g_cDefaultColor = AutoExecConfig_CreateConVar("fuckZones_default_color", "Pink", "Default zone color (Default: Pink)");
+	g_cEnableLogging = AutoExecConfig_CreateConVar("fuckZones_enable_logging", "1", "Enable logging? (Default: 1)", _, true, 0.0, true, 1.0);
 	AutoExecConfig_ExecuteFile();
 	AutoExecConfig_CleanFile();
 
@@ -213,7 +213,7 @@ public void OnPluginStart()
 	g_aColors = new ArrayList(ByteCountToCells(64));
 	g_smColorData = new StringMap();
 
-	g_coPrecision = RegClientCookie("zones_manager_precision", "Set client precision value.", CookieAccess_Public);
+	g_coPrecision = RegClientCookie("fuckZones_precision", "Set client precision value", CookieAccess_Public);
 
 	g_iRegenerationTime = -1;
 	
@@ -4247,7 +4247,7 @@ void ParseColorsData()
 	g_smColorData.Clear();
 
 	char sFolder[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, sFolder, sizeof(sFolder), "configs/zones_manager/");
+	BuildPath(Path_SM, sFolder, sizeof(sFolder), "configs/fuckZones/");
 	CreateDirectory(sFolder, 511);
 
 	char sFile[PLATFORM_MAX_PATH];
