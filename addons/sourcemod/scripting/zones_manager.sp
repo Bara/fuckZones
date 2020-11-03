@@ -48,6 +48,7 @@
 #include <sdkhooks>
 #include <clientprefs>
 #include <multicolors>
+#include <autoexecconfig>
 
 ConVar g_cPrecisionValue = null;
 ConVar g_cRegenerateSpam = null;
@@ -176,13 +177,18 @@ public void OnPluginStart()
 	LoadTranslations("common.phrases");
 	// LoadTranslations("zonesmanager.phrases");
 
-	g_cPrecisionValue = CreateConVar("zones_manager_precision_offset", "10.0", "Default value to use when setting a zones precision area.", FCVAR_NOTIFY, true, 0.0);
-	g_cRegenerateSpam = CreateConVar("zones_manager_regenerate_spam", "10", "How long should zone regenerations restricted after zone regeneation? (0 to disable this feature)", _, true, 0.0);
-	g_cDefaultHeight = CreateConVar("zones_manager_default_height", "256", "Default height for circles and polygons zones (Default: 256)");
-	g_cDefaultRadius = CreateConVar("zones_manager_default_radius", "150", "Default radius for circle zones (Default: 150)");
-	g_cDefaultZOffset = CreateConVar("zones_manager_default_z_offset", "5", "Adds an offset of X to all points while creating/editing a zone. (Default: 5)");
-	g_cDefaultColor = CreateConVar("zones_manager_default_color", "Pink", "Default color for new zones, when no color was set. (Default: Pink)");
-	g_cEnableLogging = CreateConVar("zones_manager_enable_logging", "1", "Enable logging? (Default: 1)", _, true, 0.0, true, 1.0);
+	AutoExecConfig_SetCreateDirectory(true);
+	AutoExecConfig_SetCreateFile(true);
+	AutoExecConfig_SetFile("fuck.zones");
+	g_cPrecisionValue = AutoExecConfig_CreateConVar("fuck_zones_precision_offset", "10.0", "Default value to use when setting a zones precision area.", FCVAR_NOTIFY, true, 0.0);
+	g_cRegenerateSpam = AutoExecConfig_CreateConVar("fuck_zones_regenerate_spam", "10", "How long should zone regenerations restricted after zone regeneation? (0 to disable this feature)", _, true, 0.0);
+	g_cDefaultHeight = AutoExecConfig_CreateConVar("fuck_zones_default_height", "256", "Default height for circles and polygons zones (Default: 256)");
+	g_cDefaultRadius = AutoExecConfig_CreateConVar("fuck_zones_default_radius", "150", "Default radius for circle zones (Default: 150)");
+	g_cDefaultZOffset = AutoExecConfig_CreateConVar("fuck_zones_default_z_offset", "5", "Adds an offset of X to all points while creating/editing a zone. (Default: 5)");
+	g_cDefaultColor = AutoExecConfig_CreateConVar("fuck_zones_default_color", "Pink", "Default color for new zones, when no color was set. (Default: Pink)");
+	g_cEnableLogging = AutoExecConfig_CreateConVar("fuck_zones_enable_logging", "1", "Enable logging? (Default: 1)", _, true, 0.0, true, 1.0);
+	AutoExecConfig_ExecuteFile();
+	AutoExecConfig_CleanFile();
 
 	HookEventEx("teamplay_round_start", Event_OnRoundStart);
 	HookEventEx("round_start", Event_OnRoundStart);
@@ -4873,15 +4879,15 @@ bool AddMenuItemFormat(Menu& menu, const char[] info, int style = ITEMDRAW_DEFAU
 
 bool IsClientValid(int client)
 {
-    if (client > 0 && client <= MaxClients)
-    {
-        if (IsClientInGame(client) && !IsFakeClient(client) && !IsClientSourceTV(client))
-        {
-            return true;
-        }
-    }
+	if (client > 0 && client <= MaxClients)
+	{
+		if (IsClientInGame(client) && !IsFakeClient(client) && !IsClientSourceTV(client))
+		{
+			return true;
+		}
+	}
 
-    return false;
+	return false;
 }
 
 void PushMenuCell(Menu hndl, const char[] id, int data)
