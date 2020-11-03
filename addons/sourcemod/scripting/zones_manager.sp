@@ -55,6 +55,7 @@ ConVar g_cDefaultHeight = null;
 ConVar g_cDefaultRadius = null;
 ConVar g_cDefaultZOffset = null;
 ConVar g_cDefaultColor = null;
+ConVar g_cEnableLogging = null;
 
 enum struct eForwards
 {
@@ -181,6 +182,7 @@ public void OnPluginStart()
 	g_cDefaultRadius = CreateConVar("zones_manager_default_radius", "150", "Default radius for circle zones (Default: 150)");
 	g_cDefaultZOffset = CreateConVar("zones_manager_default_z_offset", "5", "Adds an offset of X to all points while creating/editing a zone. (Default: 5)");
 	g_cDefaultColor = CreateConVar("zones_manager_default_color", "Pink", "Default color for new zones, when no color was set. (Default: Pink)");
+	g_cEnableLogging = CreateConVar("zones_manager_enable_logging", "1", "Enable logging? (Default: 1)", _, true, 0.0, true, 1.0);
 
 	HookEventEx("teamplay_round_start", Event_OnRoundStart);
 	HookEventEx("round_start", Event_OnRoundStart);
@@ -231,7 +233,10 @@ public void OnMapStart()
 	g_iDefaultHaloIndex = PrecacheModel(DEFAULT_HALOINDEX, true);
 	PrecacheModel(ZONE_MODEL, true);
 
-	LogMessage("Deleting current zones map configuration from memory.");
+	if (g_cEnableLogging.BoolValue)
+	{
+		LogMessage("Deleting current zones map configuration from memory.");
+	}
 
 	ReparseMapZonesConfig();
 
@@ -269,21 +274,34 @@ void ReparseMapZonesConfig(bool delete_config = false)
 		DeleteFile(sFile);
 	}
 
-	LogMessage("Creating keyvalues for the new map before pulling new map zones info.");
+	if (g_cEnableLogging.BoolValue)
+	{
+		LogMessage("Creating keyvalues for the new map before pulling new map zones info.");
+	}
 	g_kvConfig = new KeyValues("zones");
 
 	if (FileExists(sFile))
 	{
-		LogMessage("Config exists, retrieving the zones...");
+		if (g_cEnableLogging.BoolValue)
+		{
+			LogMessage("Config exists, retrieving the zones...");
+		}
+
 		g_kvConfig.ImportFromFile(sFile);
 	}
 	else
 	{
-		LogMessage("Config doesn't exist, creating new zones config for the map: %s", sMap);
+		if (g_cEnableLogging.BoolValue)
+		{
+			LogMessage("Config doesn't exist, creating new zones config for the map: %s", sMap);
+		}
 		KeyValuesToFile(g_kvConfig, sFile);
 	}
 
-	LogMessage("New config successfully loaded.");
+	if (g_cEnableLogging.BoolValue)
+	{
+		LogMessage("New config successfully loaded.");
+	}
 }
 
 public void OnConfigsExecuted()
@@ -429,7 +447,10 @@ void SpawnAllZones()
 		return;
 	}
 
-	LogMessage("Spawning all zones...");
+	if (g_cEnableLogging.BoolValue)
+	{
+		LogMessage("Spawning all zones...");
+	}
 
 	g_kvConfig.Rewind();
 	if (g_kvConfig.GotoFirstSubKey(false))
@@ -444,7 +465,10 @@ void SpawnAllZones()
 		while(g_kvConfig.GotoNextKey(false));
 	}
 
-	LogMessage("Zones have been spawned.");
+	if (g_cEnableLogging.BoolValue)
+	{
+		LogMessage("Zones have been spawned.");
+	}
 }
 
 int SpawnAZone(const char[] name)
@@ -3540,7 +3564,11 @@ int CreateZone(eCreateZone Data)
 	char sType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneNameByType(Data.Type, sType, sizeof(sType));
 
-	LogMessage("Spawning Zone: %s - %s - %.2f/%.2f/%.2f - %.2f/%.2f/%.2f - %.2f", Data.Name, sType, Data.Start[0], Data.Start[1], Data.Start[2], Data.End[0], Data.End[1], Data.End[2], Data.Radius);
+	// TODO: Split this into 3 different chat messages separated by zone type
+	if (g_cEnableLogging.BoolValue)
+	{
+		LogMessage("Spawning Zone: %s - %s - %.2f/%.2f/%.2f - %.2f/%.2f/%.2f - %.2f", Data.Name, sType, Data.Start[0], Data.Start[1], Data.Start[2], Data.End[0], Data.End[1], Data.End[2], Data.Radius);
+	}
 
 	int entity = -1;
 	switch (Data.Type)
@@ -3714,7 +3742,10 @@ int CreateZone(eCreateZone Data)
 		Zone[entity].Color = Data.iColors;
 	}
 
-	LogMessage("Zone %s has been spawned %s as a %s zone with the entity index %i.", Data.Name, IsValidEntity(entity) ? "successfully" : "not successfully", sType, entity);
+	if (g_cEnableLogging.BoolValue)
+	{
+		LogMessage("Zone %s has been spawned %s as a %s zone with the entity index %i.", Data.Name, IsValidEntity(entity) ? "successfully" : "not successfully", sType, entity);
+	}
 
 	delete Data.PointsData;
 	delete Data.Effects;
@@ -4319,7 +4350,10 @@ void ParseColorsData()
 	}
 
 	delete kv;
-	LogMessage("Successfully parsed %i colors for zones.", g_aColors.Length);
+	if (g_cEnableLogging.BoolValue)
+	{
+		LogMessage("Successfully parsed %i colors for zones.", g_aColors.Length);
+	}
 }
 
 bool TeleportToZone(int client, const char[] zone)
