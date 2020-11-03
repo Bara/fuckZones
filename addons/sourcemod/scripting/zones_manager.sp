@@ -175,17 +175,17 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
-	// LoadTranslations("zonesmanager.phrases");
+	// LoadTranslations("fuck.zones.phrases");
 
 	AutoExecConfig_SetCreateDirectory(true);
 	AutoExecConfig_SetCreateFile(true);
 	AutoExecConfig_SetFile("fuck.zones");
-	g_cPrecisionValue = AutoExecConfig_CreateConVar("fuck_zones_precision_offset", "10.0", "Default value to use when setting a zones precision area.", FCVAR_NOTIFY, true, 0.0);
-	g_cRegenerateSpam = AutoExecConfig_CreateConVar("fuck_zones_regenerate_spam", "10", "How long should zone regenerations restricted after zone regeneation? (0 to disable this feature)", _, true, 0.0);
-	g_cDefaultHeight = AutoExecConfig_CreateConVar("fuck_zones_default_height", "256", "Default height for circles and polygons zones (Default: 256)");
+	g_cPrecisionValue = AutoExecConfig_CreateConVar("fuck_zones_precision_offset", "10.0", "Default precision value when setting a zones precision area (Default: 10.0).", _, true, 0.1);
+	g_cRegenerateSpam = AutoExecConfig_CreateConVar("fuck_zones_regenerate_spam", "10", "Interval between every zone regeneration (0 to disable this feature, Default: 10)", _, true, 0.0);
+	g_cDefaultHeight = AutoExecConfig_CreateConVar("fuck_zones_default_height", "256", "Default height (z-axis) for circles and polygons zones (Default: 256)");
 	g_cDefaultRadius = AutoExecConfig_CreateConVar("fuck_zones_default_radius", "150", "Default radius for circle zones (Default: 150)");
-	g_cDefaultZOffset = AutoExecConfig_CreateConVar("fuck_zones_default_z_offset", "5", "Adds an offset of X to all points while creating/editing a zone. (Default: 5)");
-	g_cDefaultColor = AutoExecConfig_CreateConVar("fuck_zones_default_color", "Pink", "Default color for new zones, when no color was set. (Default: Pink)");
+	g_cDefaultZOffset = AutoExecConfig_CreateConVar("fuck_zones_default_z_offset", "5", "Adds a offset to the z-axis for all points. (Default: 5)");
+	g_cDefaultColor = AutoExecConfig_CreateConVar("fuck_zones_default_color", "Pink", "Default zone color (Default: Pink)");
 	g_cEnableLogging = AutoExecConfig_CreateConVar("fuck_zones_enable_logging", "1", "Enable logging? (Default: 1)", _, true, 0.0, true, 1.0);
 	AutoExecConfig_ExecuteFile();
 	AutoExecConfig_CleanFile();
