@@ -220,6 +220,8 @@ public void OnPluginStart()
 	ReparseMapZonesConfig();
 
 	CreateTimer(TIMER_INTERVAL, Timer_DisplayZones, _, TIMER_REPEAT);
+
+	CSetPrefix("{darkred}[fuckZones] {default}");
 }
 
 public void OnMapStart()
@@ -881,7 +883,7 @@ public Action Command_TeleportToZone(int client, int args)
 			char sCommand[64];
 			GetCmdArg(0, sCommand, sizeof(sCommand));
 
-			ReplyToCommand(client, "[SM] Usage: %s <#userid|name> <zone>", sCommand);
+			CReplyToCommand(client, "Usage: %s <#userid|name> <zone>", sCommand);
 			return Plugin_Handled;
 		}
 	}
@@ -934,7 +936,7 @@ public Action Command_SetPrecision(int client, int args)
 
 	if (args != 1)
 	{
-		CReplyToCommand(client, "sm_setprecision <value>");
+		CReplyToCommand(client, "Usage: sm_setprecision <value>");
 		return Plugin_Handled;
 	}
 
