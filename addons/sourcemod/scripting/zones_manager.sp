@@ -529,7 +529,7 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 		if (g_kvConfig.JumpToKey(sArgs))
 		{
 			g_kvConfig.Rewind();
-			CPrintToChat(client, "Zone name already exists, please pick a different name or cancel the process with \"!cancel\".");
+			CPrintToChat(client, "Zone name already exists, please pick a different name or cancel the process with \"{green}!cancel{default}\".");
 			return;
 		}
 		
@@ -549,7 +549,7 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 		char sName[MAX_ZONE_NAME_LENGTH];
 		GetEntPropString(g_iEffectKeyValue_Entity[client], Prop_Data, "m_iName", sName, sizeof(sName));
 
-		CPrintToChat(client, "Effect '%s' key '%s' for zone '%s' has been successfully updated to '%s'.", g_sEffectKeyValue_Effect[client], g_sEffectKeyValue_EffectKey[client], sName, sValue);
+		CPrintToChat(client, "Effect {green}%s{default} key {green}%s{default} for zone {green}%s{default} has been successfully updated to {green}%s{default}.", g_sEffectKeyValue_Effect[client], g_sEffectKeyValue_EffectKey[client], sName, sValue);
 
 		ListZoneEffectKeys(client, g_iEffectKeyValue_Entity[client], g_sEffectKeyValue_Effect[client]);
 	}
@@ -562,7 +562,7 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 		GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 		UpdateZonesSectionName(entity, sArgs);
-		CPrintToChat(client, "Zone '%s' has been renamed successfully to '%s'.", sName, sArgs);
+		CPrintToChat(client, "Zone {green}%s{default} has been renamed successfully to {green}%s{default}.", sName, sArgs);
 		g_iEditingName[client] = INVALID_ENT_REFERENCE;
 
 		OpenZonePropertiesMenu(client, entity);
@@ -1244,7 +1244,6 @@ public int MenuHandle_ManageZonesMenu(Menu menu, MenuAction action, int param1, 
 		case MenuAction_Select:
 		{
 			g_smSites[param1].SetValue("OpenManageZonesMenu", menu.Selection);
-			PrintToChat(param1, "Selection: %d", menu.Selection);
 
 			char sEntity[12]; char sName[MAX_ZONE_NAME_LENGTH];
 			menu.GetItem(param2, sEntity, sizeof(sEntity), _, sName, sizeof(sName));
@@ -1286,36 +1285,6 @@ void OpenEditZoneMenu(int client, int entity)
 	{
 		char sEffect[MAX_EFFECT_NAME_LENGTH];
 		g_aEffectsList.GetString(i, sEffect, sizeof(sEffect));
-
-		// Debug Start
-		StringMap temp = null;
-		Zone[entity].Effects.GetValue(sEffect, temp);
-
-		StringMapSnapshot snap1 = Zone[entity].Effects.Snapshot();
-		char sKey[128];
-		for (int j = 0; j < snap1.Length; j++)
-		{
-			snap1.GetKey(j, sKey, sizeof(sKey));
-			PrintToChat(client, "Zone: %s, Effect (Index: %d): %s", sName, j, sKey);
-
-			if (temp != null)
-			{
-				StringMapSnapshot snap2 = temp.Snapshot();
-				for (int x = 0; x < snap2.Length; x++)
-				{
-					snap2.GetKey(x, sKey, sizeof(sKey));
-
-					char sValue[MAX_KEY_VALUE_LENGTH];
-					temp.GetString(sKey, sValue, sizeof(sValue));
-					
-					PrintToChat(client, "Key (Index: %d): %s, Value: %s", x, sKey, sValue);
-				}
-				delete snap2;
-			}
-		}
-
-		delete snap1;
-		// Debug End
 
 		StringMap values = null;
 		if (Zone[entity].Effects.GetValue(sEffect, values) && values != null)
@@ -1433,7 +1402,6 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 		case MenuAction_Select:
 		{
 			g_smSites[param1].SetValue("OpenZonePropertiesMenu", menu.Selection);
-			PrintToChat(param1, "Selection: %d", menu.Selection);
 
 			char sInfo[32];
 			menu.GetItem(param2, sInfo, sizeof(sInfo));
@@ -1446,7 +1414,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			if (StrEqual(sInfo, "name"))
 			{
 				g_iEditingName[param1] = EntIndexToEntRef(entity);
-				CPrintToChat(param1, "Type the new name for the zone '%s' in chat. Type \"!cancel\" to cancel this process.", sName);
+				CPrintToChat(param1, "Type the new name for the zone {green}%s{default} in chat. Type \"{green}!cancel{default}\" to cancel this process.", sName);
 			}
 			else if (StrEqual(sInfo, "type"))
 			{
@@ -2347,7 +2315,7 @@ public int MenuHandle_ManageConfirmDeleteZoneMenu(Menu menu, MenuAction action, 
 			GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 			DeleteZone(entity, true);
-			CPrintToChat(param1, "You have deleted the zone '%s'.", sName);
+			CPrintToChat(param1, "You have deleted the zone {green}%s{default}.", sName);
 
 			OpenManageZonesMenu(param1);
 		}
@@ -2429,7 +2397,6 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 		case MenuAction_Select:
 		{
 			g_smSites[param1].SetValue("OpenCreateZonesMenu", menu.Selection);
-			PrintToChat(param1, "Selection: %d", menu.Selection);
 
 			char sInfo[32];
 			menu.GetItem(param2, sInfo, sizeof(sInfo));
@@ -2437,7 +2404,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			if (StrEqual(sInfo, "name"))
 			{
 				CZone[param1].SetName = true;
-				CPrintToChat(param1, "Type the name of this new zone in chat. Type \"!cancel\" to cancel this process.");
+				CPrintToChat(param1, "Type the name of this new zone in chat. Type \"{green}!cancel{default}\" to cancel this process.");
 			}
 			else if (StrEqual(sInfo, "type"))
 			{
@@ -2456,7 +2423,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 				GetClientLookPoint(param1, vLookPoint);
 				vLookPoint[2] += g_cDefaultZOffset.FloatValue;
 				Array_Copy(vLookPoint, CZone[param1].Start, 3);
-				CPrintToChat(param1, "Starting point: %.2f/%.2f/%.2f", CZone[param1].Start[0], CZone[param1].Start[1], CZone[param1].Start[2]);
+				// CPrintToChat(param1, "Starting point: %.2f/%.2f/%.2f", CZone[param1].Start[0], CZone[param1].Start[1], CZone[param1].Start[2]);
 
 				OpenCreateZonesMenu(param1);
 			}
@@ -2466,7 +2433,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 				GetClientLookPoint(param1, vLookPoint);
 				vLookPoint[2] += g_cDefaultZOffset.FloatValue;
 				Array_Copy(vLookPoint, CZone[param1].End, 3);
-				CPrintToChat(param1, "Ending point: %.2f/%.2f/%.2f", CZone[param1].End[0], CZone[param1].End[1], CZone[param1].End[2]);
+				// CPrintToChat(param1, "Ending point: %.2f/%.2f/%.2f", CZone[param1].End[0], CZone[param1].End[1], CZone[param1].End[2]);
 
 				OpenCreateZonesMenu(param1);
 			}
@@ -2777,7 +2744,7 @@ public int MenuHandler_EditZoneEffectKeyVaue(Menu menu, MenuAction action, int p
 
 			g_bEffectKeyValue[param1] = true;
 
-			CPrintToChat(param1, "Type the new value for the effect '%s' key '%s' on zone '%s' in chat. Type \"!cancel\" to cancel this process.", g_sEffectKeyValue_Effect[param1], g_sEffectKeyValue_EffectKey[param1], sName);
+			CPrintToChat(param1, "Type the new value for the effect {green}%s{default} key {green}%s{default} on zone {green}%s{default} in chat. Type \"{green}!cancel{default}\" to cancel this process.", g_sEffectKeyValue_Effect[param1], g_sEffectKeyValue_EffectKey[param1], sName);
 		}
 		case MenuAction_Cancel:
 		{
@@ -3009,7 +2976,7 @@ public int MenuHandler_ZoneTypeMenu(Menu menu, MenuAction action, int param1, in
 			FormatEx(sAddendum, sizeof(sAddendum), " for %s", CZone[param1].Name);
 
 			CZone[param1].Type = type;
-			CPrintToChat(param1, "Zone type%s set to %s.", sAddendum, sType);
+			CPrintToChat(param1, "Zone type%s set to {green}%s{default}.", sAddendum, sType);
 			OpenCreateZonesMenu(param1);
 		}
 
@@ -3064,7 +3031,7 @@ public int MenuHandler_ZoneDisplayMenu(Menu menu, MenuAction action, int param1,
 			FormatEx(sAddendum, sizeof(sAddendum), " for %s", CZone[param1].Name);
 
 			CZone[param1].Display = type;
-			CPrintToChat(param1, "Display type%s set to %s.", sAddendum, sType);
+			CPrintToChat(param1, "Display type%s set to {green}%s{default}.", sAddendum, sType);
 			OpenCreateZonesMenu(param1);
 		}
 
@@ -3107,7 +3074,7 @@ public int MenuHandler_ZoneColorMenu(Menu menu, MenuAction action, int param1, i
 		case MenuAction_Select:
 		{
 			menu.GetItem(param2, CZone[param1].Color, sizeof(eCreateZone::Color));
-			CPrintToChat(param1, "Zone color set to %s.", CZone[param1].Color);
+			CPrintToChat(param1, "Zone color set to {green}%s{default}.", CZone[param1].Color);
 			OpenCreateZonesMenu(param1);
 		}
 
@@ -3205,7 +3172,7 @@ void CreateNewZone(int client)
 	SaveMapConfig();
 
 	CreateZone(CZone[client]);
-	CPrintToChat(client, "Zone '%s' has been created successfully.", CZone[client].Name);
+	CPrintToChat(client, "Zone {green}%s{default} has been created successfully.", CZone[client].Name);
 	ResetCreateZoneVariables(client);
 }
 
@@ -4388,7 +4355,7 @@ bool TeleportToZone(int client, const char[] zone)
 
 	if (!bFound)
 	{
-		PrintToChat(client, "Sorry, couldn't find the zone '%s' for you to teleport to.", zone);
+		CPrintToChat(client, "Sorry, couldn't find the zone {green}%s{default} for you to teleport to.", zone);
 		return false;
 	}
 
@@ -4413,13 +4380,13 @@ bool TeleportToZone(int client, const char[] zone)
 
 		case ZONE_TYPE_POLY:
 		{
-			PrintToChat(client, "Sorry, Polygon zones aren't currently supported for teleporting.");
+			CPrintToChat(client, "Sorry, Polygon zones aren't currently supported for teleporting.");
 			return false;
 		}
 	}
 
 	TeleportEntity(client, fMiddle, NULL_VECTOR, NULL_VECTOR);
-	PrintToChat(client, "You have been teleported to '%s'.", zone);
+	CPrintToChat(client, "You have been teleported to {green}%s{default}.", zone);
 
 	return true;
 }
