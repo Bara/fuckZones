@@ -1,0 +1,121 @@
+"Phrases"
+{
+	"Chat - Zone already Exist"
+	{
+		"en"		"Zone name already exists, please pick a different name or cancel the process with {green}!cancel{default}."
+	}
+
+	"Chat - Effect Key Update"
+	{
+		"#format" 	"{1:s},{2:s},{3:s},{4:s}"
+		"en"		"Effect {green}{1}{default} key {green}{2}{default} for zone {green}{3}{default} has been successfully updated to {green}{4}{default}."
+	}
+
+	"Chat - Zone Renamed"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"Zone {green}{1}{default} has been renamed successfully to {green}{2}{default}."
+	}
+
+	"Command - Teleport Usage"
+	{
+		"#format"	"{1:s}"
+		"en"		"Usage: {1} <#userid|name> <zone>"
+	}
+
+	"Command - Effects Reloaded"
+	{
+		"en"		"Effects data has been reloaded."
+	}
+
+	"Command - Set Precision Usage"
+	{
+		"en"		"Usage: sm_setprecision <value>"
+	}
+
+	"Command - Only Numbers"
+	{
+		"en"		"Your input isn't valid! Only numbers."
+	}
+
+	"Command - Precision Set"
+	{
+		"#format"	"{1:.1f}"
+		"en"		"Precision set to {1}."
+	}
+
+	"Chat - You are not in a zone"
+	{
+		"en"		"Error: You are not currently standing in a zone to edit."
+	}
+
+	"Menu - Title - Zone Main"
+	{
+		"en"		"fuckZones"
+	}
+
+	"Menu - Item - Create Zones"
+	{
+		"en"		"Create Zones"
+	}
+
+	"Menu - Item - Manage Zones"
+	{
+		"en"		"Manage Zones"
+	}
+
+	"Menu - Item - Manage Zones New Line"
+	{
+		"en"		"Manage Zones\n "
+	}
+
+	"Menu - Item - Regenerate Zones"
+	{
+		"en"		"Regenerate Zones"
+	}
+
+	"Menu - Item - Delete All Zones"
+	{
+		"en"		"Delete all Zones"
+	}
+
+	"Menu - Title - Teleport To"
+	{
+		"en"		"Teleport to zone"
+	}
+
+	"Menu - Item - No Zones"
+	{
+		"en"		"No Zones"
+	}
+
+	"Command - Active Regenerate Spam Protection"
+	{
+		"en"		"Spam Protection active, you can not regenerate the zones yet."
+	}
+
+	"Command - All Zones Regenerated"
+	{
+		"en"		"All zones have been regenerated on the map."
+	}
+
+	"Command - All Zones Deleted"
+	{
+		"en"		"All zones have been deleted from the map."
+	}
+
+	"Menu - Title - Delete All Zones Confirmation"
+	{
+		"en"		"Are you sure to delete all zones on this map?"
+	}
+
+	"Menu - Item - Yes"
+	{
+		"en"		"Yes"
+	}
+
+	"Menu - Item - No"
+	{
+		"en"		"No"
+	}
+}

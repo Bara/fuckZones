@@ -175,7 +175,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
-	// LoadTranslations("fuckZones.phrases");
+	LoadTranslations("fuckZones.phrases");
 
 	AutoExecConfig_SetCreateDirectory(true);
 	AutoExecConfig_SetCreateFile(true);
@@ -529,7 +529,7 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 		if (g_kvConfig.JumpToKey(sArgs))
 		{
 			g_kvConfig.Rewind();
-			CPrintToChat(client, "Zone name already exists, please pick a different name or cancel the process with \"{green}!cancel{default}\".");
+			CPrintToChat(client, "%T", "Chat - Zone already exist", client);
 			return;
 		}
 		
@@ -549,7 +549,7 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 		char sName[MAX_ZONE_NAME_LENGTH];
 		GetEntPropString(g_iEffectKeyValue_Entity[client], Prop_Data, "m_iName", sName, sizeof(sName));
 
-		CPrintToChat(client, "Effect {green}%s{default} key {green}%s{default} for zone {green}%s{default} has been successfully updated to {green}%s{default}.", g_sEffectKeyValue_Effect[client], g_sEffectKeyValue_EffectKey[client], sName, sValue);
+		CPrintToChat(client, "%T", "Chat - Effect Key Update", client, g_sEffectKeyValue_Effect[client], g_sEffectKeyValue_EffectKey[client], sName, sValue);
 
 		ListZoneEffectKeys(client, g_iEffectKeyValue_Entity[client], g_sEffectKeyValue_Effect[client]);
 	}
@@ -562,7 +562,7 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 		GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 		UpdateZonesSectionName(entity, sArgs);
-		CPrintToChat(client, "Zone {green}%s{default} has been renamed successfully to {green}%s{default}.", sName, sArgs);
+		CPrintToChat(client, "%T", "Chat - Zone Renamed", client, sName, sArgs);
 		g_iEditingName[client] = INVALID_ENT_REFERENCE;
 
 		OpenZonePropertiesMenu(client, entity);
@@ -687,30 +687,6 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			{
 				g_smColorData.GetArray(CZone[client].Color, iColor, sizeof(iColor));
 			}
-
-			/*
-				if (CZone[client].Type == ZONE_TYPE_POLY && CZone[client].PointsData != null)
-				{
-					if (CZone[client].PointsData.Length > 2)
-					{
-						bValidPoints = true;
-					}
-				}
-				else if (CZone[client].Type == ZONE_TYPE_BOX)
-				{
-					if (!IsPositionNull(CZone[client].Start) && !IsPositionNull(CZone[client].End))
-					{
-						bValidPoints = true;
-					}
-				}
-				else if (CZone[client].Type == ZONE_TYPE_CIRCLE)
-				{
-					if (!IsPositionNull(CZone[client].Start))
-					{
-						bValidPoints = true;
-					}
-				}
-			*/
 
 			float fPoint[3];
 			GetClientLookPoint(client, fPoint);
@@ -873,7 +849,6 @@ public Action Command_EditZoneMenu(int client, int args)
 {
 	if (client == 0)
 	{
-		CReplyToCommand(client, "You must be in-game to use this command.");
 		return Plugin_Handled;
 	}
 
@@ -885,7 +860,6 @@ public Action Command_OpenZonesMenu(int client, int args)
 {
 	if (client == 0)
 	{
-		CReplyToCommand(client, "You must be in-game to use this command.");
 		return Plugin_Handled;
 	}
 
@@ -913,7 +887,7 @@ public Action Command_TeleportToZone(int client, int args)
 			char sCommand[64];
 			GetCmdArg(0, sCommand, sizeof(sCommand));
 
-			CReplyToCommand(client, "Usage: %s <#userid|name> <zone>", sCommand);
+			CReplyToCommand(client, "%T", "Command - Teleport Usage", client, sCommand);
 			return Plugin_Handled;
 		}
 	}
@@ -953,7 +927,7 @@ public Action Command_DeleteAllZones(int client, int args)
 public Action Command_ReloadEffects(int client, int args)
 {
 	QueueEffects();
-	CReplyToCommand(client, "Effects data has been reloaded.");
+	CReplyToCommand(client, "%T", "Command - Effect Reloaded", client);
 	return Plugin_Handled;
 }
 
@@ -966,7 +940,7 @@ public Action Command_SetPrecision(int client, int args)
 
 	if (args != 1)
 	{
-		CReplyToCommand(client, "Usage: sm_setprecision <value>");
+		CReplyToCommand(client, "%T", "Command - Set Precision Usage", client);
 		return Plugin_Handled;
 	}
 
@@ -977,7 +951,7 @@ public Action Command_SetPrecision(int client, int args)
 	{
 		if (!IsCharNumeric(sArg[i]))
 		{
-			CReplyToCommand(client, "Your input isn't valid! Only numbers.");
+			CReplyToCommand(client, "%T", "Command - Only Numbers", client);
 			return Plugin_Handled;
 		}
 	}
@@ -988,7 +962,7 @@ public Action Command_SetPrecision(int client, int args)
 	FloatToString(g_fPrecision[client], sBuffer, sizeof(sBuffer));
 	SetClientCookie(client, g_coPrecision, sBuffer);
 
-	CReplyToCommand(client, "Precision set to %.1f", g_fPrecision[client]);
+	CReplyToCommand(client, "%T", "Command - Precision Set", client, g_fPrecision[client]);
 
 	return Plugin_Handled;
 }
@@ -999,7 +973,7 @@ void FindZoneToEdit(int client)
 
 	if (entity == -1 || !IsValidEntity(entity))
 	{
-		CPrintToChat(client, "Error: You are not currently standing in a zone to edit.");
+		CPrintToChat(client, "%T", "Chat - You are not in a Zone", client);
 		return;
 	}
 
@@ -1027,12 +1001,12 @@ int GetEarliestTouchZone(int client)
 void OpenZonesMenu(int client)
 {
 	Menu menu = new Menu(MenuHandle_ZonesMenu);
-	menu.SetTitle("Zones Manager");
+	menu.SetTitle("%T", "Menu - Title - Zone Main", client);
 
-	menu.AddItem("create", "Create Zones");
-	menu.AddItem("manage", "Manage Zones\n ");
-	AddMenuItemFormat(menu, "regenerate", ITEMDRAW_DEFAULT, "Regenerate Zones");
-	AddMenuItemFormat(menu, "deleteall", ITEMDRAW_DEFAULT, "Delete all Zones");
+	AddItemFormat(menu, "create", _, "%T", "Menu - Item - Create Zones", client);
+	AddItemFormat(menu, "manage", _, "%T", "Menu - Item - Manage Zones New Line", client);
+	AddItemFormat(menu, "regenerate", _, "%T", "Menu - Item - Regenerate Zones", client);
+	AddItemFormat(menu, "deleteall", _, "%T", "Menu - Item - Delete All Zones", client);
 
 	menu.Display(client, MENU_TIME_FOREVER);
 }
@@ -1075,7 +1049,7 @@ public int MenuHandle_ZonesMenu(Menu menu, MenuAction action, int param1, int pa
 void OpenTeleportToZoneMenu(int client)
 {
 	Menu menu = new Menu(MenuHandle_TeleportToZoneMenu);
-	menu.SetTitle("Teleport to zone");
+	menu.SetTitle("%T", "Menu - Title - Teleport To", client);
 
 	for (int i = 0; i < g_aZoneEntities.Length; i++)
 	{
@@ -1095,7 +1069,7 @@ void OpenTeleportToZoneMenu(int client)
 
 	if (menu.ItemCount == 0)
 	{
-		menu.AddItem("", "[No Zones]", ITEMDRAW_DISABLED);
+		AddItemFormat(menu, "", ITEMDRAW_DISABLED, "%T", "Menu - Item - No Zones", client);
 	}
 
 	menu.ExitBackButton = true;
@@ -1132,11 +1106,11 @@ void RegenerateZones(int client = -1)
 	{
 		if (IsClientValid(client))
 		{
-			CReplyToCommand(client, "Spam Protection active, you can not regenerate the zones yet.");
+			CReplyToCommand(client, "%T", "Command - Active Regenerate Spam Protection", client);
 		}
 		else
 		{
-			PrintToServer("Spam Protection active, you can not regenerate the zones yet.");
+			PrintToServer("%T", "Command - Active Regenerate Spam Protection", LANG_SERVER);
 		}
 		
 		return;
@@ -1149,7 +1123,7 @@ void RegenerateZones(int client = -1)
 
 	if (IsClientValid(client))
 	{
-		CReplyToCommand(client, "All zones have been regenerated on the map.");
+		CReplyToCommand(client, "%T", "Command - All Zones Regenerated", client);
 	}
 }
 
@@ -1166,15 +1140,15 @@ void DeleteAllZones(int client = -1, bool confirmation = true)
 	{
 		ClearAllZones();
 		ReparseMapZonesConfig(true);
-		CReplyToCommand(client, "All zones have been deleted from the map.");
+		CReplyToCommand(client, "%T", "Command - All Zones Deleted", client);
 		return;
 	}
 
 	Menu menu = new Menu(MenuHandle_ConfirmDeleteAllZones);
-	menu.SetTitle("Are you sure to delete all zones on this map?");
+	menu.SetTitle("%T", "Menu - Title - Delete All Zones Confirmation", client);
 
-	menu.AddItem("No", "No");
-	menu.AddItem("Yes", "Yes");
+	AddItemFormat(menu, "No", _, "%T", "Menu - Item - No", client);
+	AddItemFormat(menu, "Yes", _, "%T", "Menu - Item - Yes", client);
 
 	menu.Display(client, MENU_TIME_FOREVER);
 }
@@ -1207,7 +1181,7 @@ public int MenuHandle_ConfirmDeleteAllZones(Menu menu, MenuAction action, int pa
 void OpenManageZonesMenu(int client)
 {
 	Menu menu = new Menu(MenuHandle_ManageZonesMenu);
-	menu.SetTitle("Manage Zones");
+	menu.SetTitle("%T", "Menu - Item - Manage Zones", client);
 
 	for (int i = 0; i < g_aZoneEntities.Length; i++)
 	{
@@ -1227,7 +1201,7 @@ void OpenManageZonesMenu(int client)
 
 	if (menu.ItemCount == 0)
 	{
-		menu.AddItem("", "[No Zones]", ITEMDRAW_DISABLED);
+		AddItemFormat(menu, "", ITEMDRAW_DISABLED, "%T", "Menu - Item - No Zones", client);
 	}
 
 	menu.ExitBackButton = true;
@@ -2700,7 +2674,7 @@ bool ListZoneEffectKeys(int client, int entity, const char[] effect)
 			char sValue[MAX_KEY_VALUE_LENGTH];
 			smEffects.GetString(sKey, sValue, sizeof(sValue));
 			
-			AddMenuItemFormat(menu, sKey, ITEMDRAW_DEFAULT, "%s\nValue: %s", sKey, sValue);
+			AddItemFormat(menu, sKey, _, "%s\nValue: %s", sKey, sValue);
 		}
 		delete keys;
 
@@ -4836,7 +4810,7 @@ public int Native_TeleportClientToZone(Handle plugin, int numParams)
 	return TeleportToZone(client, sName);
 }
 
-bool AddMenuItemFormat(Menu& menu, const char[] info, int style = ITEMDRAW_DEFAULT, const char[] format, any ...)
+bool AddItemFormat(Menu& menu, const char[] info, int style = ITEMDRAW_DEFAULT, const char[] format, any ...)
 {
 	char display[128];
 	VFormat(display, sizeof(display), format, 5);
@@ -5057,8 +5031,8 @@ void AddZoneMenuItems(Menu menu, int type, int pointsLength, float radius, char[
 	char sType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneNameByType(type, sType, sizeof(sType));
 
-	AddMenuItemFormat(menu, "name", ITEMDRAW_DEFAULT, "Name: %s", strlen(name) > 0 ? name : "N/A");
-	AddMenuItemFormat(menu, "type", ITEMDRAW_DEFAULT, "Type: %s\n \n%s", sType, sBuffer);
+	AddItemFormat(menu, "name", _, "Name: %s", strlen(name) > 0 ? name : "N/A");
+	AddItemFormat(menu, "type", _, "Type: %s\n \n%s", sType, sBuffer);
 
 	switch (type)
 	{
@@ -5095,8 +5069,8 @@ void AddZoneMenuItems(Menu menu, int type, int pointsLength, float radius, char[
 	char sColor[32];
 	g_cDefaultColor.GetString(sColor, sizeof(sColor));
 
-	AddMenuItemFormat(menu, "color", ITEMDRAW_DEFAULT, "Color: %s", (strlen(color) > 0) ? color : sColor);
+	AddItemFormat(menu, "color", _, "Color: %s", (strlen(color) > 0) ? color : sColor);
 	
 	GetDisplayNameByType(display, sType, sizeof(sType));
-	AddMenuItemFormat(menu, "display", ITEMDRAW_DEFAULT, "Display: %s", sType);
+	AddItemFormat(menu, "display", _, "Display: %s", sType);
 }
