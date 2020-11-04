@@ -1248,11 +1248,11 @@ void OpenEditZoneMenu(int client, int entity)
 	g_bSelectedZone[entity] = true;
 
 	Menu menu = new Menu(MenuHandle_ManageEditMenu);
-	menu.SetTitle("Manage Zone (%s)", sName);
+	menu.SetTitle("%T", "Menu - Title - Manage Zone Name", client, sName);
 
-	menu.AddItem("edit", "Edit Zone");
-	menu.AddItem("delete", "Delete Zone\n ");
-	menu.AddItem("effects_add", "Add Effect");
+	AddItemFormat(menu, "edit", _, "%T", "Menu - Item - Edit Zone", client);
+	AddItemFormat(menu, "delete", _, "%T", "Menu - Item - Delete Zone", client);
+	AddItemFormat(menu, "effects_add", _, "%T", "Menu - Item - Add Effect", client);
 
 	int draw = ITEMDRAW_DISABLED;
 	for (int i = 0; i < g_aEffectsList.Length; i++)
@@ -1268,8 +1268,8 @@ void OpenEditZoneMenu(int client, int entity)
 		}
 	}
 
-	menu.AddItem("effects_edit", "Edit Effect", draw);
-	menu.AddItem("effects_remove", "Remove Effect", draw);
+	AddItemFormat(menu, "effects_edit", draw, "%T", "Menu - Item - Edit Effect", client);
+	AddItemFormat(menu, "effects_remove", draw, "%T", "Menu - Item - Remove Effect", client);
 
 	PushMenuCell(menu, "entity", entity);
 
@@ -1349,7 +1349,7 @@ void OpenZonePropertiesMenu(int client, int entity)
 	GetColorNameByCode(Zone[entity].Color, sColor, sizeof(sColor));
 
 	Menu menu = new Menu(MenuHandle_ZonePropertiesMenu);
-	menu.SetTitle("Edit zone (%s)", sName);
+	menu.SetTitle("%T", "Menu - Title - Edit Zone Name", client, sName);
 
 	int iLength = 0;
 
@@ -1388,7 +1388,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			if (StrEqual(sInfo, "name"))
 			{
 				g_iEditingName[param1] = EntIndexToEntRef(entity);
-				CPrintToChat(param1, "Type the new name for the zone {green}%s{default} in chat. Type \"{green}!cancel{default}\" to cancel this process.", sName);
+				CPrintToChat(param1, "%T", "Chat - New Zone Name", param1, sName);
 			}
 			else if (StrEqual(sInfo, "type"))
 			{
@@ -1594,7 +1594,7 @@ void OpenEditZoneStartPointMenu(int client, int entity, bool whichpoint, bool cr
 	}
 
 	Menu menu = new Menu(MenuHandle_ZoneEditStartPointMenu);
-	menu.SetTitle("Edit %s point for zone (%s)", whichpoint ? "starting" : "ending", sName);
+	menu.SetTitle("%T", "Menu - Title - Edit Zone Point Name", client, whichpoint ? "starting" : "ending", sName);
 
 	if (whichpoint)
 	{
@@ -2072,11 +2072,8 @@ void OpenEditZoneTypeMenu(int client, int entity)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	char sAddendum[256];
-	FormatEx(sAddendum, sizeof(sAddendum), " for %s", sName);
-
 	Menu menu = new Menu(MenuHandler_EditZoneTypeMenu);
-	menu.SetTitle("Choose zone type%s", sAddendum);
+	menu.SetTitle("%T", "Menu - Title - Choose Zone Type Name", client, sName);
 
 	for (int i = 1; i < ZONE_TYPES; i++)
 	{
@@ -2135,7 +2132,7 @@ void OpenEditZoneDisplayMenu(int client, int entity)
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandler_EditZoneDisplayMenu);
-	menu.SetTitle("Choose display type for %s", sName);
+	menu.SetTitle("%T", "Menu - Title - Choose Display Type Name", client, sName);
 
 	for (int i = 0; i < DISPLAY_TYPE_TYPES; i++)
 	{
@@ -2192,11 +2189,8 @@ void OpenEditZoneColorMenu(int client, int entity)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
-	char sAddendum[256];
-	FormatEx(sAddendum, sizeof(sAddendum), " for %s", sName);
-
 	Menu menu = new Menu(MenuHandler_EditZoneColorMenu);
-	menu.SetTitle("Choose zone color%s", sAddendum);
+	menu.SetTitle("%T", "Menu - Title - Choose Zone Color Name", client, sName);
 
 	for (int i = 0; i < g_aColors.Length; i++)
 	{
@@ -2259,9 +2253,9 @@ void DisplayConfirmDeleteZoneMenu(int client, int entity)
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandle_ManageConfirmDeleteZoneMenu);
-	menu.SetTitle("Are you sure to delete this zone (%s)?", sName);
-	menu.AddItem("no", "No");
-	menu.AddItem("yes", "Yes");
+	menu.SetTitle("%T", "Menu - Title - Delete Zone Confirmation", client, sName);
+	AddItemFormat(menu, "no", _, "%T", "Menu - Item - No", client);
+	AddItemFormat(menu, "yes", _, "%T", "Menu - Item - Yes", client);
 	PushMenuCell(menu, "entity", entity);
 
 	menu.ExitBackButton = true;
@@ -2289,7 +2283,7 @@ public int MenuHandle_ManageConfirmDeleteZoneMenu(Menu menu, MenuAction action, 
 			GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 			DeleteZone(entity, true);
-			CPrintToChat(param1, "You have deleted the zone {green}%s{default}.", sName);
+			CPrintToChat(param1, "%T", "Chat - Zone Deleted", param1, sName);
 
 			OpenManageZonesMenu(param1);
 		}
@@ -2353,9 +2347,9 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	}
 
 	Menu menu = new Menu(MenuHandle_CreateZonesMenu);
-	menu.SetTitle("Create a Zone");
+	menu.SetTitle("%T", "Menu - Item - Create a Zone", client);
 
-	menu.AddItem("create", "Create Zone\n ", (bValidPoints && CZone[client].Type > ZONE_TYPE_NONE && strlen(CZone[client].Name) > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+	AddItemFormat(menu, "create", (bValidPoints && CZone[client].Type > ZONE_TYPE_NONE && strlen(CZone[client].Name) > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED, "%T", "Menu - Item - Create Zone New Line", client);
 	AddZoneMenuItems(menu, CZone[client].Type, iLength, CZone[client].Radius, CZone[client].Name, CZone[client].Color, CZone[client].Display);
 	menu.ExitBackButton = true;
 
@@ -2378,7 +2372,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			if (StrEqual(sInfo, "name"))
 			{
 				CZone[param1].SetName = true;
-				CPrintToChat(param1, "Type the name of this new zone in chat. Type \"{green}!cancel{default}\" to cancel this process.");
+				CPrintToChat(param1, "%T", "Chat - New Zone Name", param1);
 			}
 			else if (StrEqual(sInfo, "type"))
 			{

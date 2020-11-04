@@ -59,6 +59,16 @@
 		"en"		"Create Zones"
 	}
 
+	"Menu - Item - Create a Zone"
+	{
+		"en"		"Create a Zone"
+	}
+
+	"Menu - Item - Create Zone New Line"
+	{
+		"en"		"Create Zone\n "
+	}
+
 	"Menu - Item - Manage Zones"
 	{
 		"en"		"Manage Zones"
@@ -104,9 +114,21 @@
 		"en"		"All zones have been deleted from the map."
 	}
 
+	"Chat - Zone Deleted"
+	{
+		"#format"	"{1:s}"
+		"en"		"You have deleted the zone {green}{1}{default}."
+	}
+
 	"Menu - Title - Delete All Zones Confirmation"
 	{
 		"en"		"Are you sure to delete all zones on this map?"
+	}
+
+	"Menu - Title - Delete Zone Confirmation"
+	{
+		"#format"	"{1:s}"
+		"en"		"Are you sure to delete this zone {1}?"
 	}
 
 	"Menu - Item - Yes"
@@ -117,5 +139,72 @@
 	"Menu - Item - No"
 	{
 		"en"		"No"
+	}
+
+	"Menu - Title - Manage Zone Name"
+	{
+		"#format"	"{1:s}"
+		"en"		"Manage Zone {1}"
+	}
+
+	"Menu - Item - Edit Zone"
+	{
+		"en"		"Edit Zone"
+	}
+
+	"Menu - Item - Delete Zone"
+	{
+		"en"		"Delete Zone\n "
+	}
+
+	"Menu - Item - Add Effect"
+	{
+		"en"		"Add Effect"
+	}
+
+	"Menu - Item - Edit Effect"
+	{
+		"en"		"Edit Effect"
+	}
+
+	"Menu - Item - Remove Effect"
+	{
+		"en"		"Remove Effect"
+	}
+
+	"Menu - Title - Edit Zone Name"
+	{
+		"#format"	"{1:s}"
+		"en"		"Edit zone {1}"
+	}
+
+	"Chat - New Zone Name"
+	{
+		"#format"	"{1:s}"
+		"en"		"Type the new name for the zone {green}{1}{default} in chat. Type {green}!cancel{default} to cancel this process."
+	}
+
+	"Menu - Title - Edit Zone Point Name"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"Edit {1} point for zone {2}"
+	}
+
+	"Menu - Title - Choose Zone Type Name"
+	{
+		"#format"	"{1:s}"
+		"en"		"Choose zone type for {1}"
+	}
+
+	"Menu - Title - Choose Display Type Name"
+	{
+		"#format"	"{1:s}"
+		"en"		"Choose display type for {1}"
+	}
+
+	"Menu - Title - Choose Zone Color Name"
+	{
+		"#format"	"{1:s}"
+		"en"		"Choose zone color for {1}"
 	}
 }
