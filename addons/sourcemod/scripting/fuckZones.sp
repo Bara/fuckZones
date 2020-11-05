@@ -1035,7 +1035,7 @@ public int MenuHandle_ZonesMenu(Menu menu, MenuAction action, int param1, int pa
 			}
 			else if (StrEqual(sInfo, "deleteall"))
 			{
-				DeleteAllZones(param1);
+				DeleteAllZones(param1, true);
 			}
 		}
 
@@ -1168,7 +1168,7 @@ public int MenuHandle_ConfirmDeleteAllZones(Menu menu, MenuAction action, int pa
 				return;
 			}
 
-			DeleteAllZones(param1);
+			DeleteAllZones(param1, false);
 		}
 
 		case MenuAction_End:

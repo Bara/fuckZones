@@ -60,7 +60,7 @@
 		"pl"		"Precyzja ustawiona na {1}."
 	}
 
-	"Chat - You are not in a zone"
+	"Chat - You are not in a Zone"
 	{
 		"en"		"Error: You are not currently standing in a zone to edit."
 		"de"		"Fehler: Sie befinden sich derzeit nicht in einer zu bearbeitenden Zone."
