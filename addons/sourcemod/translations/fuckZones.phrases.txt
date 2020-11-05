@@ -4,7 +4,7 @@
 	{
 		"en"		"Zone name already exists, please pick a different name or cancel the process with {green}!cancel{default}."
 		"de"		"Zonenname existiert bereits, bitte wählen Sie einen anderen Namen oder brechen Sie den Vorgang mit {green}!cancel{default} ab."
-		"pl"		"Nazwa strefy już istnieje, proszę wybierz inną nazwę lub anuluj proces komendą {green}!cancel{default} ab."
+		"pl"		"Nazwa strefy już istnieje, proszę wybierz inną nazwę lub anuluj proces komendą {green}!cancel{default}."
 	}
 
 	"Chat - Effect Key Update"
