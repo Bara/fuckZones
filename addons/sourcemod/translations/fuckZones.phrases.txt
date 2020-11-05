@@ -84,7 +84,7 @@
 	"Menu - Item - Create a Zone"
 	{
 		"en"		"Create a Zone"
-		"de"		"Erstellen eine Zone"
+		"de"		"Erstelle eine Zone"
 		"pl"		"Stwórz strefe"
 	}
 
@@ -133,14 +133,14 @@
 	"Menu - Item - No Zones"
 	{
 		"en"		"No Zones"
-		"de"		"Keine Zonen"
+		"de"		"keine Zonen vorhanden"
 		"pl"		"Brak stref"
 	}
 
 	"Menu - Item - No Effects"
 	{
 		"en"		"No Effects"
-		"de"		"Keine Effekte"
+		"de"		"keine Effekte vorhanden"
 		"pl"		"Brak efektów"
 	}
 
@@ -313,7 +313,7 @@
 	{
 		"#format"	"{1:s}"
 		"en"		"Pick zone effect key to edit for zone {1}"
-		"de"		"Zoneneffekt Taste zum Bearbeiten für Zone {1} auswählen"
+		"de"		"Wählen Sie den Zonen Effekt Schlüssel, den Sie bearbeiten möchten {1}"
 		"pl"		"Wybiecz klucz efektu strefy który chcesz edytować {1}"
 	}
 
@@ -366,7 +366,7 @@
 	{
 		"#format"	"{1:s}"
 		"en"		"Sorry, couldn't find the zone {green}{1}{default} for you to teleport to."
-		"de"		"Sorry, konnte die Zone nicht finden {green}{1}{default} zu dem Sie sich teleportieren können."
+		"de"		"Sorry, konnte die Zone nicht finden {green}{1}{default} zu dem Sie sich teleportieren wollen."
 		"pl"		"Wybacz, nie mogliśmy znaleźć strefy {green}{1}{default} aby Cię do niej przeteleportować."
 	}
 
@@ -552,3 +552,4 @@
 		"pl"		"końcowy punkt"
 	}
 }
+'+
