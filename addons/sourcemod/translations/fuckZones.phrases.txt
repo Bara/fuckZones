@@ -4,6 +4,7 @@
 	{
 		"en"		"Zone name already exists, please pick a different name or cancel the process with {green}!cancel{default}."
 		"de"		"Zonenname existiert bereits, bitte wählen Sie einen anderen Namen oder brechen Sie den Vorgang mit {green}!cancel{default} ab."
+		"pl"		"Nazwa strefy już istnieje, proszę wybierz inną nazwę lub anuluj proces komendą {green}!cancel{default} ab."
 	}
 
 	"Chat - Effect Key Update"
@@ -11,6 +12,7 @@
 		"#format" 	"{1:s},{2:s},{3:s},{4:s}"
 		"en"		"Effect {green}{1}{default} key {green}{2}{default} for zone {green}{3}{default} has been successfully updated to {green}{4}{default}."
 		"de"		"Effekt {green}{1}{default} Schlüssel {green}{2}{default} für zone {green}{3}{default} wurde erfolgreich aktualisiert auf {green}{4}{default}."
+		"pl"		"Efekt {green}{1}{default} klucz {green}{2}{default} dla strefy {green}{3}{default} został pomyślnie zaktualizowany na {green}{4}{default}."
 	}
 
 	"Chat - Zone Renamed"
@@ -18,6 +20,7 @@
 		"#format"	"{1:s},{2:s}"
 		"en"		"Zone {green}{1}{default} has been renamed successfully to {green}{2}{default}."
 		"de"		"Zone {green}{1}{default} wurde erfolgreich umbenannt in {green}{2}{default}."
+		"pl"		"Pomyślnie zmieniłeś nazwę strefy {green}{1}{default} na {green}{2}{default}."
 	}
 
 	"Command - Teleport Usage"
@@ -25,24 +28,28 @@
 		"#format"	"{1:s}"
 		"en"		"Usage: {1} <#userid|name> <zone>"
 		"de"		"Benutzung: {1} <#userid|name> <zone>"
+		"pl"		"Użycie: {1} <#userid|nazwa> <strefa>"
 	}
 
 	"Command - Effects Reloaded"
 	{
 		"en"		"Effects data has been reloaded."
 		"de"		"Die Effektdaten wurden neu geladen."
+		"pl"		"Dane efektó zostały przeładowane."
 	}
 
 	"Command - Set Precision Usage"
 	{
 		"en"		"Usage: sm_setprecision <value>"
 		"de"		"Benutzung: sm_setprecision <value>"
+		"pl"		"Użycie: sm_setprecision <wartość>"
 	}
 
 	"Command - Only Numbers"
 	{
 		"en"		"Your input isn't valid! Only numbers."
 		"de"		"Ihre Eingabe ist ungültig! Nur Zahlen."
+		"pl"		"Wprowadzone dane są nieprawidłowe! Tylko numery."
 	}
 
 	"Command - Precision Set"
@@ -50,96 +57,112 @@
 		"#format"	"{1:.1f}"
 		"en"		"Precision set to {1}."
 		"de"		"Genauigkeit eingestellt auf {1}."
+		"pl"		"Precyzja ustawiona na {1}."
 	}
 
 	"Chat - You are not in a zone"
 	{
 		"en"		"Error: You are not currently standing in a zone to edit."
 		"de"		"Fehler: Sie befinden sich derzeit nicht in einer zu bearbeitenden Zone."
+		"pl"		"Błąd: Nie stoisz w żadnej strefie aby rozpocząć edycje."
 	}
 
 	"Menu - Title - Zone Main"
 	{
 		"en"		"fuckZones"
 		"de"		"fuckZones"
+		"pl"		"fuckZones"
 	}
 
 	"Menu - Item - Create Zones"
 	{
 		"en"		"Create Zones"
 		"de"		"Zonen erstellen"
+		"pl"		"Stwórz strefy"
 	}
 
 	"Menu - Item - Create a Zone"
 	{
 		"en"		"Create a Zone"
 		"de"		"Erstellen eine Zone"
+		"pl"		"Stwórz strefe"
 	}
 
 	"Menu - Item - Create Zone New Line"
 	{
 		"en"		"Create Zone\n "
 		"de"		"Zone erstellen\n "
+		"pl"		"Stwórz strefe\n "
 	}
 
 	"Menu - Item - Manage Zones"
 	{
 		"en"		"Manage Zones"
 		"de"		"Zonen verwalten"
+		"pl"		"Zarządzaj strefami"
 	}
 
 	"Menu - Item - Manage Zones New Line"
 	{
 		"en"		"Manage Zones\n "
 		"de"        "Zonen verwalten\n "
+		"pl"        "Zarządzaj strefami\n "
 	}
 
 	"Menu - Item - Regenerate Zones"
 	{
 		"en"		"Regenerate Zones"
 		"de"		"Zonen erneuern"
+		"pl"		"Przeładuj strefy"
 	}
 
 	"Menu - Item - Delete All Zones"
 	{
 		"en"		"Delete all Zones"
 		"de"		"Alle Zonen löschen"
+		"pl"		"Usuń wszystkie strefy"
 	}
 
 	"Menu - Title - Teleport To"
 	{
 		"en"		"Teleport to zone"
 		"de"		"Zur Zone teleportieren"
+		"pl"		"Teleportuj do strefy"
 	}
 
 	"Menu - Item - No Zones"
 	{
 		"en"		"No Zones"
 		"de"		"Keine Zonen"
+		"pl"		"Brak stref"
 	}
 
 	"Menu - Item - No Effects"
 	{
 		"en"		"No Effects"
 		"de"		"Keine Effekte"
+		"pl"		"Brak efektów"
 	}
 
 	"Command - Active Regenerate Spam Protection"
 	{
 		"en"		"Spam Protection active, you can not regenerate the zones yet."
 		"de"		"Spamschutz aktiv, Sie können die Zonen noch nicht erneuern."
+		"pl"		"Ochrona spamu aktywna, nie możesz teraz przeładować stref."
 	}
 
 	"Command - All Zones Regenerated"
 	{
 		"en"		"All zones have been regenerated on the map."
 		"de"		"Alle Zonen sind auf der Karte neu generiert worden."
+		"pl"		"Wszystkie strefy zostały przeładowane na tej mapie."
 	}
 
 	"Command - All Zones Deleted"
 	{
 		"en"		"All zones have been deleted from the map."
 		"de"		"Alle Zonen sind von der Karte gelöscht worden."
+		"pl"		"Wszystkie strefy zostały usunięte z mapy."
 	}
 
 	"Chat - Zone Deleted"
@@ -147,12 +170,14 @@
 		"#format"	"{1:s}"
 		"en"		"You have deleted the zone {green}{1}{default}."
 		"de"		"Sie haben die Zone gelöscht {green}{1}{default}."
+		"pl"		"Usunąłeś strefę {green}{1}{default}."
 	}
 
 	"Menu - Title - Delete All Zones Confirmation"
 	{
 		"en"		"Are you sure to delete all zones on this map?"
 		"de"		"Sind Sie sicher, dass Sie alle Zonen auf dieser Karte löschen wollen?"
+		"pl"		"Jesteś pewien że chcesz usunąć wszystkie strefy na tej mapie?"
 	}
 
 	"Menu - Title - Delete Zone Confirmation"
@@ -160,18 +185,21 @@
 		"#format"	"{1:s}"
 		"en"		"Are you sure to delete this zone {1}?"
 		"de"		"Sind Sie sicher, dass Sie diese Zone löschen wollen? {1}?"
+		"pl"		"Jesteś pewien że chcesz usunąć strefę {1}?"
 	}
 
 	"Menu - Item - Yes"
 	{
 		"en"		"Yes"
 		"de"		"Ja"
+		"pl"		"Tak"
 	}
 
 	"Menu - Item - No"
 	{
 		"en"		"No"
 		"de"		"Nein"
+		"pl"		"Nie"
 	}
 
 	"Menu - Title - Manage Zone Name"
@@ -179,36 +207,42 @@
 		"#format"	"{1:s}"
 		"en"		"Manage Zone {1}"
 		"de"		"Zone verwalten {1}"
+		"pl"		"Zarządzanie strefą {1}"
 	}
 
 	"Menu - Item - Edit Zone"
 	{
 		"en"		"Edit Zone"
 		"de"		"Zone bearbeiten"
+		"pl"		"Edytuj strefe"
 	}
 
 	"Menu - Item - Delete Zone"
 	{
 		"en"		"Delete Zone\n "
 		"de"		"Zone löschen\n "
+		"pl"		"Usuń strefe\n "
 	}
 
 	"Menu - Item - Add Effect"
 	{
 		"en"		"Add Effect"
 		"de"		"Effekt hinzufügen"
+		"pl"		"Dodaj efekt"
 	}
 
 	"Menu - Item - Edit Effect"
 	{
 		"en"		"Edit Effect"
 		"de"		"Effekt editieren"
+		"pl"		"Edytuj efekt"
 	}
 
 	"Menu - Item - Remove Effect"
 	{
 		"en"		"Remove Effect"
 		"de"		"Effekt entfernen"
+		"pl"		"Usuń efekt"
 	}
 
 	"Menu - Title - Edit Zone Name"
@@ -216,6 +250,7 @@
 		"#format"	"{1:s}"
 		"en"		"Edit zone {1}"
 		"de"		"Zone editieren {1}"
+		"pl"		"Edytuj strefe {1}"
 	}
 
 	"Chat - New Zone Name"
@@ -223,6 +258,7 @@
 		"#format"	"{1:s}"
 		"en"		"Type the new name for the zone {green}{1}{default} in chat. Type {green}!cancel{default} to cancel this process."
 		"de"		"Geben Sie den neuen Namen für die Zone ein {green}{1}{default} in dem Chat. Schreiben Sie {green}!cancel{default} um diesen Vorgang abzubrechen."
+		"pl"		"Wprowadź nową nazwę dla strefy {green}{1}{default} na czacie. Wpisz {green}!cancel{default} aby anulować proces."
 	}
 
 	"Menu - Title - Edit Zone Point Name"
@@ -230,6 +266,7 @@
 		"#format"	"{1:s},{2:s}"
 		"en"		"Edit {1} point for zone {2}"
 		"de"		"Bearbeiten {1} Punkt für Zone {2}"
+		"pl"		"Edytuj {1} punkt dla sterfy {2}"
 	}
 
 	"Menu - Title - Choose Zone Type Name"
@@ -237,6 +274,7 @@
 		"#format"	"{1:s}"
 		"en"		"Choose zone type for {1}"
 		"de"		"Wählen Sie den Zonentyp für {1}"
+		"pl"		"Wybierz typ strefy dla {1}"
 	}
 
 	"Menu - Title - Choose Display Type Name"
@@ -244,6 +282,7 @@
 		"#format"	"{1:s}"
 		"en"		"Choose display type for {1}"
 		"de"		"Wählen Sie die Anzeigeart für {1}"
+		"pl"		"Wybierz tryb wyświetlania dla {1}"
 	}
 
 	"Menu - Title - Choose Zone Color Name"
@@ -251,6 +290,7 @@
 		"#format"	"{1:s}"
 		"en"		"Choose zone color for {1}"
 		"de"		"Wählen Sie die Zonenfarbe für {1}"
+		"pl"		"Wybierz kolor strefy dla {1}"
 	}
 
 	"Menu - Title - Add Effect Zone Name"
@@ -258,6 +298,7 @@
 		"#format"	"{1:s}"
 		"en"		"Add zone effect to zone {1}"
 		"de"		"Zoneneffekt zur Zone hinzufügen {1}"
+		"pl"		"Dodaj efekt strefy do sterfy {1}"
 	}
 
 	"Menu - Title - Pick Effect To Edit"
@@ -265,6 +306,7 @@
 		"#format"	"{1:s}"
 		"en"		"Pick zone effect to edit for zone {1}"
 		"de"		"Zu bearbeitenden Zoneneffekt für Zone auswählen {1}"
+		"pl"		"Wybierz efekt strefy który chcesz edytować {1}"
 	}
 
 	"Menu - Title - Pick Effet Key To Edit"
@@ -272,6 +314,7 @@
 		"#format"	"{1:s}"
 		"en"		"Pick zone effect key to edit for zone {1}"
 		"de"		"Zoneneffekt Taste zum Bearbeiten für Zone auswählen {1}"
+		"pl"		"Wybiecz klucz efektu strefy który chcesz edytować {1}"
 	}
 
 	"Chat - Type New Effect Key Value In Chat"
@@ -279,6 +322,7 @@
 		"#format"	"{1:s},{2:s},{3:s}"
 		"en"		"Type the new value for the effect {green}{1}{default} key {green}{2}{default} on zone {green}{3}{default} in chat. Type {green}!cancel{default} to cancel this process."
 		"de"		"Geben Sie den neuen Wert für den Effekt ein {green}{1}{default} Taste {green}{2}{default} auf Zone {green}{3}{default} im Chat ein. Geben Sie {green}!cancel{default} ein, um diesen Vorgang abzubrechen."
+		"pl"		"Wprowadź nową wartość dla efektu {green}{1}{default} klucz {green}{2}{default} w strefie {green}{3}{default} na czacie. Wpisz {green}!cancel{default} aby anulować proces."
 	}
 
 	"Menu - Title - Pick Effect To Remove"
@@ -286,6 +330,7 @@
 		"#format"	"{1:s}"
 		"en"		"Pick effect to remove from zone {1}"
 		"de"		"Pick Effekt zum Entfernen aus der Zone {1}"
+		"pl"		"Wybierz efekt do usunięcia z strefy {1}"
 	}
 
 	"Chat - Color Set To"
@@ -293,17 +338,20 @@
 		"#format"	"{1:s}"
 		"en"		"Zone color set to {green}{1}{default}."
 		"de"		"Zonenfarbe eingestellt auf {green}{1}{default}."
+		"pl"		"Kolor strefy ustawiony na {green}{1}{default}."
 	}
 
 	"Chat - Zone Name Required"
 	{
 		"en"		"You must set a zone name in order to create it."
 		"de"		"Sie müssen einen Zonennamen festlegen, um die Zone zu erstellen."
+		"pl"		"Musisz nazwać tą strefę, aby ją stworzyć."
 	}
 	"Chat - Zone Name Exists"
 	{
 		"en"		"Zone already exists, please pick a different name."
 		"de"		"Zone existiert bereits, bitte wählen Sie einen anderen Namen."
+		"pl"		"Strefa już istnieje, wybierz proszę inną nazwę."
 	}
 
 	"Chat - Zone Created"
@@ -311,6 +359,7 @@
 		"#format"	"{1:s}"
 		"en"		"Zone {green}{1}{default} has been created successfully."
 		"de"		"Zone {green}{1}{default} wurde erfolgreich erstellt."
+		"pl"		"Strefa {green}{1}{default} została pomyślnie stworzona."
 	}
 
 	"Chat - Teleport - Zone Not Found To"
@@ -318,12 +367,14 @@
 		"#format"	"{1:s}"
 		"en"		"Sorry, couldn't find the zone {green}{1}{default} for you to teleport to."
 		"de"		"Sorry, konnte die Zone nicht finden {green}{1}{default} zu dem Sie sich teleportieren können."
+		"pl"		"Wybacz, nie mogliśmy znaleźć strefy {green}{1}{default} aby Cię do niej przeteleportować."
 	}
 
 	"Chat - Teleport - Polygons Not Supported"
 	{
 		"en"		"Sorry, Polygon zones aren't currently supported for teleporting."
 		"de"		"Sorry, Polygonzonen werden derzeit nicht für Teleporting unterstützt."
+		"pl"		"Wybacz, ale strefy Polygonowe aktualnie nie wspierają teleportacji."
 	}
 
 	"Chat - Teleported To Zone"
@@ -331,6 +382,7 @@
 		"#format"	"{1:s}"
 		"en"		"You have been teleported to {green}{1}{default}."
 		"de"		"Sie wurden teleportiert nach {green}{1}{default}."
+		"pl"		"Zostałeś przeteleportowany do {green}{1}{default}."
 	}
 
 	"Menu - Item - Points"
@@ -338,6 +390,7 @@
 		"#format"	"{1:d}"
 		"en"		"Points: {1}"
 		"de"		"Punkte: {1}"
+		"pl"		"Punktów: {1}"
 	}
 
 	"Menu - Item - Radius"
@@ -345,6 +398,7 @@
 		"#format"	"{1:.1f}"
 		"en"		"Radius: {1}"
 		"de"		"Radius: {1}"
+		"pl"		"Promień: {1}"
 	}
 
 	"Menu - Item - Name"
@@ -352,6 +406,7 @@
 		"#format"	"{1:s}"
 		"en"		"Name: {1}"
 		"de"		"Name: {1}"
+		"pl"		"Nazwa: {1}"
 	}
 
 	"Menu - Item - Type"
@@ -359,6 +414,7 @@
 		"#format"	"{1:s},{2:s}"
 		"en"		"Type: {1}\n \n{2}"
 		"de"		"Type: {1}\n \n{2}"
+		"pl"		"Wpisz: {1}\n \n{2}"
 	}
 
 	"Menu - Item - Color"
@@ -366,6 +422,7 @@
 		"#format"	"{1:s}"
 		"en"		"Color: {1}"
 		"de"		"Farbe: {1}"
+		"pl"		"Kolor: {1}"
 	}
 
 	"Menu - Item - Display"
@@ -373,95 +430,111 @@
 		"#format"	"{1:s}"
 		"en"		"Display: {1}"
 		"de"		"Anzeigen: {1}"
+		"pl"		"Tryb wyświetlania: {1}"
 	}
 
 	"Menu - Item - Set Starting Point"
 	{
 		"en"		"Set Starting Point"
 		"de"		"Startpunkt festlegen"
+		"pl"		"Ustaw punkt startowy"
 	}
 
 	"Menu - Item - Set Starting Point (Ignore Z/Height)"
 	{
 		"en"		"Set Starting Point (Ignore Z/Height)"
 		"de"		"Startpunkt festlegen (Z/Höhe ignorieren)"
+		"pl"		"Ustaw punkt startowy (Ignoruj Z/Wysokość)"
 	}
 
 	"Menu - Item - Move Starting Point (Precision)"
 	{
 		"en"		"Move Starting Point (Precision)"
 		"de"		"Startpunkt verschieben (Genauigkeit)"
+		"pl"		"Przesuń punkt startowy (Precyzyjnie)"
 	}
 
 	"Menu - Item - Set Ending Point"
 	{
 		"en"		"Set Ending Point"
 		"de"		"Endpunkt festlegen"
+		"pl"		"Ustaw punkt końcowy"
 	}
 
 	"Menu - Item - Set Ending Point (Ignore Z/Height)"
 	{
 		"en"		"Set Ending Point (Ignore Z/Height)"
 		"de"		"Endpunkt festlegen (Z/Höhe ignorieren)"
+		"pl"		"Ustaw punkt końcowy (Ignoruj Z/Wysokość)"
 	}
 
 	"Menu - Item - Move Ending Point (Precision)\n "
 	{
 		"en"		"Move Ending Point (Precision)\n "
 		"de"		"Endpunkt verschieben (Genauigkeit)\n "
+		"pl"		"Przesuń punkt końcowy (Precyzyjnie)\n "
 	}
 
 	"Menu - Item - Set Center Point"
 	{
 		"en"		"Set Center Point"
 		"de"		"Mittelpunkt festlegen"
+		"pl"		"Ustaw środek punktu"
 	}
 
 	"Menu - Item - Move Center Point (Precision)"
 	{
 		"en"		"Move Center Point (Precision)"
 		"de"		"Mittelpunkt verschieben (Genauigkeit)"
+		"pl"		"Przesuń punkt środkowy (Precyzyjnie)"
 	}
 
 	"Menu - Item - Radius +"
 	{
 		"en"		"Radius +"
 		"de"		"Radius +"
+		"pl"		"Promień +"
 	}
 
 	"Menu - Item - Radius -"
 	{
 		"en"		"Radius -"
 		"de"		"Radius -"
+		"pl"		"Promień -"
 	}
 
 	"Menu - Item - Height +"
 	{
 		"en"		"Height +"
 		"de"		"Höhe +"
+		"pl"		"Wysokość +"
 	}
 
 	"Menu - Item - Height -"
 	{
 		"en"		"Height -"
 		"de"		"Höhe -"
+		"pl"		"Wysokość -"
 	}
 
 	"Menu - Item - Add a Point"
 	{
 		"en"		"Add a Point"
 		"de"		"Punkt hinzufügen"
+		"pl"		"Dodaj punkt"
 	}
 
 	"Menu - Item - Remove last Point"
 	{
 		"en"		"Remove last Point"
 		"de"		"Letzten Punkt entfernen"
+		"pl"		"Usuń ostatni punkt"
 	}
 
 	"Menu - Item - Clear all Points"
 	{
 		"en"		"Clear all Points"
 		"de"		"Alle Punkte löschen"
+		"pl"		"Wyczyść wszystkie punkty"
 	}
 }
