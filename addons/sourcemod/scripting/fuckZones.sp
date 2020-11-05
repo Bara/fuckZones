@@ -1358,7 +1358,7 @@ void OpenZonePropertiesMenu(int client, int entity)
 		iLength = Zone[entity].PointsData.Length;
 	}
 
-	AddZoneMenuItems(menu, iType, iLength, Zone[entity].Radius, sName, sColor, Zone[entity].Display);
+	AddZoneMenuItems(client, menu, iType, iLength, Zone[entity].Radius, sName, sColor, Zone[entity].Display);
 
 	PushMenuCell(menu, "entity", entity);
 
@@ -2350,7 +2350,7 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	menu.SetTitle("%T", "Menu - Item - Create a Zone", client);
 
 	AddItemFormat(menu, "create", (bValidPoints && CZone[client].Type > ZONE_TYPE_NONE && strlen(CZone[client].Name) > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED, "%T", "Menu - Item - Create Zone New Line", client);
-	AddZoneMenuItems(menu, CZone[client].Type, iLength, CZone[client].Radius, CZone[client].Name, CZone[client].Color, CZone[client].Display);
+	AddZoneMenuItems(client, menu, CZone[client].Type, iLength, CZone[client].Radius, CZone[client].Name, CZone[client].Color, CZone[client].Display);
 	menu.ExitBackButton = true;
 
 	int iSite;
@@ -2527,7 +2527,7 @@ bool AddZoneEffectMenu(int client, int entity)
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandler_AddZoneEffect);
-	menu.SetTitle("Add zone effect to zone (%s)", sName);
+	menu.SetTitle("%T", "Menu - Title - Add Effect Zone Name", client, sName);
 
 	for (int i = 0; i < g_aEffectsList.Length; i++)
 	{
@@ -2547,7 +2547,7 @@ bool AddZoneEffectMenu(int client, int entity)
 
 	if (menu.ItemCount == 0)
 	{
-		menu.AddItem("", "[No Effects]", ITEMDRAW_DISABLED);
+		AddItemFormat(menu, "", ITEMDRAW_DISABLED, "%T", "Menu - Item - No Effects", client);
 	}
 
 	PushMenuCell(menu, "entity", entity);
@@ -2594,7 +2594,7 @@ bool EditZoneEffectMenu(int client, int entity)
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandler_EditZoneEffect);
-	menu.SetTitle("Pick zone effect to edit for zone (%s)", sName);
+	menu.SetTitle("%T", "Menu - Title - Pick Effect To Edit", client, sName);
 
 	for (int i = 0; i < g_aEffectsList.Length; i++)
 	{
@@ -2652,7 +2652,7 @@ bool ListZoneEffectKeys(int client, int entity, const char[] effect)
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandler_EditZoneEffectKeyVaue);
-	menu.SetTitle("Pick zone effect to edit for zone (%s)", sName);
+	menu.SetTitle("%T", "Menu - Title - Pick Effet Key To Edit", client, sName);
 
 	StringMap smEffects = null;
 	Zone[entity].Effects.GetValue(effect, smEffects);
@@ -2668,7 +2668,8 @@ bool ListZoneEffectKeys(int client, int entity, const char[] effect)
 			char sValue[MAX_KEY_VALUE_LENGTH];
 			smEffects.GetString(sKey, sValue, sizeof(sValue));
 			
-			AddItemFormat(menu, sKey, _, "%s\nValue: %s", sKey, sValue);
+			// AddItemFormat(menu, sKey, _, "%s\nValue: %s", sKey, sValue);
+			menu.AddItem(sKey, sKey);
 		}
 		delete keys;
 
@@ -2712,7 +2713,7 @@ public int MenuHandler_EditZoneEffectKeyVaue(Menu menu, MenuAction action, int p
 
 			g_bEffectKeyValue[param1] = true;
 
-			CPrintToChat(param1, "Type the new value for the effect {green}%s{default} key {green}%s{default} on zone {green}%s{default} in chat. Type \"{green}!cancel{default}\" to cancel this process.", g_sEffectKeyValue_Effect[param1], g_sEffectKeyValue_EffectKey[param1], sName);
+			CPrintToChat(param1, "%T", "Chat - Type New Effect Key Value In Chat", param1, g_sEffectKeyValue_Effect[param1], g_sEffectKeyValue_EffectKey[param1], sName);
 		}
 		case MenuAction_Cancel:
 		{
@@ -2824,7 +2825,7 @@ bool RemoveZoneEffectMenu(int client, int entity)
 	GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandler_RemoveZoneEffect);
-	menu.SetTitle("Pick zone effect to remove it from zone (%s)", sName);
+	menu.SetTitle("%T", "Menu - Title - Pick Effect To Remove", client, sName);
 
 	for (int i = 0; i < g_aEffectsList.Length; i++)
 	{
@@ -2910,11 +2911,8 @@ void RemoveEffectFromZone(int entity, const char[] effect)
 
 void OpenZoneTypeMenu(int client)
 {
-	char sAddendum[256];
-	FormatEx(sAddendum, sizeof(sAddendum), " for %s", CZone[client].Name);
-
 	Menu menu = new Menu(MenuHandler_ZoneTypeMenu);
-	menu.SetTitle("Choose zone type%s", strlen(CZone[client].Name) > 0 ? sAddendum : "");
+	menu.SetTitle("%T", "Menu - Title - Choose Zone Type Name", client, strlen(CZone[client].Name) > 0 ? CZone[client].Name : "N/A");
 
 	for (int i = 1; i < ZONE_TYPES; i++)
 	{
@@ -2965,11 +2963,8 @@ public int MenuHandler_ZoneTypeMenu(Menu menu, MenuAction action, int param1, in
 
 void OpenZoneDisplayMenu(int client)
 {
-	char sAddendum[256];
-	FormatEx(sAddendum, sizeof(sAddendum), " %s", CZone[client].Name);
-
 	Menu menu = new Menu(MenuHandler_ZoneDisplayMenu);
-	menu.SetTitle("Choose display type for %s", strlen(CZone[client].Name) > 0 ? sAddendum : "");
+	menu.SetTitle("%T", "Menu - Title - Choose Display Type Name", client, strlen(CZone[client].Name) > 0 ? CZone[client].Name : "N/A");
 
 	for (int i = 0; i < DISPLAY_TYPE_TYPES; i++)
 	{
@@ -3021,7 +3016,7 @@ public int MenuHandler_ZoneDisplayMenu(Menu menu, MenuAction action, int param1,
 void OpenZonesColorMenu(int client)
 {
 	Menu menu = new Menu(MenuHandler_ZoneColorMenu);
-	menu.SetTitle("Choose color");
+	menu.SetTitle("%T", "Menu - Title - Choose Zone Color Name", client, strlen(CZone[client].Name) > 0 ? CZone[client].Name : "N/A");
 
 	for (int i = 0; i < g_aColors.Length; i++)
 	{
@@ -3042,7 +3037,7 @@ public int MenuHandler_ZoneColorMenu(Menu menu, MenuAction action, int param1, i
 		case MenuAction_Select:
 		{
 			menu.GetItem(param2, CZone[param1].Color, sizeof(eCreateZone::Color));
-			CPrintToChat(param1, "Zone color set to {green}%s{default}.", CZone[param1].Color);
+			CPrintToChat(param1, "%T", "Chat - Color Set To", param1, CZone[param1].Color);
 			OpenCreateZonesMenu(param1);
 		}
 
@@ -3065,7 +3060,7 @@ void CreateNewZone(int client)
 {
 	if (strlen(CZone[client].Name) == 0)
 	{
-		CPrintToChat(client, "You must set a zone name in order to create it.");
+		CPrintToChat(client, "%T", "Chat - Zone Name Required", client);
 		OpenCreateZonesMenu(client);
 		return;
 	}
@@ -3075,7 +3070,7 @@ void CreateNewZone(int client)
 	if (g_kvConfig.JumpToKey(CZone[client].Name))
 	{
 		g_kvConfig.Rewind();
-		CPrintToChat(client, "Zone already exists, please pick a different name.");
+		CPrintToChat(client, "%T", "Chat - Zone Name Exists", client);
 		OpenCreateZonesMenu(client);
 		return;
 	}
@@ -3140,7 +3135,7 @@ void CreateNewZone(int client)
 	SaveMapConfig();
 
 	CreateZone(CZone[client]);
-	CPrintToChat(client, "Zone {green}%s{default} has been created successfully.", CZone[client].Name);
+	CPrintToChat(client, "%T", "Chat - Zone Created", client, CZone[client].Name);
 	ResetCreateZoneVariables(client);
 }
 
@@ -3321,45 +3316,6 @@ public Action Timer_DisplayZones(Handle timer)
 						TE_SetupBeamRingPointToClient(i, fUpper, CZone[i].Radius, CZone[i].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 					}
 				}
-
-				/* case ZONE_TYPE_POLY:
-				{
-					if (CZone[i].PointsData != null && CZone[i].PointsData.Length > 0)
-					{
-						for (int x = 0; x < CZone[i].PointsData.Length; x++)
-						{
-							float fBottomStart[3];
-							CZone[i].PointsData.GetArray(x, fBottomStart, sizeof(fBottomStart));
-
-							int index;
-
-							if (x + 1 == CZone[i].PointsData.Length)
-							{
-								index = 0;
-							}
-							else
-							{
-								index = x + 1;
-							}
-
-							float fStart[3];
-							CZone[i].PointsData.GetArray(index, fStart, sizeof(fStart));
-
-							TE_SetupBeamPointsToClient(i, fBottomStart, fStart, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
-
-							float fUpperStart[3];
-							fUpperStart = fBottomStart;
-							fUpperStart[2] += CZone[i].PointsHeight;
-
-							float fUpperNext[3];
-							fUpperNext = fStart;
-							fUpperNext[2] += CZone[i].PointsHeight;
-
-							TE_SetupBeamPointsToClient(i, fUpperStart, fUpperNext, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
-							TE_SetupBeamPointsToClient(i, fBottomStart, fUpperStart, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
-						}
-					}
-				}*/
 			}
 		}
 	}
@@ -4323,7 +4279,7 @@ bool TeleportToZone(int client, const char[] zone)
 
 	if (!bFound)
 	{
-		CPrintToChat(client, "Sorry, couldn't find the zone {green}%s{default} for you to teleport to.", zone);
+		CPrintToChat(client, "%T", "Chat - Zone Not Found To Teleport", client, zone);
 		return false;
 	}
 
@@ -4348,13 +4304,13 @@ bool TeleportToZone(int client, const char[] zone)
 
 		case ZONE_TYPE_POLY:
 		{
-			CPrintToChat(client, "Sorry, Polygon zones aren't currently supported for teleporting.");
+			CPrintToChat(client, "%T", "Chat - Teleport - Polygons Not Supported", client);
 			return false;
 		}
 	}
 
 	TeleportEntity(client, fMiddle, NULL_VECTOR, NULL_VECTOR);
-	CPrintToChat(client, "You have been teleported to {green}%s{default}.", zone);
+	CPrintToChat(client, "%T", "Chat - Teleported To Zone", client, zone);
 
 	return true;
 }
@@ -5010,61 +4966,61 @@ bool GetColorNameByCode(int iColor[4], char[] color, int maxlen)
 	return false;
 }
 
-void AddZoneMenuItems(Menu menu, int type, int pointsLength, float radius, char[] name, char[] color, int display)
+void AddZoneMenuItems(int client, Menu menu, int type, int pointsLength, float radius, char[] name, char[] color, int display)
 {
 	char sBuffer[256];
 	if (type == ZONE_TYPE_POLY)
 	{
-		Format(sBuffer, sizeof(sBuffer), "Points: %d", pointsLength);
+		Format(sBuffer, sizeof(sBuffer), "%T", "Menu - Item - Points", client, pointsLength);
 	}
 	else if (type == ZONE_TYPE_CIRCLE)
 	{
-		Format(sBuffer, sizeof(sBuffer), "Radius: %.1f", radius);
+		Format(sBuffer, sizeof(sBuffer), "%T", "Menu - Item - Radius", client, radius);
 	}
 
 	char sType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneNameByType(type, sType, sizeof(sType));
 
-	AddItemFormat(menu, "name", _, "Name: %s", strlen(name) > 0 ? name : "N/A");
-	AddItemFormat(menu, "type", _, "Type: %s\n \n%s", sType, sBuffer);
+	AddItemFormat(menu, "name", _, "%T", "Menu - Item - Name", client, strlen(name) > 0 ? name : "N/A");
+	AddItemFormat(menu, "type", _, "%T", "Menu - Item - Type", client, sType, sBuffer);
 
 	switch (type)
 	{
 		case ZONE_TYPE_BOX:
 		{
-			menu.AddItem("startpoint_a", "Set Starting Point");
-			menu.AddItem("startpoint_a_no_z", "Set Starting Point (Ignore Z/Height)");
-			menu.AddItem("startpoint_a_precision", "Move Starting Point (Precision)");
-			menu.AddItem("startpoint_b", "Set Ending Point");
-			menu.AddItem("startpoint_b_no_z", "Set Ending Point (Ignore Z/Height)");
-			menu.AddItem("startpoint_b_precision", "Move Ending Point (Precision)\n ");
+			AddItemFormat(menu, "startpoint_a", _, "%T", "Menu - Item - Set Starting Point", client);
+			AddItemFormat(menu, "startpoint_a_no_z", _, "%T", "Menu - Item - Set Starting Point (Ignore Z/Height)", client);
+			AddItemFormat(menu, "startpoint_a_precision", _, "%T", "Menu - Item - Move Starting Point (Precision)", client);
+			AddItemFormat(menu, "startpoint_b", _, "%T", "Menu - Item - Set Ending Point", client);
+			AddItemFormat(menu, "startpoint_b_no_z", _, "%T", "Menu - Item - Set Ending Point (Ignore Z/Height)", client);
+			AddItemFormat(menu, "startpoint_b_precision", _, "%T", "Menu - Item - Move Ending Point (Precision)\n ", client);
 		}
 
 		case ZONE_TYPE_CIRCLE:
 		{
-			menu.AddItem("startpoint_a", "Set Center Point");
-			menu.AddItem("startpoint_a_precision", "Move Center Point Precision");
-			menu.AddItem("add_radius", "Radius +");
-			menu.AddItem("remove_radius", "Radius -");
-			menu.AddItem("add_height", "Height +");
-			menu.AddItem("remove_height", "Height -\n ");
+			AddItemFormat(menu, "startpoint_a", _, "%T", "Menu - Item - Set Center Point", client);
+			AddItemFormat(menu, "startpoint_a_precision", _, "%T", "Menu - Item - Move Center Point (Precision)", client);
+			AddItemFormat(menu, "add_radius", _, "%T", "Menu - Item - Radius +", client);
+			AddItemFormat(menu, "remove_radius", _, "%T", "Menu - Item - Radius -", client);
+			AddItemFormat(menu, "add_height", _, "%T", "Menu - Item - Height +", client);
+			AddItemFormat(menu, "remove_height", _, "%T", "Menu - Item - Height -", client);
 		}
 
 		case ZONE_TYPE_POLY:
 		{
-			menu.AddItem("add_point", "Add a Point");
-			menu.AddItem("remove_point", "Remove last Point");
-			menu.AddItem("clear_points", "Clear all Points");
-			menu.AddItem("add_height", "Height +");
-			menu.AddItem("remove_height", "Height -\n ");
+			AddItemFormat(menu, "add_point", _, "%T", "Menu - Item - Add a Point", client);
+			AddItemFormat(menu, "remove_point", _, "%T", "Menu - Item - Remove last Point", client);
+			AddItemFormat(menu, "clear_points", _, "%T", "Menu - Item - Clear all Points", client);
+			AddItemFormat(menu, "add_height", _, "%T", "Menu - Item - Height +", client);
+			AddItemFormat(menu, "remove_height", _, "%T", "Menu - Item - Height -", client);
 		}
 	}
 
 	char sColor[32];
 	g_cDefaultColor.GetString(sColor, sizeof(sColor));
 
-	AddItemFormat(menu, "color", _, "Color: %s", (strlen(color) > 0) ? color : sColor);
+	AddItemFormat(menu, "color", _, "%T", "Menu - Item - Color", client, (strlen(color) > 0) ? color : sColor);
 	
 	GetDisplayNameByType(display, sType, sizeof(sType));
-	AddItemFormat(menu, "display", _, "Display: %s", sType);
+	AddItemFormat(menu, "display", _, "%T", "Menu - Item - Display", client, sType);
 }

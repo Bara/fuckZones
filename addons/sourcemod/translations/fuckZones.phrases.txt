@@ -99,6 +99,11 @@
 		"en"		"No Zones"
 	}
 
+	"Menu - Item - No Effects"
+	{
+		"en"		"No Effects"
+	}
+
 	"Command - Active Regenerate Spam Protection"
 	{
 		"en"		"Spam Protection active, you can not regenerate the zones yet."
@@ -206,5 +211,184 @@
 	{
 		"#format"	"{1:s}"
 		"en"		"Choose zone color for {1}"
+	}
+
+	"Menu - Title - Add Effect Zone Name"
+	{
+		"#format"	"{1:s}"
+		"en"		"Add zone effect to zone {1}"
+	}
+
+	"Menu - Title - Pick Effect To Edit"
+	{
+		"#format"	"{1:s}"
+		"en"		"Pick zone effect to edit for zone {1}"
+	}
+
+	"Menu - Title - Pick Effet Key To Edit"
+	{
+		"#format"	"{1:s}"
+		"en"		"Pick zone effect key to edit for zone {1}"
+	}
+
+	"Chat - Type New Effect Key Value In Chat"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"Type the new value for the effect {green}{1}{default} key {green}{2}{default} on zone {green}{3}{default} in chat. Type {green}!cancel{default} to cancel this process."
+	}
+
+	"Menu - Title - Pick Effect To Remove"
+	{
+		"#format"	"{1:s}"
+		"en"		"Pick effect to remove from zone {1}"
+	}
+
+	"Chat - Color Set To"
+	{
+		"#format"	"{1:s}"
+		"en"		"Zone color set to {green}{1}{default}."
+	}
+
+	"Chat - Zone Name Required"
+	{
+		"en"		"You must set a zone name in order to create it."
+	}
+	"Chat - Zone Name Exists"
+	{
+		"en"		"Zone already exists, please pick a different name."
+	}
+
+	"Chat - Zone Created"
+	{
+		"#format"	"{1:s}"
+		"en"		"Zone {green}{1}{default} has been created successfully."
+	}
+
+	"Chat - Teleport - Zone Not Found To"
+	{
+		"#format"	"{1:s}"
+		"en"		"Sorry, couldn't find the zone {green}{1}{default} for you to teleport to."
+	}
+
+	"Chat - Teleport - Polygons Not Supported"
+	{
+		"en"		"Sorry, Polygon zones aren't currently supported for teleporting."
+	}
+
+	"Chat - Teleported To Zone"
+	{
+		"#format"	"{1:s}"
+		"en"		"You have been teleported to {green}{1}{default}."
+	}
+
+	"Menu - Item - Points"
+	{
+		"#format"	"{1:d}"
+		"en"		"Points: {1}"
+	}
+
+	"Menu - Item - Radius"
+	{
+		"#format"	"{1:.1f}"
+		"en"		"Radius: {1}"
+	}
+
+	"Menu - Item - Name"
+	{
+		"#format"	"{1:s}"
+		"en"		"Name: {1}"
+	}
+
+	"Menu - Item - Type"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"Type: {1}\n \n{2}"
+	}
+
+	"Menu - Item - Color"
+	{
+		"#format"	"{1:s}"
+		"en"		"Color: {1}"
+	}
+
+	"Menu - Item - Display"
+	{
+		"#format"	"{1:s}"
+		"en"		"Display: {1}"
+	}
+
+	"Menu - Item - Set Starting Point"
+	{
+		"en"		"Set Starting Point"
+	}
+
+	"Menu - Item - Set Starting Point (Ignore Z/Height)"
+	{
+		"en"		"Set Starting Point (Ignore Z/Height)"
+	}
+
+	"Menu - Item - Move Starting Point (Precision)"
+	{
+		"en"		"Move Starting Point (Precision)"
+	}
+
+	"Menu - Item - Set Ending Point"
+	{
+		"en"		"Set Ending Point"
+	}
+
+	"Menu - Item - Set Ending Point (Ignore Z/Height)"
+	{
+		"en"		"Set Ending Point (Ignore Z/Height)"
+	}
+
+	"Menu - Item - Move Ending Point (Precision)\n "
+	{
+		"en"		"Move Ending Point (Precision)\n "
+	}
+
+	"Menu - Item - Set Center Point"
+	{
+		"en"		"Set Center Point"
+	}
+
+	"Menu - Item - Move Center Point (Precision)"
+	{
+		"en"		"Move Center Point (Precision)"
+	}
+
+	"Menu - Item - Radius +"
+	{
+		"en"		"Radius +"
+	}
+
+	"Menu - Item - Radius -"
+	{
+		"en"		"Radius -"
+	}
+
+	"Menu - Item - Height +"
+	{
+		"en"		"Height +"
+	}
+
+	"Menu - Item - Height -"
+	{
+		"en"		"Height -"
+	}
+
+	"Menu - Item - Add a Point"
+	{
+		"en"		"Add a Point"
+	}
+
+	"Menu - Item - Remove last Point"
+	{
+		"en"		"Remove last Point"
+	}
+
+	"Menu - Item - Clear all Points"
+	{
+		"en"		"Clear all Points"
 	}
 }
