@@ -184,7 +184,7 @@
 	{
 		"#format"	"{1:s}"
 		"en"		"Are you sure to delete this zone {1}?"
-		"de"		"Sind Sie sicher, dass Sie diese Zone löschen wollen? {1}?"
+		"de"		"Sind Sie sicher, dass Sie die Zone {1} löschen wollen?"
 		"pl"		"Jesteś pewien że chcesz usunąć strefę {1}?"
 	}
 
@@ -249,7 +249,7 @@
 	{
 		"#format"	"{1:s}"
 		"en"		"Edit zone {1}"
-		"de"		"Zone editieren {1}"
+		"de"		"Zone {1} editieren"
 		"pl"		"Edytuj strefe {1}"
 	}
 
@@ -264,9 +264,9 @@
 	"Menu - Title - Edit Zone Point Name"
 	{
 		"#format"	"{1:s},{2:s}"
-		"en"		"Edit {1} point for zone {2}"
-		"de"		"Bearbeiten {1} Punkt für Zone {2}"
-		"pl"		"Edytuj {1} punkt dla sterfy {2}"
+		"en"		"Edit {1} for zone {2}"
+		"de"		"Bearbeiten {1} für Zone {2}"
+		"pl"		"Edytuj {1} dla sterfy {2}"
 	}
 
 	"Menu - Title - Choose Zone Type Name"
@@ -297,7 +297,7 @@
 	{
 		"#format"	"{1:s}"
 		"en"		"Add zone effect to zone {1}"
-		"de"		"Zoneneffekt zur Zone hinzufügen {1}"
+		"de"		"Zoneneffekt zur Zone {1} hinzufügen"
 		"pl"		"Dodaj efekt strefy do sterfy {1}"
 	}
 
@@ -305,7 +305,7 @@
 	{
 		"#format"	"{1:s}"
 		"en"		"Pick zone effect to edit for zone {1}"
-		"de"		"Zu bearbeitenden Zoneneffekt für Zone auswählen {1}"
+		"de"		"Zu bearbeitenden Zoneneffekt für Zone {1} auswählen"
 		"pl"		"Wybierz efekt strefy który chcesz edytować {1}"
 	}
 
@@ -313,7 +313,7 @@
 	{
 		"#format"	"{1:s}"
 		"en"		"Pick zone effect key to edit for zone {1}"
-		"de"		"Zoneneffekt Taste zum Bearbeiten für Zone auswählen {1}"
+		"de"		"Zoneneffekt Taste zum Bearbeiten für Zone {1} auswählen"
 		"pl"		"Wybiecz klucz efektu strefy który chcesz edytować {1}"
 	}
 
@@ -329,7 +329,7 @@
 	{
 		"#format"	"{1:s}"
 		"en"		"Pick effect to remove from zone {1}"
-		"de"		"Pick Effekt zum Entfernen aus der Zone {1}"
+		"de"		"Wähle einen Effekt zum Entfernen aus der Zone {1}"
 		"pl"		"Wybierz efekt do usunięcia z strefy {1}"
 	}
 
@@ -536,5 +536,19 @@
 		"en"		"Clear all Points"
 		"de"		"Alle Punkte löschen"
 		"pl"		"Wyczyść wszystkie punkty"
+	}
+
+	"Menu - Text - Starting"
+	{
+		"en"		"starting point"
+		"de"		"Startpunkt"
+		"pl"		"startowy punkt"
+	}
+
+	"Menu - Text - Ending"
+	{
+		"en"		"ending point"
+		"de"		"Endpunkt"
+		"pl"		"końcowy punkt"
 	}
 }

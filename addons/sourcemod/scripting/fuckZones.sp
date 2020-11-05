@@ -1593,8 +1593,12 @@ void OpenEditZoneStartPointMenu(int client, int entity, bool whichpoint, bool cr
 		}
 	}
 
+	char sStarting[32], sEnding[32];
+	Format(sStarting, sizeof(sStarting), "%T", "Menu - Text - Starting", client);
+	Format(sEnding, sizeof(sEnding), "%T", "Menu - Text - Ending", client);
+
 	Menu menu = new Menu(MenuHandle_ZoneEditStartPointMenu);
-	menu.SetTitle("%T", "Menu - Title - Edit Zone Point Name", client, whichpoint ? "starting" : "ending", sName);
+	menu.SetTitle("%T", "Menu - Title - Edit Zone Point Name", client, whichpoint ? sStarting : sEnding, sName);
 
 	if (whichpoint)
 	{
@@ -2372,7 +2376,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			if (StrEqual(sInfo, "name"))
 			{
 				CZone[param1].SetName = true;
-				CPrintToChat(param1, "%T", "Chat - New Zone Name", param1);
+				CPrintToChat(param1, "%T", "Chat - New Zone Name", param1, strlen(CZone[param1].Name) > 0 ? CZone[param1].Name : "N/A");
 			}
 			else if (StrEqual(sInfo, "type"))
 			{
