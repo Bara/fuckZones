@@ -411,10 +411,10 @@
 
 	"Menu - Item - Type"
 	{
-		"#format"	"{1:s},{2:s}"
-		"en"		"Type: {1}\n \n{2}"
-		"de"		"Type: {1}\n \n{2}"
-		"pl"		"Wpisz: {1}\n \n{2}"
+		"#format"	"{1:s}"
+		"en"		"Type: {1}"
+		"de"		"Type: {1}"
+		"pl"		"Wpisz: {1}"
 	}
 
 	"Menu - Item - Color"
@@ -427,10 +427,10 @@
 
 	"Menu - Item - Display"
 	{
-		"#format"	"{1:s}"
-		"en"		"Display: {1}\n "
-		"de"		"Anzeigen: {1}\n "
-		"pl"		"Tryb wyświetlania: {1}\n "
+		"#format"	"{1:s},{2:s}"
+		"en"		"Display: {1}\n \n{2}"
+		"de"		"Anzeigen: {1}\n \n{2}"
+		"pl"		"Tryb wyświetlania: {1}\n \n{2}"
 	}
 
 	"Menu - Item - Set Starting Point"

@@ -1,33 +1,9 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define MAX_ZONE_NAME_LENGTH 128
-#define MAX_ZONE_TYPE_LENGTH 64
-
-#define MAX_EFFECT_NAME_LENGTH 128
-
-#define MAX_KEY_NAME_LENGTH 128
-#define MAX_KEY_VALUE_LENGTH 128
-
-#define MAX_EFFECT_CALLBACKS 3
-#define EFFECT_CALLBACK_ONENTERZONE 0
-#define EFFECT_CALLBACK_ONACTIVEZONE 1
-#define EFFECT_CALLBACK_ONLEAVEZONE 2
-
 #define DEFAULT_MODELINDEX "sprites/laserbeam.vmt"
 #define DEFAULT_HALOINDEX "materials/sprites/halo.vmt"
 #define ZONE_MODEL "models/error.mdl"
-
-#define ZONE_TYPES 4
-#define ZONE_TYPE_NONE 0
-#define ZONE_TYPE_BOX 1
-#define ZONE_TYPE_CIRCLE 2
-#define ZONE_TYPE_POLY 3
-
-#define DISPLAY_TYPE_TYPES 3
-#define DISPLAY_TYPE_HIDE 0
-#define DISPLAY_TYPE_BOTTOM 1
-#define DISPLAY_TYPE_FULL 2
 
 #define MAX_ENTITY_LIMIT 4096
 
@@ -49,6 +25,7 @@
 #include <clientprefs>
 #include <multicolors>
 #include <autoexecconfig>
+#include <fuckZones>
 
 ConVar g_cPrecisionValue = null;
 ConVar g_cRegenerateSpam = null;
@@ -96,6 +73,7 @@ enum struct eEntityData
 	StringMap Effects;
 	ArrayList PointsData;
 	float Start[3];
+	float End[3];
 	float PointsHeight;
 	float PointsDistance;
 	float PointsMin[3];
@@ -1365,7 +1343,7 @@ void OpenZonePropertiesMenu(int client, int entity)
 		iLength = Zone[entity].PointsData.Length;
 	}
 
-	AddZoneMenuItems(client, menu, iType, iLength, Zone[entity].Radius, sName, sColor, Zone[entity].Display);
+	AddZoneMenuItems(client, menu, iType, iLength, Zone[entity].Radius, sName, sColor, Zone[entity].Display, Zone[entity].Start, Zone[entity].End);
 
 	PushMenuCell(menu, "entity", entity);
 
@@ -2365,7 +2343,7 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	menu.SetTitle("%T", "Menu - Item - Create a Zone", client);
 
 	AddItemFormat(menu, "create", (bValidPoints && CZone[client].Type > ZONE_TYPE_NONE && strlen(CZone[client].Name) > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED, "%T", "Menu - Item - Create Zone New Line", client);
-	AddZoneMenuItems(client, menu, CZone[client].Type, iLength, CZone[client].Radius, CZone[client].Name, CZone[client].Color, CZone[client].Display);
+	AddZoneMenuItems(client, menu, CZone[client].Type, iLength, CZone[client].Radius, CZone[client].Name, CZone[client].Color, CZone[client].Display, CZone[client].Start, CZone[client].End);
 	menu.ExitBackButton = true;
 
 	int iSite;
@@ -3626,6 +3604,7 @@ int CreateZone(eCreateZone Data)
 		g_aZoneEntities.Push(EntIndexToEntRef(entity));
 
 		Zone[entity].Start = Data.Start;
+		Zone[entity].End = Data.End;
 		Zone[entity].Radius = Data.Radius;
 		Zone[entity].PointsHeight = Data.PointsHeight;
 		Zone[entity].Display = Data.Display;
@@ -4986,7 +4965,7 @@ bool GetColorNameByCode(int iColor[4], char[] color, int maxlen)
 	return false;
 }
 
-void AddZoneMenuItems(int client, Menu menu, int type, int pointsLength, float radius, char[] name, char[] color, int display)
+void AddZoneMenuItems(int client, Menu menu, int type, int pointsLength, float radius, char[] name, char[] color, int display, float[3] start, float[3] end)
 {
 	char sBuffer[256];
 	if (type == ZONE_TYPE_POLY)
@@ -5002,31 +4981,31 @@ void AddZoneMenuItems(int client, Menu menu, int type, int pointsLength, float r
 	GetZoneNameByType(type, sType, sizeof(sType));
 
 	AddItemFormat(menu, "name", _, "%T", "Menu - Item - Name", client, strlen(name) > 0 ? name : "N/A");
-	AddItemFormat(menu, "type", _, "%T", "Menu - Item - Type", client, sType, sBuffer);
+	AddItemFormat(menu, "type", _, "%T", "Menu - Item - Type", client, sType);
 	
 	char sColor[32];
 	g_cDefaultColor.GetString(sColor, sizeof(sColor));
 	AddItemFormat(menu, "color", _, "%T", "Menu - Item - Color", client, (strlen(color) > 0) ? color : sColor);
 	
 	GetDisplayNameByType(display, sType, sizeof(sType));
-	AddItemFormat(menu, "display", _, "%T", "Menu - Item - Display", client, sType);
+	AddItemFormat(menu, "display", _, "%T", "Menu - Item - Display", client, sType, sBuffer);
 
 	switch (type)
 	{
 		case ZONE_TYPE_BOX:
 		{
 			AddItemFormat(menu, "startpoint_a", _, "%T", "Menu - Item - Set Starting Point", client);
-			AddItemFormat(menu, "startpoint_a_no_z", _, "%T", "Menu - Item - Set Starting Point (Ignore Z/Height)", client);
-			AddItemFormat(menu, "startpoint_a_precision", _, "%T", "Menu - Item - Move Starting Point (Precision)", client);
+			AddItemFormat(menu, "startpoint_a_no_z", IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Starting Point (Ignore Z/Height)", client);
+			AddItemFormat(menu, "startpoint_a_precision", IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Move Starting Point (Precision)", client);
 			AddItemFormat(menu, "startpoint_b", _, "%T", "Menu - Item - Set Ending Point", client);
-			AddItemFormat(menu, "startpoint_b_no_z", _, "%T", "Menu - Item - Set Ending Point (Ignore Z/Height)", client);
-			AddItemFormat(menu, "startpoint_b_precision", _, "%T", "Menu - Item - Move Ending Point (Precision)", client);
+			AddItemFormat(menu, "startpoint_b_no_z", IsPositionNull(end) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Ending Point (Ignore Z/Height)", client);
+			AddItemFormat(menu, "startpoint_b_precision", IsPositionNull(end) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Move Ending Point (Precision)", client);
 		}
 
 		case ZONE_TYPE_CIRCLE:
 		{
 			AddItemFormat(menu, "startpoint_a", _, "%T", "Menu - Item - Set Center Point", client);
-			AddItemFormat(menu, "startpoint_a_precision", _, "%T", "Menu - Item - Move Center Point (Precision)", client);
+			AddItemFormat(menu, "startpoint_a_precision", IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Move Center Point (Precision)", client);
 			AddItemFormat(menu, "add_radius", _, "%T", "Menu - Item - Radius +", client);
 			AddItemFormat(menu, "remove_radius", _, "%T", "Menu - Item - Radius -", client);
 			AddItemFormat(menu, "add_height", _, "%T", "Menu - Item - Height +", client);

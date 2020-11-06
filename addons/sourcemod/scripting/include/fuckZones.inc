@@ -3,6 +3,30 @@
 #endif
 #define _fuckZones_included
 
+#define MAX_ZONE_NAME_LENGTH 128
+#define MAX_ZONE_TYPE_LENGTH 64
+
+#define MAX_EFFECT_NAME_LENGTH 128
+
+#define MAX_KEY_NAME_LENGTH 128
+#define MAX_KEY_VALUE_LENGTH 128
+
+#define MAX_EFFECT_CALLBACKS 3
+#define EFFECT_CALLBACK_ONENTERZONE 0
+#define EFFECT_CALLBACK_ONACTIVEZONE 1
+#define EFFECT_CALLBACK_ONLEAVEZONE 2
+
+#define ZONE_TYPES 4
+#define ZONE_TYPE_NONE 0
+#define ZONE_TYPE_BOX 1
+#define ZONE_TYPE_CIRCLE 2
+#define ZONE_TYPE_POLY 3
+
+#define DISPLAY_TYPE_TYPES 3
+#define DISPLAY_TYPE_HIDE 0
+#define DISPLAY_TYPE_BOTTOM 1
+#define DISPLAY_TYPE_FULL 2
+
 typedef fuckZones_Effect_OnEnterZone = function void (int client, int entity, StringMap values);
 typedef fuckZones_Effect_OnActiveZone = function void (int client, int entity, StringMap values);
 typedef fuckZones_Effect_OnLeaveZone = function void (int client, int entity, StringMap values);
