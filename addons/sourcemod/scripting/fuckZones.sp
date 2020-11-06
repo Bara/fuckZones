@@ -170,8 +170,8 @@ public void OnPluginStart()
 	g_cDefaultZOffset = AutoExecConfig_CreateConVar("fuckZones_default_z_offset", "5", "Adds a offset to the z-axis for all points. (Default: 5)");
 	g_cDefaultColor = AutoExecConfig_CreateConVar("fuckZones_default_color", "Pink", "Default zone color (Default: Pink)");
 	g_cEnableLogging = AutoExecConfig_CreateConVar("fuckZones_enable_logging", "1", "Enable logging? (Default: 1)", _, true, 0.0, true, 1.0);
-	g_cMaxRadius = AutoExecConfig_CreateConVar("fuckZones_max_radius", "512", "Set's the maximum radius value for all zones. (Default: 512)");
-	g_cMaxHeight = AutoExecConfig_CreateConVar("fuckZones_max_height", "512", "Set's the maximum height value for all zones. (Default: 512)");
+	g_cMaxRadius = AutoExecConfig_CreateConVar("fuckZones_max_radius", "512", "Set's the maximum radius value for circle zones. (Default: 512)");
+	g_cMaxHeight = AutoExecConfig_CreateConVar("fuckZones_max_height", "512", "Set's the maximum height value for circle/poly zones. (Default: 512)");
 	g_cNameRegex = AutoExecConfig_CreateConVar("fuckZones_name_regex", "^[a-zA-Z0-9 _]+$", "Allowed characters in zone name. (Default: \"^[a-zA-Z0-9 _]+$\"");
 	AutoExecConfig_ExecuteFile();
 	AutoExecConfig_CleanFile();
