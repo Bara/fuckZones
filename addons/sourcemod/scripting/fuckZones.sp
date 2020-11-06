@@ -7,8 +7,10 @@
 
 #define MAX_ENTITY_LIMIT 4096
 
-#define TIMER_INTERVAL 0.1
-#define TE_LIFE TIMER_INTERVAL+0.1
+#define TIMER_INTERVAL 1.0
+#define TE_LIFE TIMER_INTERVAL+0.05
+#define TIMER_INTERVAL_CREATE 0.1
+#define TE_LIFE_CREATE TIMER_INTERVAL_CREATE+0.1
 #define TE_DRAW_RADIUS 15.0
 #define TE_STARTFRAME 0
 #define TE_FRAMERATE 30
@@ -683,7 +685,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				{
 					if (IsPositionNull(CZone[client].Start))
 					{
-						TE_SetupBeamRingPointToClient(client, fPoint, CZone[client].Radius, CZone[client].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
+						TE_SetupBeamRingPointToClient(client, fPoint, CZone[client].Radius, CZone[client].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 
 						float fStart[3], fEnd[3];
 						for (int j = 0; j < 4; j++)
@@ -704,13 +706,13 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 								fEnd[2] += CZone[client].PointsHeight;
 							}
 
-							TE_SetupBeamPointsToClient(client, fStart, fEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							TE_SetupBeamPointsToClient(client, fStart, fEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 						}
 
 						float fUpper[3];
 						fUpper = fPoint;
 						fUpper[2] = fPoint[2] + CZone[client].PointsHeight;
-						TE_SetupBeamRingPointToClient(client, fUpper, CZone[client].Radius, CZone[client].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
+						TE_SetupBeamRingPointToClient(client, fUpper, CZone[client].Radius, CZone[client].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 					}
 				}
 
@@ -729,7 +731,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							fStart = CZone[client].End;
 						}
 
-						TE_DrawBeamBoxToClient(client, fStart, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+						TE_DrawBeamBoxToClient(client, fStart, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 					}
 				}
 
@@ -759,7 +761,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 								float fLastStart[3];
 								fLastStart = fBottomStart;
 								fLastStart[2] += CZone[client].PointsHeight;
-								TE_SetupBeamPointsToClient(client, fLastStart, fBottomStart, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+								TE_SetupBeamPointsToClient(client, fLastStart, fBottomStart, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 							}
 							else
 							{
@@ -769,7 +771,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							float fBottomNext[3];
 							CZone[client].PointsData.GetArray(index, fBottomNext, sizeof(fBottomNext));
 
-							TE_SetupBeamPointsToClient(client, fBottomStart, fBottomNext, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							TE_SetupBeamPointsToClient(client, fBottomStart, fBottomNext, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 
 							float fUpperStart[3];
 							fUpperStart = fBottomStart;
@@ -779,8 +781,8 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							fUpperNext = fBottomNext;
 							fUpperNext[2] += CZone[client].PointsHeight;
 
-							TE_SetupBeamPointsToClient(client, fUpperStart, fUpperNext, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
-							TE_SetupBeamPointsToClient(client, fBottomStart, fUpperStart, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							TE_SetupBeamPointsToClient(client, fUpperStart, fUpperNext, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							TE_SetupBeamPointsToClient(client, fBottomStart, fUpperStart, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 						}
 
 						iColor[0] = 255;
@@ -788,8 +790,8 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 						iColor[2] = 0;
 						iColor[3] = 255;
 
-						TE_SetupBeamPointsToClient(client, fLast, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
-						TE_SetupBeamPointsToClient(client, fStart, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+						TE_SetupBeamPointsToClient(client, fLast, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+						TE_SetupBeamPointsToClient(client, fStart, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 
 						float fUpperLast[3];
 						fUpperLast = fLast;
@@ -803,15 +805,15 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 						fUpperStart = fStart;
 						fUpperStart[2] += CZone[client].PointsHeight;
 
-						TE_SetupBeamPointsToClient(client, fUpperLast, fUpperPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
-						TE_SetupBeamPointsToClient(client, fUpperStart, fUpperPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+						TE_SetupBeamPointsToClient(client, fUpperLast, fUpperPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+						TE_SetupBeamPointsToClient(client, fUpperStart, fUpperPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 						
-						TE_SetupBeamPointsToClient(client, fUpperPoint, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+						TE_SetupBeamPointsToClient(client, fUpperPoint, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 					}
 				}
 			}
 
-			CreateTimer(0.1, Timer_ResetShow, GetClientUserId(client));
+			CreateTimer(TIMER_INTERVAL_CREATE, Timer_ResetShow, GetClientUserId(client));
 		}
 	}
 
