@@ -59,6 +59,7 @@ ConVar g_cDefaultColor = null;
 ConVar g_cEnableLogging = null;
 ConVar g_cMaxRadius = null;
 ConVar g_cMaxHeight = null;
+ConVar g_cNameRegex = null;
 
 enum struct eForwards
 {
@@ -191,6 +192,7 @@ public void OnPluginStart()
 	g_cEnableLogging = AutoExecConfig_CreateConVar("fuckZones_enable_logging", "1", "Enable logging? (Default: 1)", _, true, 0.0, true, 1.0);
 	g_cMaxRadius = AutoExecConfig_CreateConVar("fuckZones_max_radius", "512", "Set's the maximum radius value for all zones. (Default: 512)");
 	g_cMaxHeight = AutoExecConfig_CreateConVar("fuckZones_max_height", "512", "Set's the maximum height value for all zones. (Default: 512)");
+	g_cNameRegex = AutoExecConfig_CreateConVar("fuckZones_name_regex", "^[a-zA-Z0-9 _]+$", "Allowed characters in zone name. (Default: \"^[a-zA-Z0-9 _]+$\"");
 	AutoExecConfig_ExecuteFile();
 	AutoExecConfig_CleanFile();
 
@@ -528,12 +530,8 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 
 	if (CZone[client].SetName)
 	{
-		g_kvConfig.Rewind();
-
-		if (g_kvConfig.JumpToKey(sArgs))
+		if (!CheckZoneName(client, sArgs))
 		{
-			g_kvConfig.Rewind();
-			CPrintToChat(client, "%T", "Chat - Zone already exist", client);
 			return;
 		}
 		
@@ -561,6 +559,11 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 	if (g_iEditingName[client] != INVALID_ENT_REFERENCE)
 	{
 		int entity = EntRefToEntIndex(g_iEditingName[client]);
+
+		if (!CheckZoneName(client, sArgs))
+		{
+			return;
+		}
 
 		char sName[MAX_ZONE_NAME_LENGTH];
 		GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
@@ -2686,8 +2689,7 @@ bool ListZoneEffectKeys(int client, int entity, const char[] effect)
 			char sValue[MAX_KEY_VALUE_LENGTH];
 			smEffects.GetString(sKey, sValue, sizeof(sValue));
 			
-			// AddItemFormat(menu, sKey, _, "%s\nValue: %s", sKey, sValue);
-			menu.AddItem(sKey, sKey);
+			AddItemFormat(menu, sKey, _, "%T", "Menu - Item - List Effect Key Value", client, sKey, sValue);
 		}
 		delete keys;
 
@@ -5018,7 +5020,7 @@ void AddZoneMenuItems(int client, Menu menu, int type, int pointsLength, float r
 			AddItemFormat(menu, "startpoint_a_precision", _, "%T", "Menu - Item - Move Starting Point (Precision)", client);
 			AddItemFormat(menu, "startpoint_b", _, "%T", "Menu - Item - Set Ending Point", client);
 			AddItemFormat(menu, "startpoint_b_no_z", _, "%T", "Menu - Item - Set Ending Point (Ignore Z/Height)", client);
-			AddItemFormat(menu, "startpoint_b_precision", _, "%T", "Menu - Item - Move Ending Point (Precision)\n ", client);
+			AddItemFormat(menu, "startpoint_b_precision", _, "%T", "Menu - Item - Move Ending Point (Precision)", client);
 		}
 
 		case ZONE_TYPE_CIRCLE:
@@ -5040,4 +5042,30 @@ void AddZoneMenuItems(int client, Menu menu, int type, int pointsLength, float r
 			AddItemFormat(menu, "remove_height", _, "%T", "Menu - Item - Height -", client);
 		}
 	}
+}
+
+bool CheckZoneName(int client, const char[] name)
+{
+	g_kvConfig.Rewind();
+
+	if (g_kvConfig.JumpToKey(name))
+	{
+		g_kvConfig.Rewind();
+		CPrintToChat(client, "%T", "Chat - Zone already exist", client);
+		return false;
+	}
+
+	char sRegex[128];
+	g_cNameRegex.GetString(sRegex, sizeof(sRegex));
+	Regex rRegex = new Regex(sRegex);
+
+	if(rRegex.Match(name) != 1)
+	{
+		CPrintToChat(client, "%T", "Chat - Invalid Zone Name", client);
+		return false;
+	}
+
+	delete rRegex;
+
+	return true;
 }

@@ -428,9 +428,9 @@
 	"Menu - Item - Display"
 	{
 		"#format"	"{1:s}"
-		"en"		"Display: {1}"
-		"de"		"Anzeigen: {1}"
-		"pl"		"Tryb wyświetlania: {1}"
+		"en"		"Display: {1}\n "
+		"de"		"Anzeigen: {1}\n "
+		"pl"		"Tryb wyświetlania: {1}\n "
 	}
 
 	"Menu - Item - Set Starting Point"
@@ -551,5 +551,17 @@
 		"de"		"Endpunkt"
 		"pl"		"końcowy punkt"
 	}
+
+	"Menu - Item - List Effect Key Value"
+	{
+		"#format"	"{1:s}{2:s}"
+		"en"		"{1}\nValue: {2}"
+		"de"		"{1}\nWert: {2}"
+	}
+
+	"Chat - Invalid Zone Name"
+	{
+		"en"		"Your zone name contains invalid characters. Please choose another name."
+		"de"		"Der Name der Zone enthält ungültige Zeichen. Bitte wählen Sie ein anderen."
+	}
 }
-'+
