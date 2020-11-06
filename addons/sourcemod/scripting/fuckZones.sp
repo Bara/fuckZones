@@ -5045,7 +5045,7 @@ bool CheckZoneName(int client, const char[] name)
 	if (g_kvConfig.JumpToKey(name))
 	{
 		g_kvConfig.Rewind();
-		CPrintToChat(client, "%T", "Chat - Zone already exist", client);
+		CPrintToChat(client, "%T", "Chat - Zone Already Exist", client);
 		return false;
 	}
 

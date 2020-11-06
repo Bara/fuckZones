@@ -1,6 +1,6 @@
 "Phrases"
 {
-	"Chat - Zone already Exist"
+	"Chat - Zone Already Exist"
 	{
 		"en"		"Zone name already exists, please pick a different name or cancel the process with {green}!cancel{default}."
 		"de"		"Zonenname existiert bereits, bitte wählen Sie einen anderen Namen oder brechen Sie den Vorgang mit {green}!cancel{default} ab."
