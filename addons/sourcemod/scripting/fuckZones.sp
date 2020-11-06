@@ -164,7 +164,7 @@ public void OnPluginStart()
 	AutoExecConfig_SetCreateFile(true);
 	AutoExecConfig_SetFile("fuckZones");
 	g_cPrecisionValue = AutoExecConfig_CreateConVar("fuckZones_precision_offset", "10.0", "Default precision value when setting a zones precision area (Default: 10.0).", _, true, 0.1);
-	g_cRegenerateSpam = AutoExecConfig_CreateConVar("fuckZones_regenerate_spam", "10", "Interval between every zone regeneration (0 to disable this feature, Default: 10)", _, true, 0.0);
+	g_cRegenerateSpam = AutoExecConfig_CreateConVar("fuckZones_regenerate_spam", "10", "Amount of time before zones can be regenerated again (spam protection) (0 to disable this feature, Default: 10)", _, true, 0.0);
 	g_cDefaultHeight = AutoExecConfig_CreateConVar("fuckZones_default_height", "256", "Default height (z-axis) for circles and polygons zones (Default: 256)");
 	g_cDefaultRadius = AutoExecConfig_CreateConVar("fuckZones_default_radius", "150", "Default radius for circle zones (Default: 150)");
 	g_cDefaultZOffset = AutoExecConfig_CreateConVar("fuckZones_default_z_offset", "5", "Adds a offset to the z-axis for all points. (Default: 5)");
@@ -4874,6 +4874,12 @@ int SpawnZone(const char[] name)
 	int display = GetDisplayTypeByName(sType);
 
 	float fRadius = g_kvConfig.GetFloat("radius");
+
+	if (fRadius < 5.0)
+	{
+		fRadius = g_cDefaultRadius.FloatValue;
+		g_kvConfig.SetFloat("radius", fRadius);
+	}
 
 	int iColor[4] = {0, 255, 255, 255};
 	g_kvConfig.GetColor("color", iColor[0], iColor[1], iColor[2], iColor[3]);
