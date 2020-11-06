@@ -4987,6 +4987,13 @@ void AddZoneMenuItems(int client, Menu menu, int type, int pointsLength, float r
 
 	AddItemFormat(menu, "name", _, "%T", "Menu - Item - Name", client, strlen(name) > 0 ? name : "N/A");
 	AddItemFormat(menu, "type", _, "%T", "Menu - Item - Type", client, sType, sBuffer);
+	
+	char sColor[32];
+	g_cDefaultColor.GetString(sColor, sizeof(sColor));
+	AddItemFormat(menu, "color", _, "%T", "Menu - Item - Color", client, (strlen(color) > 0) ? color : sColor);
+	
+	GetDisplayNameByType(display, sType, sizeof(sType));
+	AddItemFormat(menu, "display", _, "%T", "Menu - Item - Display", client, sType);
 
 	switch (type)
 	{
@@ -5019,12 +5026,4 @@ void AddZoneMenuItems(int client, Menu menu, int type, int pointsLength, float r
 			AddItemFormat(menu, "remove_height", _, "%T", "Menu - Item - Height -", client);
 		}
 	}
-
-	char sColor[32];
-	g_cDefaultColor.GetString(sColor, sizeof(sColor));
-
-	AddItemFormat(menu, "color", _, "%T", "Menu - Item - Color", client, (strlen(color) > 0) ? color : sColor);
-	
-	GetDisplayNameByType(display, sType, sizeof(sType));
-	AddItemFormat(menu, "display", _, "%T", "Menu - Item - Display", client, sType);
 }
