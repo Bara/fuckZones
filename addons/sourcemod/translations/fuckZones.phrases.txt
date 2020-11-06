@@ -105,8 +105,8 @@
 	"Menu - Item - Manage Zones New Line"
 	{
 		"en"		"Manage Zones\n "
-		"de"        "Zonen verwalten\n "
-		"pl"        "Zarządzaj strefami\n "
+		"de"		"Zonen verwalten\n "
+		"pl"		"Zarządzaj strefami\n "
 	}
 
 	"Menu - Item - Regenerate Zones"
@@ -557,11 +557,13 @@
 		"#format"	"{1:s}{2:s}"
 		"en"		"{1}\nValue: {2}"
 		"de"		"{1}\nWert: {2}"
+		"pl"		"{1}\nWartość: {2}"
 	}
 
 	"Chat - Invalid Zone Name"
 	{
 		"en"		"Your zone name contains invalid characters. Please choose another name."
 		"de"		"Der Name der Zone enthält ungültige Zeichen. Bitte wählen Sie ein anderen."
+		"pl"		"Twoja nazwa strefy zawiera nieprawidłowe znaki. Proszę wprowadź inną nazwę."
 	}
 }
