@@ -468,7 +468,7 @@
 		"pl"		"Ustaw punkt końcowy (Ignoruj Z/Wysokość)"
 	}
 
-	"Menu - Item - Move Ending Point (Precision)\n "
+	"Menu - Item - Move Ending Point (Precision)"
 	{
 		"en"		"Move Ending Point (Precision)\n "
 		"de"		"Endpunkt verschieben (Genauigkeit)\n "
