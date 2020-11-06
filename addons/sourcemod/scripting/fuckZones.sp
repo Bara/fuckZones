@@ -57,6 +57,8 @@ ConVar g_cDefaultRadius = null;
 ConVar g_cDefaultZOffset = null;
 ConVar g_cDefaultColor = null;
 ConVar g_cEnableLogging = null;
+ConVar g_cMaxRadius = null;
+ConVar g_cMaxHeight = null;
 
 enum struct eForwards
 {
@@ -187,6 +189,8 @@ public void OnPluginStart()
 	g_cDefaultZOffset = AutoExecConfig_CreateConVar("fuckZones_default_z_offset", "5", "Adds a offset to the z-axis for all points. (Default: 5)");
 	g_cDefaultColor = AutoExecConfig_CreateConVar("fuckZones_default_color", "Pink", "Default zone color (Default: Pink)");
 	g_cEnableLogging = AutoExecConfig_CreateConVar("fuckZones_enable_logging", "1", "Enable logging? (Default: 1)", _, true, 0.0, true, 1.0);
+	g_cMaxRadius = AutoExecConfig_CreateConVar("fuckZones_max_radius", "512", "Set's the maximum radius value for all zones. (Default: 512)");
+	g_cMaxHeight = AutoExecConfig_CreateConVar("fuckZones_max_height", "512", "Set's the maximum height value for all zones. (Default: 512)");
 	AutoExecConfig_ExecuteFile();
 	AutoExecConfig_CleanFile();
 
@@ -1471,7 +1475,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			else if (StrEqual(sInfo, "add_radius"))
 			{
 				Zone[entity].Radius += g_fPrecision[param1];
-				Zone[entity].Radius = ClampCell(Zone[entity].Radius, 0.0, 430.0);
+				Zone[entity].Radius = ClampCell(Zone[entity].Radius, 5.0, g_cMaxRadius.FloatValue);
 
 				char sValue[64];
 				FloatToString(Zone[entity].Radius, sValue, sizeof(sValue));
@@ -1484,7 +1488,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			else if (StrEqual(sInfo, "remove_radius"))
 			{
 				Zone[entity].Radius -= g_fPrecision[param1];
-				Zone[entity].Radius = ClampCell(Zone[entity].Radius, 0.0, 430.0);
+				Zone[entity].Radius = ClampCell(Zone[entity].Radius, 5.0, g_cMaxRadius.FloatValue);
 
 				char sValue[64];
 				FloatToString(Zone[entity].Radius, sValue, sizeof(sValue));
@@ -1497,6 +1501,7 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			else if (StrEqual(sInfo, "add_height"))
 			{
 				Zone[entity].PointsHeight += g_fPrecision[param1];
+				Zone[entity].PointsHeight = ClampCell(Zone[entity].PointsHeight, 5.0, g_cMaxHeight.FloatValue);
 
 				char sValue[64];
 				FloatToString(Zone[entity].PointsHeight, sValue, sizeof(sValue));
@@ -1509,6 +1514,9 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 			else if (StrEqual(sInfo, "remove_height"))
 			{
 				Zone[entity].PointsHeight -= g_fPrecision[param1];
+				Zone[entity].PointsHeight = ClampCell(Zone[entity].PointsHeight, 5.0, g_cMaxHeight.FloatValue);
+
+				// TODO: ClamCell
 
 				char sValue[64];
 				FloatToString(Zone[entity].PointsHeight, sValue, sizeof(sValue));
@@ -2440,23 +2448,29 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			else if (StrEqual(sInfo, "add_radius"))
 			{
 				CZone[param1].Radius += g_fPrecision[param1];
-				CZone[param1].Radius = ClampCell(CZone[param1].Radius, 0.0, 430.0);
+				CZone[param1].Radius = ClampCell(CZone[param1].Radius, 5.0, g_cMaxRadius.FloatValue);
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "remove_radius"))
 			{
 				CZone[param1].Radius -= g_fPrecision[param1];
-				CZone[param1].Radius = ClampCell(CZone[param1].Radius, 0.0, 430.0);
+				CZone[param1].Radius = ClampCell(CZone[param1].Radius, 5.0, g_cMaxRadius.FloatValue);
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "add_height"))
 			{
 				CZone[param1].PointsHeight += g_fPrecision[param1];
+				CZone[param1].PointsHeight = ClampCell(CZone[param1].PointsHeight, 5.0, g_cMaxHeight.FloatValue);
+
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "remove_height"))
 			{
 				CZone[param1].PointsHeight -= g_fPrecision[param1];
+				CZone[param1].PointsHeight = ClampCell(CZone[param1].PointsHeight, 5.0, g_cMaxHeight.FloatValue);
+
+				// TODO: ClampCell
+
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "add_point"))
