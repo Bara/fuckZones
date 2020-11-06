@@ -1499,8 +1499,6 @@ public int MenuHandle_ZonePropertiesMenu(Menu menu, MenuAction action, int param
 				Zone[entity].PointsHeight -= g_fPrecision[param1];
 				Zone[entity].PointsHeight = ClampCell(Zone[entity].PointsHeight, 5.0, g_cMaxHeight.FloatValue);
 
-				// TODO: ClamCell
-
 				char sValue[64];
 				FloatToString(Zone[entity].PointsHeight, sValue, sizeof(sValue));
 				UpdateZonesConfigKey(entity, "points_height", sValue);
@@ -2451,8 +2449,6 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 			{
 				CZone[param1].PointsHeight -= g_fPrecision[param1];
 				CZone[param1].PointsHeight = ClampCell(CZone[param1].PointsHeight, 5.0, g_cMaxHeight.FloatValue);
-
-				// TODO: ClampCell
 
 				OpenCreateZonesMenu(param1);
 			}
@@ -3458,13 +3454,24 @@ void GetAbsBoundingBox(int ent, float mins[3], float maxs[3])
 
 int CreateZone(eCreateZone Data)
 {
-	char sType[MAX_ZONE_TYPE_LENGTH];
+	char sType[MAX_ZONE_TYPE_LENGTH], sDType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneNameByType(Data.Type, sType, sizeof(sType));
+	GetDisplayNameByType(Data.Display, sDType, sizeof(sDType));
 
-	// TODO: Split this into 3 different chat messages separated by zone type
 	if (g_cEnableLogging.BoolValue)
 	{
-		LogMessage("Spawning Zone: %s - %s - %.2f/%.2f/%.2f - %.2f/%.2f/%.2f - %.2f", Data.Name, sType, Data.Start[0], Data.Start[1], Data.Start[2], Data.End[0], Data.End[1], Data.End[2], Data.Radius);
+		if (Data.Type == ZONE_TYPE_BOX)
+		{
+			LogMessage("Spawning Zone: %s, Type: %s, Display: %s, Color: {%d,%d,%d,%d}, Start: %.2f/%.2f/%.2f, End: %.2f/%.2f/%.2f", Data.Name, sType, sDType, Data.iColors[0], Data.iColors[1], Data.iColors[2], Data.iColors[3], Data.Start[0], Data.Start[1], Data.Start[2], Data.End[0], Data.End[1], Data.End[2]);
+		}
+		else if (Data.Type == ZONE_TYPE_CIRCLE)
+		{
+			LogMessage("Spawning Zone: %s, Type: %s, Display: %s, Color: {%d,%d,%d,%d}, Center Point: %.2f/%.2f/%.2f, Radius: %.1f, Height: %.1f", Data.Name, sType, sDType, Data.iColors[0], Data.iColors[1], Data.iColors[2], Data.iColors[3], Data.Start[0], Data.Start[1], Data.Start[2], Data.Radius, Data.PointsHeight);
+		}
+		else if (Data.Type == ZONE_TYPE_POLY)
+		{
+			LogMessage("Spawning Zone: %s, Type: %s, Display: %s, Color: {%d,%d,%d,%d}, Center Point: %.2f/%.2f/%.2f, Points: %d, Height: %.1f", Data.Name, sType, sDType, Data.iColors[0], Data.iColors[1], Data.iColors[2], Data.iColors[3], Data.Start[0], Data.Start[1], Data.Start[2], Data.PointsData.Length, Data.PointsHeight);
+		}
 	}
 
 	int entity = -1;
