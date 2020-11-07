@@ -35,6 +35,7 @@ ConVar g_cDefaultHeight = null;
 ConVar g_cDefaultRadius = null;
 ConVar g_cDefaultZOffset = null;
 ConVar g_cDefaultColor = null;
+ConVar g_cDefaultDisplay = null;
 ConVar g_cEnableLogging = null;
 ConVar g_cMaxRadius = null;
 ConVar g_cMaxHeight = null;
@@ -169,6 +170,7 @@ public void OnPluginStart()
 	g_cDefaultRadius = AutoExecConfig_CreateConVar("fuckZones_default_radius", "150", "Default radius for circle zones (Default: 150)");
 	g_cDefaultZOffset = AutoExecConfig_CreateConVar("fuckZones_default_z_offset", "5", "Adds a offset to the z-axis for all points. (Default: 5)");
 	g_cDefaultColor = AutoExecConfig_CreateConVar("fuckZones_default_color", "Pink", "Default zone color (Default: Pink)");
+	g_cDefaultDisplay = AutoExecConfig_CreateConVar("fuckZones_default_display", "1", "Default zone display (0 - Full, 1 - Bottom (Default), 2 - Hide)", _, true, 0.0, true, 2.0);
 	g_cEnableLogging = AutoExecConfig_CreateConVar("fuckZones_enable_logging", "1", "Enable logging? (Default: 1)", _, true, 0.0, true, 1.0);
 	g_cMaxRadius = AutoExecConfig_CreateConVar("fuckZones_max_radius", "512", "Set's the maximum radius value for circle zones. (Default: 512)");
 	g_cMaxHeight = AutoExecConfig_CreateConVar("fuckZones_max_height", "512", "Set's the maximum height value for circle/poly zones. (Default: 512)");
@@ -3150,7 +3152,7 @@ void ResetCreateZoneVariables(int client)
 	delete CZone[client].PointsData;
 	CZone[client].PointsHeight = g_cDefaultHeight.FloatValue;
 	CZone[client].SetName = false;
-	CZone[client].Display = DISPLAY_TYPE_BOTTOM;
+	CZone[client].Display = g_cDefaultDisplay.IntValue;
 	CZone[client].Show = true;
 }
 
