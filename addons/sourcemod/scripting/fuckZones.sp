@@ -5011,16 +5011,16 @@ void AddZoneMenuItems(int client, Menu menu, int type, int pointsLength, float r
 		{
 			AddItemFormat(menu, "startpoint_a", _, "%T", "Menu - Item - Set Starting Point", client);
 			AddItemFormat(menu, "startpoint_a_no_z", IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Starting Point (Ignore Z/Height)", client);
-			AddItemFormat(menu, "startpoint_a_precision", IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Move Starting Point (Precision)", client);
+			AddItemFormat(menu, "startpoint_a_precision", IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Edit Starting Point (Precision)", client);
 			AddItemFormat(menu, "startpoint_b", _, "%T", "Menu - Item - Set Ending Point", client);
 			AddItemFormat(menu, "startpoint_b_no_z", IsPositionNull(end) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Ending Point (Ignore Z/Height)", client);
-			AddItemFormat(menu, "startpoint_b_precision", IsPositionNull(end) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Move Ending Point (Precision)", client);
+			AddItemFormat(menu, "startpoint_b_precision", IsPositionNull(end) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Edit Ending Point (Precision)", client);
 		}
 
 		case ZONE_TYPE_CIRCLE:
 		{
 			AddItemFormat(menu, "startpoint_a", _, "%T", "Menu - Item - Set Center Point", client);
-			AddItemFormat(menu, "startpoint_a_precision", IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Move Center Point (Precision)", client);
+			AddItemFormat(menu, "startpoint_a_precision", IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Edit Center Point (Precision)", client);
 			AddItemFormat(menu, "add_radius", _, "%T", "Menu - Item - Radius +", client);
 			AddItemFormat(menu, "remove_radius", _, "%T", "Menu - Item - Radius -", client);
 			AddItemFormat(menu, "add_height", _, "%T", "Menu - Item - Height +", client);

@@ -447,11 +447,11 @@
 		"pl"		"Ustaw punkt startowy (Ignoruj Z/Wysokość)"
 	}
 
-	"Menu - Item - Move Starting Point (Precision)"
+	"Menu - Item - Edit Starting Point (Precision)"
 	{
-		"en"		"Move Starting Point (Precision)"
-		"de"		"Startpunkt verschieben (Genauigkeit)"
-		"pl"		"Przesuń punkt startowy (Precyzyjnie)"
+		"en"		"Edit Starting Point (Precision)"
+		"de"		"Startpunkt bearbeiten (Genauigkeit)"
+		"pl"		"Przesuń punkt startowy (Precyzyjnie)" // TODO
 	}
 
 	"Menu - Item - Set Ending Point"
@@ -468,11 +468,11 @@
 		"pl"		"Ustaw punkt końcowy (Ignoruj Z/Wysokość)"
 	}
 
-	"Menu - Item - Move Ending Point (Precision)"
+	"Menu - Item - Edit Ending Point (Precision)"
 	{
-		"en"		"Move Ending Point (Precision)\n "
-		"de"		"Endpunkt verschieben (Genauigkeit)\n "
-		"pl"		"Przesuń punkt końcowy (Precyzyjnie)\n "
+		"en"		"Edit Ending Point (Precision)\n "
+		"de"		"Endpunkt bearbeiten (Genauigkeit)\n "
+		"pl"		"Przesuń punkt końcowy (Precyzyjnie)\n " // TODO
 	}
 
 	"Menu - Item - Set Center Point"
@@ -482,11 +482,11 @@
 		"pl"		"Ustaw środek punktu"
 	}
 
-	"Menu - Item - Move Center Point (Precision)"
+	"Menu - Item - Edit Center Point (Precision)"
 	{
-		"en"		"Move Center Point (Precision)"
-		"de"		"Mittelpunkt verschieben (Genauigkeit)"
-		"pl"		"Przesuń punkt środkowy (Precyzyjnie)"
+		"en"		"Edit Center Point (Precision)"
+		"de"		"Mittelpunkt bearbeiten (Genauigkeit)"
+		"pl"		"Przesuń punkt środkowy (Precyzyjnie)" // TODO
 	}
 
 	"Menu - Item - Radius +"
