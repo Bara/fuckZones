@@ -660,7 +660,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			}
 		}
 
-		if (CZone[client].Show && CZone[client].Display > DISPLAY_TYPE_HIDE && CZone[client].Type > ZONE_TYPE_NONE)
+		if (CZone[client].Show && CZone[client].Display >= 0 && CZone[client].Display < DISPLAY_TYPE_HIDE && CZone[client].Type > ZONE_TYPE_NONE)
 		{
 			CZone[client].Show = false;
 			int iColor[4];
@@ -2489,7 +2489,7 @@ public int MenuHandle_CreateZonesMenu(Menu menu, MenuAction action, int param1, 
 
 				if (CZone[param1].Display > DISPLAY_TYPE_TYPES)
 				{
-					CZone[param1].Display = DISPLAY_TYPE_HIDE;
+					CZone[param1].Display = DISPLAY_TYPE_FULL;
 				}
 
 				OpenZoneDisplayMenu(param1);
@@ -3324,7 +3324,7 @@ public Action Timer_DisplayZones(Handle timer)
 	{
 		int zone = EntRefToEntIndex(g_aZoneEntities.Get(x));
 
-		if (IsValidEntity(zone) && Zone[zone].Display > DISPLAY_TYPE_HIDE)
+		if (IsValidEntity(zone) && Zone[zone].Display >= 0 && Zone[zone].Display < DISPLAY_TYPE_HIDE)
 		{
 			GetEntPropVector(zone, Prop_Data, "m_vecOrigin", vecOrigin);
 

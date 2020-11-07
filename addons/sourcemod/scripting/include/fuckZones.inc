@@ -23,9 +23,9 @@
 #define ZONE_TYPE_POLY 3
 
 #define DISPLAY_TYPE_TYPES 3
-#define DISPLAY_TYPE_HIDE 0
+#define DISPLAY_TYPE_FULL 0
 #define DISPLAY_TYPE_BOTTOM 1
-#define DISPLAY_TYPE_FULL 2
+#define DISPLAY_TYPE_HIDE 2
 
 typedef fuckZones_Effect_OnEnterZone = function void (int client, int entity, StringMap values);
 typedef fuckZones_Effect_OnActiveZone = function void (int client, int entity, StringMap values);
