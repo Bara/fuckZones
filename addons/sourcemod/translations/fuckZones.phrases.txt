@@ -1,5 +1,11 @@
 "Phrases"
 {
+	"Chat - No Longer Valid"
+	{
+		"en"		"Your selected zone is no longer valid."
+		"de"		"Deine ausgewählte Zone ist nicht mehr gültig."
+	}
+
 	"Chat - Zone Already Exist"
 	{
 		"en"		"Zone name already exists, please pick a different name or cancel the process with {green}!cancel{default}."
@@ -210,6 +216,11 @@
 		"pl"		"Zarządzanie strefą {1}"
 	}
 
+	"Menu - Title - Select Map Zone"
+	{
+		"en"		"Select map zone"
+	}
+
 	"Menu - Item - Edit Zone"
 	{
 		"en"		"Edit Zone"
@@ -407,6 +418,14 @@
 		"en"		"Name: {1}"
 		"de"		"Name: {1}"
 		"pl"		"Nazwa: {1}"
+	}
+
+	"Menu - Item - Trigger"
+	{
+		"#format"	"{1:s}"
+		"en"		"Trigger: {1}"
+		"de"		"Trigger: {1}"
+		"pl"		"Trigger: {1}"
 	}
 
 	"Menu - Item - Type"
