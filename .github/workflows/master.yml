@@ -19,9 +19,7 @@ jobs:
 
       - name: Set environment variables
         run: |
-          echo "SOURCEMOD_PATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
-          echo "SOURCEMOD_PATH=$SOURCEMOD_PATH" >> $GITHUB_ENV
-          echo "SCRIPTS_PATH=$SOURCEMOD_PATH/addons/sourcemod/scripting" >> $GITHUB_ENV
+          echo "SCRIPTS_PATH=addons/sourcemod/scripting" >> $GITHUB_ENV
 
       - name: Setup SourcePawn Compiler ${{ matrix.SM_VERSION }}
         uses: rumblefrog/setup-sp@master
@@ -33,6 +31,6 @@ jobs:
           for file in fuckZones*.sp
           do
             echo -e "\nCompiling $file..."
-            spcomp -E -w234 -O2 -v2 -i $SCRIPTS_PATH/include $file
+            spcomp -E -w234 -O2 -v2 -i include $file
           done
-        working-directory: $SCRIPTS_PATH
+        working-directory: ${{ env.SCRIPTS_PATH }}

@@ -4,6 +4,7 @@
 	{
 		"en"		"Your selected zone is no longer valid."
 		"de"		"Deine ausgewählte Zone ist nicht mehr gültig."
+		"pl"		"Twoja zaznaczona strefa nie jest już prawidłowa."
 	}
 
 	"Chat - Zone Already Exist"
@@ -219,6 +220,8 @@
 	"Menu - Title - Select Map Zone"
 	{
 		"en"		"Select map zone"
+		"de"		"Wähle eine Kartenzone"
+		"pl"		"Wybierz strefę na mapie"
 	}
 
 	"Menu - Item - Edit Zone"
