@@ -376,11 +376,11 @@
 		"pl"		"Strefa {green}{1}{default} została pomyślnie stworzona."
 	}
 
-	"Chat - Teleport - Zone Not Found To"
+	"Chat - Zone Not Found To Teleport"
 	{
 		"#format"	"{1:s}"
 		"en"		"Sorry, couldn't find the zone {green}{1}{default} for you to teleport to."
-		"de"		"Sorry, konnte die Zone nicht finden {green}{1}{default} zu dem Sie sich teleportieren wollen."
+		"de"		"Sorry, konnte die Zone {green}{1}{default} nicht finden zu dem Sie sich teleportieren wollen."
 		"pl"		"Wybacz, nie mogliśmy znaleźć strefy {green}{1}{default} aby Cię do niej przeteleportować."
 	}
 
@@ -539,6 +539,20 @@
 		"pl"		"Wysokość -"
 	}
 
+	"Menu - Item - Set Teleport Point"
+	{
+		"en"		"Set Teleport Point"
+		"de"		"Teleportpunkt setzen"
+		"pl"		"Ustaw punkt teleportu"
+	}
+
+	"Chat - Teleport Point Set"
+	{
+		"en"		"Teleport point has been set to your location."
+		"de"		"Der Teleportpunkt wurde an deiner Stelle gesetzt."
+		"pl"		"Punkt teleportacji został ustawiony na Twoją lokalizację."
+	}
+
 	"Menu - Item - Add a Point"
 	{
 		"en"		"Add a Point"
@@ -550,18 +564,21 @@
 	{
 		"en"		"Edit a Point"
 		"de"		"Punkt bearbeiten"
+		"pl"		"Edytuj punkt"
 	}
 
 	"Menu - Title - Info To Edit Poly Point"
 	{
 		"en"		"Edit point\n "
 		"de"		"Punkt bearbeiten\n "
+		"pl"		"Edytuj punkt\n "
 	}
 
 	"Menu - Item - Info To Edit Poly Point"
 	{
 		"en"		"Aim onto an polygon zone point\nconfirm it with E/your +use key"
 		"de"		"Zielen Sie auf ein Polygonzonenpunkt\nund bestätigen Sie diesen mit E/ihre '+use' Taste"
+		"pl"		"Wyceluj w punkt strefy polygonowej\nzatwierdź ją przyciskiem E/Twój '+use'"
 	}
 
 	"Menu - Title - Edit Poly Point Name"
@@ -569,6 +586,7 @@
 		"#format"	"{1:d},{2:s}"
 		"en"		"Edit Point {1} for zone {2}"
 		"de"		"Bearbeitung Punkt {1} für Zone {2}"
+		"pl"		"Edycja punktu {1} dla strefy {2}"
 	}
 
 	"Menu - Item - Remove last Point"

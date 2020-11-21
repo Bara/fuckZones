@@ -79,6 +79,7 @@ enum struct eEntityData
 	ArrayList PointsData;
 	float Start[3];
 	float End[3];
+	float Teleport[3];
 	float PointsHeight;
 	float PointsDistance;
 	float PointsMin[3];
@@ -100,6 +101,7 @@ enum struct eCreateZone
 	float Start[3];
 	float End[3];
 	float Origin[3];
+	float Teleport[3];
 	float Radius;
 	char Color[64];
 	int iColors[4];
@@ -1623,6 +1625,15 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 
 				OpenZonePropertiesMenu(param1, entity);
 			}
+			else if (StrEqual(sInfo, "set_teleport"))
+			{
+				GetClientAbsOrigin(param1, Zone[entity].Teleport);
+				UpdateZonesConfigKeyVector(entity, "teleport", Zone[entity].Teleport);
+
+				CPrintToChat(param1, "%T", "Chat - Teleport Point Set", param1);
+
+				OpenZonePropertiesMenu(param1, entity);
+			}
 			else
 			{
 				OpenZonePropertiesMenu(param1, entity);
@@ -2574,6 +2585,13 @@ public int MenuHandler_CreateZonesMenu(Menu menu, MenuAction action, int param1,
 
 				OpenCreateZonesMenu(param1);
 			}
+			else if (StrEqual(sInfo, "set_teleport"))
+			{
+				GetClientAbsOrigin(param1, CZone[param1].Teleport);
+				CPrintToChat(param1, "%T", "Chat - Teleport Point Set", param1);
+
+				OpenCreateZonesMenu(param1);
+			}
 			else if (StrEqual(sInfo, "color"))
 			{
 				OpenZonesColorMenu(param1);
@@ -3217,6 +3235,7 @@ void CreateNewZone(int client)
 
 		case ZONE_TYPE_POLY:
 		{
+			g_kvConfig.SetVector("teleport", CZone[client].Teleport);
 			g_kvConfig.SetFloat("points_height", CZone[client].PointsHeight);
 
 			if (g_kvConfig.JumpToKey("points", true))
@@ -3777,6 +3796,8 @@ int CreateZone(eCreateZone Data, bool create)
 				}
 
 				Zone[entity].PointsDistance = greatdiff;
+
+				Zone[entity].Teleport = Data.Teleport;
 			}
 		}
 	}
@@ -4483,24 +4504,36 @@ bool TeleportToZone(int client, const char[] zone)
 	{
 		case ZONE_TYPE_BOX:
 		{
-			float start[3];
-			GetZonesVectorData(entity, "start", start);
+			float fStart[3], fEnd[3];
+			GetAbsBoundingBox(entity, fStart, fEnd);
+			GetMiddleOfABox(fStart, fEnd, fMiddle);
 
-			float end[3];
-			GetZonesVectorData(entity, "end", end);
+			PrintToChat(client, "Box: %f / %f / %f", fMiddle[0], fMiddle[1], fMiddle[2]);
+		}
 
-			GetMiddleOfABox(start, end, fMiddle);
+		case ZONE_TYPE_TRIGGER:
+		{
+			float fStart[3], fEnd[3];
+			GetAbsBoundingBox(entity, fStart, fEnd);
+			GetMiddleOfABox(fStart, fEnd, fMiddle);
+
+			PrintToChat(client, "Trigger: %f / %f / %f", fMiddle[0], fMiddle[1], fMiddle[2]);
 		}
 
 		case ZONE_TYPE_CIRCLE:
 		{
-			GetZonesVectorData(entity, "start", fMiddle);
+			fMiddle = Zone[entity].Start;
 		}
 
 		case ZONE_TYPE_POLY:
 		{
-			CPrintToChat(client, "%T", "Chat - Teleport - Polygons Not Supported", client);
-			return false;
+			if (IsPositionNull(Zone[entity].Teleport))
+			{
+				CPrintToChat(client, "%T", "Chat - Teleport - Polygons Not Supported", client);
+				return false;
+			}
+
+			fMiddle = Zone[entity].Teleport;
 		}
 	}
 
@@ -5060,6 +5093,9 @@ int SpawnZone(const char[] name)
 	float vOrigin[3];
 	g_kvConfig.GetVector("origin", vOrigin);
 
+	float vTeleport[3];
+	g_kvConfig.GetVector("teleport", vTeleport);
+
 	g_kvConfig.GetString("display", sType, sizeof(sType));
 	int display = GetDisplayTypeByName(sType);
 
@@ -5139,6 +5175,7 @@ int SpawnZone(const char[] name)
 	zone.PointsHeight = points_height;
 	zone.Effects = effects;
 	zone.Display = display;
+	zone.Teleport = vTeleport;
 	
 	int iEntity = CreateZone(zone, false);
 
@@ -5244,6 +5281,7 @@ void AddZoneMenuItems(int client, Menu menu, bool create, int type, int pointsLe
 			AddItemFormat(menu, "clear_points", (pointsLength > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED, "%T", "Menu - Item - Clear all Points", client);
 			AddItemFormat(menu, "add_height", (pointsLength > 2) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED, "%T", "Menu - Item - Height +", client);
 			AddItemFormat(menu, "remove_height", (pointsLength > 2) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED, "%T", "Menu - Item - Height -", client);
+			AddItemFormat(menu, "set_teleport", (pointsLength > 2) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED, "%T", "Menu - Item - Set Teleport Point", client);
 		}
 	}
 }
