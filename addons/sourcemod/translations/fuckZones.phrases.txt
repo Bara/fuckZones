@@ -546,10 +546,35 @@
 		"pl"		"Dodaj punkt"
 	}
 
+	"Menu - Item - Edit a Point"
+	{
+		"en"		"Edit a Point"
+		"de"		"Punkt bearbeiten"
+	}
+
+	"Menu - Title - Info To Edit Poly Point"
+	{
+		"en"		"Edit point\n "
+		"de"		"Punkt bearbeiten\n "
+	}
+
+	"Menu - Item - Info To Edit Poly Point"
+	{
+		"en"		"Aim onto an polygon zone point\nconfirm it with E/your +use key"
+		"de"		"Zielen Sie auf ein Polygonzonenpunkt\nund bestätigen Sie diesen mit E/ihre '+use' Taste"
+	}
+
+	"Menu - Title - Edit Poly Point Name"
+	{
+		"#format"	"{1:d},{2:s}"
+		"en"		"Edit Point {1} for zone {2}"
+		"de"		"Bearbeitung Punkt {1} für Zone {2}"
+	}
+
 	"Menu - Item - Remove last Point"
 	{
 		"en"		"Remove last Point"
-		"de"		"Letzten Punkt entfernen"
+		"de"		"Letzten Punkt löschen"
 		"pl"		"Usuń ostatni punkt"
 	}
 
