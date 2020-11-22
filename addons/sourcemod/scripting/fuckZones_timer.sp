@@ -49,6 +49,39 @@ public Action fuckZones_OnStartTouchZone(int client, int entity, const char[] zo
 
 	PrintToChat(client, "StartTouch: Entity: %i - Name: %s (%s) - Type: %i (%d)", entity, zone_name, sName, type, iType);
 
+	ArrayList aEffects = fuckZones_GetEffectsList();
+	char sEffect[MAX_EFFECT_NAME_LENGTH];
+	StringMap smEffect = null;
+	StringMap smKeys = null;
+	StringMapSnapshot keys = null;
+
+	for (int i = 0; i < aEffects.Length; i++)
+	{
+		aEffects.GetString(i, sEffect, sizeof(sEffect));
+		smEffect = fuckZones_GetZoneEffects(entity);
+		
+		if (smEffect != null)
+		{
+			smEffect.GetValue(sEffect, smKeys);
+
+			if (smKeys != null)
+			{
+				keys = smKeys.Snapshot();
+				for (int x = 0; x < keys.Length; x++)
+				{
+					char sKey[MAX_KEY_NAME_LENGTH];
+					keys.GetKey(x, sKey, sizeof(sKey));
+
+					char sValue[MAX_KEY_VALUE_LENGTH];
+					smKeys.GetString(sKey, sValue, sizeof(sValue));
+					
+					PrintToChat(client, "Effect: %s, Key: %s, Value: %s", sEffect, sKey, sValue);
+				}
+				delete keys;
+			}
+		}
+	}
+
 	if (g_fTime[client] > 0.0 && StrContains(zone_name, "End", false) != -1)
 	{
 		PrintToChat(client, "Time: %f", (GetGameTime() - g_fTime[client]));
