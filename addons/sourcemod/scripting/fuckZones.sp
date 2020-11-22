@@ -156,6 +156,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("fuckZones_TeleportClientToZone", Native_TeleportClientToZone);
 	CreateNative("fuckZones_GetEffectsList", Native_GetEffectsList);
 	CreateNative("fuckZones_GetZoneEffects", Native_GetZoneEffects);
+	CreateNative("fuckZones_GetZoneType", Native_GetZoneType);
 
 	Forward.QueueEffects_Post = new GlobalForward("fuckZones_OnQueueEffects_Post", ET_Ignore);
 	Forward.StartTouchZone = new GlobalForward("fuckZones_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
@@ -5015,6 +5016,23 @@ public int Native_GetZoneEffects(Handle plugin, int numParams)
 	}
 	
 	return view_as<int>(Zone[zone].Effects);
+}
+
+public int Native_GetZoneType(Handle plugin, int numParams)
+{
+	int zone = GetNativeCell(1);
+
+	if (zone < 1 || !IsValidEntity(zone))
+	{
+		return -1;
+	}
+
+	if (g_aZoneEntities.FindValue(EntIndexToEntRef(zone)) == -1)
+	{
+		return -1;
+	}
+	
+	return GetZoneTypeByIndex(zone);
 }
 
 bool AddItemFormat(Menu& menu, const char[] info, int style = ITEMDRAW_DEFAULT, const char[] format, any ...)

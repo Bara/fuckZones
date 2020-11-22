@@ -46,14 +46,25 @@ native bool fuckZones_TeleportClientToZone(int client, const char[] name);
 /*
  * Don't close this ArrayList. It will handled by fuckZones.
  *
+ * return                Index or -1 for invalid index
+ *
  */
 native ArrayList fuckZones_GetEffectsList();
 
 /*
  * Don't close this StringMap. It will handled by fuckZones.
  *
+ * return                Index or -1 for invalid index
+ *
  */
 native StringMap fuckZones_GetZoneEffects(int zone);
+
+/*
+ *
+ * return                Zone Type, 0 and lower is invalid type.
+ *
+ */
+native StringMap fuckZones_GetZoneType(int zone);
 
 
 
@@ -150,6 +161,7 @@ public void __pl_fuckZones_SetNTVOptional()
 	MarkNativeAsOptional("fuckZones_TeleportClientToZone");
 	MarkNativeAsOptional("fuckZones_GetEffectsList");
 	MarkNativeAsOptional("fuckZones_GetZoneEffects");
+	MarkNativeAsOptional("fuckZones_GetZoneType");
 }
 #endif
 
