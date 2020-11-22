@@ -44,7 +44,7 @@ ConVar g_cNameRegex = null;
 
 enum struct eForwards
 {
-	GlobalForward QueueEffects_Post;
+	GlobalForward OnEffectsReady;
 	GlobalForward StartTouchZone;
 	GlobalForward TouchZone;
 	GlobalForward EndTouchZone;
@@ -159,7 +159,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("fuckZones_GetZoneType", Native_GetZoneType);
 	CreateNative("fuckZones_GetZoneName", Native_GetZoneName);
 
-	Forward.QueueEffects_Post = new GlobalForward("fuckZones_OnQueueEffects_Post", ET_Ignore);
+	Forward.OnEffectsReady = new GlobalForward("fuckZones_OnEffectsReady", ET_Ignore);
 	Forward.StartTouchZone = new GlobalForward("fuckZones_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	Forward.TouchZone = new GlobalForward("fuckZones_OnTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	Forward.EndTouchZone = new GlobalForward("fuckZones_OnEndTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
@@ -372,7 +372,7 @@ void QueueEffects(bool reset = true)
 		g_aEffectsList.Clear();
 	}
 
-	Call_StartForward(Forward.QueueEffects_Post);
+	Call_StartForward(Forward.OnEffectsReady);
 	Call_Finish();
 }
 

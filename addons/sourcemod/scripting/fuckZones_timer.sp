@@ -18,9 +18,9 @@ public Plugin myinfo =
 	url = "github.com/Bara"
 };
 
-public void fuckZones_OnQueueEffects_Post()
+public void fuckZones_OnEffectsReady()
 {
-	fuckZones_RegisterEffect(EFFECT_NAME, INVALID_FUNCTION, INVALID_FUNCTION, INVALID_FUNCTION);
+	fuckZones_RegisterEffect(EFFECT_NAME, INVALID_FUNCTION, INVALID_FUNCTION, OnZoneLeave);
 
 	/*
 		Start/End Zone: 0 = Disabled, 1 = 1st Start Zone, 2 = 2nd Start Zone (for Bonus)
@@ -101,4 +101,22 @@ public Action fuckZones_OnEndTouchZone(int client, int entity, const char[] zone
 	}
 
 	return Plugin_Continue;
+}
+
+public void OnZoneLeave(int client, int entity, StringMap values)
+{
+	PrintToChat(client, "test");
+	
+	char sKey[MAX_KEY_NAME_LENGTH];
+	char sValue[MAX_KEY_VALUE_LENGTH];
+
+	StringMapSnapshot keys = values.Snapshot();
+	for (int x = 0; x < keys.Length; x++)
+	{
+		keys.GetKey(x, sKey, sizeof(sKey));
+		values.GetString(sKey, sValue, sizeof(sValue));
+		
+		PrintToChat(client, "Key: %s, Value: %s", sKey, sValue);
+	}
+	delete keys;
 }

@@ -78,7 +78,7 @@ native bool fuckZones_GetZoneName(int zone, char[] name, int length);
 *
 * noreturn
 **/
-forward void fuckZones_OnQueueEffects_Post();
+forward void fuckZones_OnEffectsReady();
 
 /**
 * Called right before a player enters the zone.
