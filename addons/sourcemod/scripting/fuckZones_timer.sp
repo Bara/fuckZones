@@ -42,7 +42,12 @@ public void fuckZones_OnQueueEffects_Post()
 
 public Action fuckZones_OnStartTouchZone(int client, int entity, const char[] zone_name, int type)
 {
-	PrintToChat(client, "StartTouch: Entity: %i - Name: %s - Type: %i", entity, zone_name, type);
+	char sName[MAX_ZONE_NAME_LENGTH];
+	fuckZones_GetZoneName(entity, sName, sizeof(sName));
+
+	int iType = fuckZones_GetZoneType(entity);
+
+	PrintToChat(client, "StartTouch: Entity: %i - Name: %s (%s) - Type: %i (%d)", entity, zone_name, sName, type, iType);
 
 	if (g_fTime[client] > 0.0 && StrContains(zone_name, "End", false) != -1)
 	{

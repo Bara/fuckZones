@@ -157,6 +157,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("fuckZones_GetEffectsList", Native_GetEffectsList);
 	CreateNative("fuckZones_GetZoneEffects", Native_GetZoneEffects);
 	CreateNative("fuckZones_GetZoneType", Native_GetZoneType);
+	CreateNative("fuckZones_GetZoneName", Native_GetZoneName);
 
 	Forward.QueueEffects_Post = new GlobalForward("fuckZones_OnQueueEffects_Post", ET_Ignore);
 	Forward.StartTouchZone = new GlobalForward("fuckZones_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
@@ -565,7 +566,7 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 		UpdateZoneEffectKey(g_iEffectKeyValue_Entity[client], g_sEffectKeyValue_Effect[client], g_sEffectKeyValue_EffectKey[client], sValue);
 
 		char sName[MAX_ZONE_NAME_LENGTH];
-		GetEntPropString(g_iEffectKeyValue_Entity[client], Prop_Send, "m_iName", sName, sizeof(sName));
+		GetZoneNameByIndex(g_iEffectKeyValue_Entity[client], sName, sizeof(sName));
 
 		CPrintToChat(client, "%T", "Chat - Effect Key Update", client, g_sEffectKeyValue_Effect[client], g_sEffectKeyValue_EffectKey[client], sName, sValue);
 
@@ -582,7 +583,7 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 		}
 
 		char sName[MAX_ZONE_NAME_LENGTH];
-		GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+		GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 		UpdateZonesSectionName(entity, sArgs);
 		CPrintToChat(client, "%T", "Chat - Zone Renamed", client, sName, sArgs);
@@ -1043,7 +1044,7 @@ void FindZoneToEdit(int client)
 	}
 
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	OpenEditZoneMenu(client, entity);
 }
@@ -1126,7 +1127,7 @@ void OpenTeleportToZoneMenu(int client)
 			IntToString(zone, sEntity, sizeof(sEntity));
 
 			char sName[MAX_ZONE_NAME_LENGTH];
-			GetEntPropString(zone, Prop_Send, "m_iName", sName, sizeof(sName));
+			GetZoneNameByIndex(zone, sName, sizeof(sName));
 
 			menu.AddItem(sEntity, sName);
 		}
@@ -1258,7 +1259,7 @@ void OpenManageZonesMenu(int client)
 			IntToString(zone, sEntity, sizeof(sEntity));
 
 			char sName[MAX_ZONE_NAME_LENGTH];
-			GetEntPropString(zone, Prop_Send, "m_iName", sName, sizeof(sName));
+			GetZoneNameByIndex(zone, sName, sizeof(sName));
 
 			menu.AddItem(sEntity, sName);
 		}
@@ -1308,7 +1309,7 @@ public int MenuHandler_ManageZonesMenu(Menu menu, MenuAction action, int param1,
 void OpenEditZoneMenu(int client, int entity)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	g_bSelectedZone[entity] = true;
 
@@ -1411,7 +1412,7 @@ void OpenZonePropertiesMenu(int client, int entity)
 	}
 	
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	g_bSelectedZone[entity] = true;
 
@@ -1455,7 +1456,7 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 			int entity = GetMenuCell(menu, "entity");
 
 			char sName[MAX_ZONE_NAME_LENGTH];
-			GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+			GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 			if (StrEqual(sInfo, "name"))
 			{
@@ -1666,7 +1667,7 @@ void OpenEditZoneStartPointMenu(int client, int entity, bool whichpoint, bool cr
 
 	if (!create)
 	{
-		GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+		GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 		g_bSelectedZone[entity] = true;
 	}
@@ -2032,7 +2033,7 @@ public int MenuHandler_ZoneEditStartPointMenu(Menu menu, MenuAction action, int 
 int RemakeZoneEntity(int entity)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	DeleteZone(entity);
 	return SpawnAZone(sName);
@@ -2046,7 +2047,7 @@ void GetZonesVectorData(int entity, const char[] name, float[3] vecdata)
 	}
 
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	g_kvConfig.Rewind();
 
@@ -2065,7 +2066,7 @@ void UpdateZonesSectionName(int entity, const char[] name)
 	}
 
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	g_kvConfig.Rewind();
 
@@ -2088,7 +2089,7 @@ void UpdateZonesConfigKey(int entity, const char[] key, const char[] value)
 	}
 
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	g_kvConfig.Rewind();
 
@@ -2109,7 +2110,7 @@ void UpdateZonesConfigKeyVector(int entity, const char[] key, float[3] value)
 	}
 
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	g_kvConfig.Rewind();
 
@@ -2130,7 +2131,7 @@ void SaveZonePointsData(int entity)
 	}
 
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	g_kvConfig.Rewind();
 
@@ -2161,7 +2162,7 @@ void SaveZonePointsData(int entity)
 void OpenEditZoneTypeMenu(int client, int entity)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandler_EditZoneTypeMenu);
 	menu.SetTitle("%T", "Menu - Title - Choose Zone Type Name", client, sName);
@@ -2220,7 +2221,7 @@ public int MenuHandler_EditZoneTypeMenu(Menu menu, MenuAction action, int param1
 void OpenEditZoneDisplayMenu(int client, int entity)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandler_EditZoneDisplayMenu);
 	menu.SetTitle("%T", "Menu - Title - Choose Display Type Name", client, sName);
@@ -2278,7 +2279,7 @@ public int MenuHandler_EditZoneDisplayMenu(Menu menu, MenuAction action, int par
 void OpenEditZoneColorMenu(int client, int entity)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandler_EditZoneColorMenu);
 	menu.SetTitle("%T", "Menu - Title - Choose Zone Color Name", client, sName);
@@ -2341,7 +2342,7 @@ public int MenuHandler_EditZoneColorMenu(Menu menu, MenuAction action, int param
 void DisplayConfirmDeleteZoneMenu(int client, int entity)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandler_ManageConfirmDeleteZoneMenu);
 	menu.SetTitle("%T", "Menu - Title - Delete Zone Confirmation", client, sName);
@@ -2371,7 +2372,7 @@ public int MenuHandler_ManageConfirmDeleteZoneMenu(Menu menu, MenuAction action,
 			}
 
 			char sName[MAX_ZONE_NAME_LENGTH];
-			GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+			GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 			DeleteZone(entity, true, param1);
 			CPrintToChat(param1, "%T", "Chat - Zone Deleted", param1, sName);
@@ -2637,7 +2638,7 @@ public int MenuHandler_CreateZonesMenu(Menu menu, MenuAction action, int param1,
 bool AddZoneEffectMenu(int client, int entity)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandler_AddZoneEffect);
 	menu.SetTitle("%T", "Menu - Title - Add Effect Zone Name", client, sName);
@@ -2704,7 +2705,7 @@ public int MenuHandler_AddZoneEffect(Menu menu, MenuAction action, int param1, i
 bool EditZoneEffectMenu(int client, int entity)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandler_EditZoneEffect);
 	menu.SetTitle("%T", "Menu - Title - Pick Effect To Edit", client, sName);
@@ -2762,7 +2763,7 @@ public int MenuHandler_EditZoneEffect(Menu menu, MenuAction action, int param1, 
 bool ListZoneEffectKeys(int client, int entity, const char[] effect)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandler_EditZoneEffectKeyVaue);
 	menu.SetTitle("%T", "Menu - Title - Pick Effet Key To Edit", client, sName);
@@ -2821,7 +2822,7 @@ public int MenuHandler_EditZoneEffectKeyVaue(Menu menu, MenuAction action, int p
 			menu.GetItem(param2, g_sEffectKeyValue_EffectKey[param1], sizeof(g_sEffectKeyValue_EffectKey[]));
 
 			char sName[MAX_ZONE_NAME_LENGTH];
-			GetEntPropString(g_iEffectKeyValue_Entity[param1], Prop_Send, "m_iName", sName, sizeof(sName));
+			GetZoneNameByIndex(g_iEffectKeyValue_Entity[param1], sName, sizeof(sName));
 
 			g_bEffectKeyValue[param1] = true;
 
@@ -2852,7 +2853,7 @@ void AddEffectToZone(int entity, const char[] effect)
 	g_kvConfig.Rewind();
 
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	StringMap keys = null;
 	g_smEffectKeys.GetValue(effect, keys);
@@ -2895,7 +2896,7 @@ stock void UpdateZoneEffectKey(int entity, const char[] effect_name, const char[
 	g_kvConfig.Rewind();
 
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	if (g_kvConfig.JumpToKey(sName) && g_kvConfig.JumpToKey("effects", true) && g_kvConfig.JumpToKey(effect_name, true))
 	{
@@ -2934,7 +2935,7 @@ stock void UpdateZoneEffectKey(int entity, const char[] effect_name, const char[
 bool RemoveZoneEffectMenu(int client, int entity)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandler_RemoveZoneEffect);
 	menu.SetTitle("%T", "Menu - Title - Pick Effect To Remove", client, sName);
@@ -3003,7 +3004,7 @@ void RemoveEffectFromZone(int entity, const char[] effect)
 	g_kvConfig.Rewind();
 
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	StringMap values = null;
 	if (Zone[entity].Effects.GetValue(effect, values))
@@ -3222,6 +3223,7 @@ void CreateNewZone(int client)
 		{
 			g_kvConfig.SetVector("start", CZone[client].Start);
 			g_kvConfig.SetVector("end", CZone[client].End);
+			
 
 			float fOrigin[3];
 			GetEntPropVector(CZone[client].Trigger, Prop_Send, "m_vecOrigin", fOrigin);
@@ -3814,7 +3816,11 @@ int CreateZone(eCreateZone Data, bool create)
 		Zone[entity].Radius = Data.Radius;
 		Zone[entity].PointsHeight = Data.PointsHeight;
 		Zone[entity].Display = Data.Display;
-		Zone[entity].Trigger = true;
+		
+		if (Data.Type == ZONE_TYPE_TRIGGER)
+		{
+			Zone[entity].Trigger = true;
+		}
 
 		if (Zone[entity].Effects != null)
 		{
@@ -3859,7 +3865,7 @@ int CreateZone(eCreateZone Data, bool create)
 Action IsNearExternalZone(int client, int entity, int type)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	Action result = Plugin_Continue;
 
@@ -3890,7 +3896,7 @@ Action IsNearExternalZone(int client, int entity, int type)
 Action IsNotNearExternalZone(int client, int entity, int type)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	Action result = Plugin_Continue;
 
@@ -3912,7 +3918,7 @@ Action IsNotNearExternalZone(int client, int entity, int type)
 void IsNearExternalZone_Post(int client, int entity, int type)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	if (!g_bIsInsideZone_Post[client][entity])
 	{
@@ -3945,7 +3951,7 @@ void IsNearExternalZone_Post(int client, int entity, int type)
 void IsNotNearExternalZone_Post(int client, int entity, int type)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	if (g_bIsInsideZone_Post[client][entity])
 	{
@@ -3976,13 +3982,13 @@ public Action Zones_StartTouch(int entity, int other)
 	g_bIsInZone[client][entity] = true;
 
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	Call_StartForward(Forward.StartTouchZone);
 	Call_PushCell(client);
 	Call_PushCell(entity);
 	Call_PushString(sName);
-	Call_PushCell(ZONE_TYPE_BOX);
+	Call_PushCell(GetZoneTypeByIndex(entity));
 
 	Action result = Plugin_Continue;
 	Call_Finish(result);
@@ -4000,13 +4006,13 @@ public Action Zones_Touch(int entity, int other)
 	}
 
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	Call_StartForward(Forward.TouchZone);
 	Call_PushCell(client);
 	Call_PushCell(entity);
 	Call_PushString(sName);
-	Call_PushCell(ZONE_TYPE_BOX);
+	Call_PushCell(GetZoneTypeByIndex(entity));
 
 	Action result = Plugin_Continue;
 	Call_Finish(result);
@@ -4026,13 +4032,13 @@ public Action Zones_EndTouch(int entity, int other)
 	g_bIsInZone[client][entity] = false;
 
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	Call_StartForward(Forward.EndTouchZone);
 	Call_PushCell(client);
 	Call_PushCell(entity);
 	Call_PushString(sName);
-	Call_PushCell(ZONE_TYPE_BOX);
+	Call_PushCell(GetZoneTypeByIndex(entity));
 
 	Action result = Plugin_Continue;
 	Call_Finish(result);
@@ -4052,13 +4058,13 @@ public void Zones_StartTouchPost(int entity, int other)
 	CallEffectCallback(entity, client, EFFECT_CALLBACK_ONENTERZONE);
 
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	Call_StartForward(Forward.StartTouchZone_Post);
 	Call_PushCell(client);
 	Call_PushCell(entity);
 	Call_PushString(sName);
-	Call_PushCell(ZONE_TYPE_BOX);
+	Call_PushCell(GetZoneTypeByIndex(entity));
 	Call_Finish();
 }
 
@@ -4074,13 +4080,13 @@ public void Zones_TouchPost(int entity, int other)
 	CallEffectCallback(entity, client, EFFECT_CALLBACK_ONACTIVEZONE);
 
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	Call_StartForward(Forward.TouchZone_Post);
 	Call_PushCell(client);
 	Call_PushCell(entity);
 	Call_PushString(sName);
-	Call_PushCell(ZONE_TYPE_BOX);
+	Call_PushCell(GetZoneTypeByIndex(entity));
 	Call_Finish();
 }
 
@@ -4096,13 +4102,13 @@ public void Zones_EndTouchPost(int entity, int other)
 	CallEffectCallback(entity, client, EFFECT_CALLBACK_ONLEAVEZONE);
 
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	Call_StartForward(Forward.EndTouchZone_Post);
 	Call_PushCell(client);
 	Call_PushCell(entity);
 	Call_PushString(sName);
-	Call_PushCell(ZONE_TYPE_BOX);
+	Call_PushCell(GetZoneTypeByIndex(entity));
 	Call_Finish();
 }
 
@@ -4129,7 +4135,7 @@ void CallEffectCallback(int entity, int client, int callback)
 void DeleteZone(int entity, bool permanent = false, int client = -1)
 {
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 	int index = g_aZoneEntities.FindValue(EntIndexToEntRef(entity));
 	g_aZoneEntities.Erase(index);
@@ -4486,7 +4492,7 @@ bool TeleportToZone(int client, const char[] zone)
 
 		if (IsValidEntity(entity))
 		{
-			GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+			GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 			if (StrEqual(sName, zone))
 			{
@@ -4961,7 +4967,7 @@ public int Native_IsClientInZone(Handle plugin, int numParams)
 		if (IsValidEntity(zone))
 		{
 			char sName2[64];
-			GetEntPropString(zone, Prop_Send, "m_iName", sName2, sizeof(sName2));
+			GetZoneNameByIndex(zone, sName2, sizeof(sName2));
 
 			if (StrEqual(sName, sName2))
 			{
@@ -5033,6 +5039,33 @@ public int Native_GetZoneType(Handle plugin, int numParams)
 	}
 	
 	return GetZoneTypeByIndex(zone);
+}
+
+public int Native_GetZoneName(Handle plugin, int numParams)
+{
+	int zone = GetNativeCell(1);
+
+	if (zone < 1 || !IsValidEntity(zone))
+	{
+		return false;
+	}
+
+	if (g_aZoneEntities.FindValue(EntIndexToEntRef(zone)) == -1)
+	{
+		return false;
+	}
+	
+	int length = GetNativeCell(3);
+	
+	char[] name = new char[length];
+	GetZoneNameByIndex(zone, name, length);
+
+	if (SetNativeString(2, name, length) == SP_ERROR_NONE)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 bool AddItemFormat(Menu& menu, const char[] info, int style = ITEMDRAW_DEFAULT, const char[] format, any ...)
@@ -5379,7 +5412,7 @@ public void Frame_OnEntityCreated(int ref)
 		char sName[64];
 		if (HasEntProp(entity, Prop_Send, "m_iName"))
 		{
-			GetEntPropString(entity, Prop_Send, "m_iName", sName, sizeof(sName));
+			GetZoneNameByIndex(entity, sName, sizeof(sName));
 		}
 
 		if (g_cEnableLogging.BoolValue)
@@ -5406,7 +5439,7 @@ void OpenMapZoneList(int client)
 		if (IsValidEntity(zone))
 		{
 			IntToString(g_aMapZones.Get(i), sRef, sizeof(sRef));
-			GetEntPropString(zone, Prop_Send, "m_iName", sName, sizeof(sName));
+			GetZoneNameByIndex(zone, sName, sizeof(sName));
 			menu.AddItem(sRef, sName);
 		}
 	}
@@ -5430,7 +5463,7 @@ public int MenuHandler_MapZoneListMenu(Menu menu, MenuAction action, int param1,
 			menu.GetItem(param2, sRef, sizeof(sRef));
 
 			CZone[param1].Trigger = EntRefToEntIndex(StringToInt(sRef));
-			GetEntPropString(CZone[param1].Trigger, Prop_Send, "m_iName", CZone[param1].Name, sizeof(eCreateZone::Name));
+			GetZoneNameByIndex(CZone[param1].Trigger, CZone[param1].Name, sizeof(eCreateZone::Name));
 			GetAbsBoundingBox(CZone[param1].Trigger, CZone[param1].Start, CZone[param1].End);
 
 			OpenCreateZonesMenu(param1);
@@ -5517,7 +5550,7 @@ void OpenPolyPointEditMenu(int client)
 	CancelClientMenu(client);
 
 	char sName[MAX_ZONE_NAME_LENGTH];
-	GetEntPropString(zone, Prop_Send, "m_iName", sName, sizeof(sName));
+	GetZoneNameByIndex(zone, sName, sizeof(sName));
 
 	Menu menu = new Menu(MenuHandler_OpenPolyPointEditMenu);
 	menu.SetTitle("%T", "Menu - Title - Edit Poly Point Name", client, pointIndex + 1, sName);
@@ -5605,4 +5638,9 @@ public int MenuHandler_OpenPolyPointEditMenu(Menu menu, MenuAction action, int p
 			delete menu;
 		}
 	}
+}
+
+void GetZoneNameByIndex(int zone, char[] name, int length)
+{
+	GetEntPropString(zone, Prop_Send, "m_iName", name, length);
 }

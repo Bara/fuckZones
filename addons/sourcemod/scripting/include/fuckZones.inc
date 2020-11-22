@@ -64,7 +64,8 @@ native StringMap fuckZones_GetZoneEffects(int zone);
  * return                Zone Type, 0 and lower is invalid type.
  *
  */
-native StringMap fuckZones_GetZoneType(int zone);
+native int fuckZones_GetZoneType(int zone);
+native bool fuckZones_GetZoneName(int zone, char[] name, int length);
 
 
 
@@ -162,6 +163,7 @@ public void __pl_fuckZones_SetNTVOptional()
 	MarkNativeAsOptional("fuckZones_GetEffectsList");
 	MarkNativeAsOptional("fuckZones_GetZoneEffects");
 	MarkNativeAsOptional("fuckZones_GetZoneType");
+	MarkNativeAsOptional("fuckZones_GetZoneName");
 }
 #endif
 
