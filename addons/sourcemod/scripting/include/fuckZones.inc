@@ -32,17 +32,33 @@ typedef fuckZones_Effect_OnEnterZone = function void (int client, int entity, St
 typedef fuckZones_Effect_OnActiveZone = function void (int client, int entity, StringMap values);
 typedef fuckZones_Effect_OnLeaveZone = function void (int client, int entity, StringMap values);
 
-/**----------------------------------------------------------*/
-//Forwards
 
-native void fuckZones_Register_Effect(const char[] name, fuckZones_Effect_OnEnterZone OnEnterZone = INVALID_FUNCTION, fuckZones_Effect_OnActiveZone OnActiveZone = INVALID_FUNCTION, fuckZones_Effect_OnLeaveZone OnLeaveZone = INVALID_FUNCTION);
-native void fuckZones_Register_Effect_Key(const char[] name, const char[] effect, const char[] defaultvalue);
-native void fuckZones_Request_QueueEffects();
+
+/**----------------------------------------------------------*/
+// Natives
+
+native void fuckZones_RegisterEffect(const char[] name, fuckZones_Effect_OnEnterZone OnEnterZone = INVALID_FUNCTION, fuckZones_Effect_OnActiveZone OnActiveZone = INVALID_FUNCTION, fuckZones_Effect_OnLeaveZone OnLeaveZone = INVALID_FUNCTION);
+native void fuckZones_RegisterEffectKey(const char[] name, const char[] effect, const char[] defaultvalue);
+native void fuckZones_ReloadEffects();
 native bool fuckZones_IsClientInZone(int client, const char[] name);
 native bool fuckZones_TeleportClientToZone(int client, const char[] name);
 
+/*
+ * Don't close this ArrayList. It will handled by fuckZones.
+ *
+ */
+native ArrayList fuckZones_GetEffectsList();
+
+/*
+ * Don't close this StringMap. It will handled by fuckZones.
+ *
+ */
+native StringMap fuckZones_GetZoneEffects(int zone);
+
+
+
 /**----------------------------------------------------------*/
-//Forwards
+// Forwards
 
 /**
 * Called whenever the plugin requests for effects to be registered.
@@ -127,11 +143,13 @@ forward void fuckZones_OnEndTouchZone_Post(int client, int entity, const char[] 
 #if !defined REQUIRE_PLUGIN
 public void __pl_fuckZones_SetNTVOptional()
 {
-	MarkNativeAsOptional("ffuckZones_Register_Effect");
-	MarkNativeAsOptional("ffuckZones_Register_Effect_Key");
-	MarkNativeAsOptional("ffuckZones_Request_QueueEffects");
-	MarkNativeAsOptional("ffuckZones_IsClientInZone");
-	MarkNativeAsOptional("ffuckZones_TeleportClientToZone");
+	MarkNativeAsOptional("fuckZones_RegisterEffect");
+	MarkNativeAsOptional("fuckZones_RegisterEffectKey");
+	MarkNativeAsOptional("fuckZones_ReloadEffects");
+	MarkNativeAsOptional("fuckZones_IsClientInZone");
+	MarkNativeAsOptional("fuckZones_TeleportClientToZone");
+	MarkNativeAsOptional("fuckZones_GetEffectsList");
+	MarkNativeAsOptional("fuckZones_GetZoneEffects");
 }
 #endif
 

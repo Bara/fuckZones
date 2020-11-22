@@ -149,11 +149,13 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 {
 	RegPluginLibrary("fuckZones");
 
-	CreateNative("fuckZones_Register_Effect", Native_Register_Effect);
-	CreateNative("fuckZones_Register_Effect_Key", Native_Register_Effect_Key);
-	CreateNative("fuckZones_Request_QueueEffects", Native_Request_QueueEffects);
+	CreateNative("fuckZones_RegisterEffect", Native_RegisterEffect);
+	CreateNative("fuckZones_RegisterEffectKey", Native_RegisterEffectKey);
+	CreateNative("fuckZones_ReloadEffects", Native_ReloadEffects);
 	CreateNative("fuckZones_IsClientInZone", Native_IsClientInZone);
 	CreateNative("fuckZones_TeleportClientToZone", Native_TeleportClientToZone);
+	CreateNative("fuckZones_GetEffectsList", Native_GetEffectsList);
+	CreateNative("fuckZones_GetZoneEffects", Native_GetZoneEffects);
 
 	Forward.QueueEffects_Post = new GlobalForward("fuckZones_OnQueueEffects_Post", ET_Ignore);
 	Forward.StartTouchZone = new GlobalForward("fuckZones_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
@@ -876,7 +878,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 
 void OnButtonPress(int client, int button)
 {
-    if (button & IN_USE)
+	if (button & IN_USE)
 	{
 		int zone = g_iConfirmZone[client];
 
@@ -889,7 +891,7 @@ void OnButtonPress(int client, int button)
 
 /* void OnButtonRelease(int client, int button)
 {
-    if (client && button)
+	if (client && button)
 	{
 		// Hello.
 	}
@@ -4893,7 +4895,7 @@ float CalculateHorizontalDistance(float vec1[3], float vec2[3], bool squared = f
 }
 
 //Natives
-public int Native_Register_Effect(Handle plugin, int numParams)
+public int Native_RegisterEffect(Handle plugin, int numParams)
 {
 	int size;
 	GetNativeStringLength(1, size);
@@ -4908,7 +4910,7 @@ public int Native_Register_Effect(Handle plugin, int numParams)
 	RegisterNewEffect(plugin, sEffect, function1, function2, function3);
 }
 
-public int Native_Register_Effect_Key(Handle plugin, int numParams)
+public int Native_RegisterEffectKey(Handle plugin, int numParams)
 {
 	int size;
 	GetNativeStringLength(1, size);
@@ -4931,7 +4933,7 @@ public int Native_Register_Effect_Key(Handle plugin, int numParams)
 	RegisterNewEffectKey(sEffect, sKey, sDefaultValue);
 }
 
-public int Native_Request_QueueEffects(Handle plugin, int numParams)
+public int Native_ReloadEffects(Handle plugin, int numParams)
 {
 	QueueEffects();
 }
@@ -4986,6 +4988,33 @@ public int Native_TeleportClientToZone(Handle plugin, int numParams)
 	GetNativeString(2, sName, size + 1);
 
 	return TeleportToZone(client, sName);
+}
+
+public int Native_GetEffectsList(Handle plugin, int numParams)
+{
+	if (g_aEffectsList != null)
+	{
+		return view_as<int>(g_aEffectsList);
+	}
+	
+	return -1;
+}
+
+public int Native_GetZoneEffects(Handle plugin, int numParams)
+{
+	int zone = GetNativeCell(1);
+
+	if (zone < 1 || !IsValidEntity(zone))
+	{
+		return -1;
+	}
+
+	if (g_aZoneEntities.FindValue(EntIndexToEntRef(zone)) == -1)
+	{
+		return -1;
+	}
+	
+	return view_as<int>(Zone[zone].Effects);
 }
 
 bool AddItemFormat(Menu& menu, const char[] info, int style = ITEMDRAW_DEFAULT, const char[] format, any ...)

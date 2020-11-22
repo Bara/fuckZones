@@ -20,7 +20,7 @@ public Plugin myinfo =
 
 public void fuckZones_OnQueueEffects_Post()
 {
-	fuckZones_Register_Effect(EFFECT_NAME, INVALID_FUNCTION, INVALID_FUNCTION, INVALID_FUNCTION);
+	fuckZones_RegisterEffect(EFFECT_NAME, INVALID_FUNCTION, INVALID_FUNCTION, INVALID_FUNCTION);
 
 	/*
 		Start/End Zone: 0 = Disabled, 1 = 1st Start Zone, 2 = 2nd Start Zone (for Bonus)
@@ -29,15 +29,15 @@ public void fuckZones_OnQueueEffects_Post()
 		Bonus: 0 = Disabled, 1 = Enabled
 	*/
 
-	fuckZones_Register_Effect_Key(EFFECT_NAME, "Start Zone", "1");
-	fuckZones_Register_Effect_Key(EFFECT_NAME, "End Zone", "1");
+	fuckZones_RegisterEffectKey(EFFECT_NAME, "Start Zone", "1");
+	fuckZones_RegisterEffectKey(EFFECT_NAME, "End Zone", "1");
 
-	fuckZones_Register_Effect_Key(EFFECT_NAME, "Misc Zone", "0");
+	fuckZones_RegisterEffectKey(EFFECT_NAME, "Misc Zone", "0");
 
-	fuckZones_Register_Effect_Key(EFFECT_NAME, "Stage", "0");
-	fuckZones_Register_Effect_Key(EFFECT_NAME, "Checkpoint", "0");
+	fuckZones_RegisterEffectKey(EFFECT_NAME, "Stage", "0");
+	fuckZones_RegisterEffectKey(EFFECT_NAME, "Checkpoint", "0");
 
-	fuckZones_Register_Effect_Key(EFFECT_NAME, "Bonus", "0");
+	fuckZones_RegisterEffectKey(EFFECT_NAME, "Bonus", "0");
 }
 
 public Action fuckZones_OnStartTouchZone(int client, int entity, const char[] zone_name, int type)
