@@ -516,11 +516,11 @@ int SpawnAZone(const char[] name)
 	return -1;
 }
 
-public void OnClientSayCommand_Post(int client, const char[] command, const char[] sArgs)
+public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs)
 {
 	if (strlen(sArgs) == 0)
 	{
-		return;
+		return Plugin_Stop;
 	}
 
 	if (StrContains(sArgs, "!cancel", true) != -1)
@@ -542,19 +542,21 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 			OpenZonePropertiesMenu(client, entity);
 		}
 
-		return;
+		return Plugin_Stop;
 	}
 
 	if (CZone[client].SetName)
 	{
 		if (!CheckZoneName(client, sArgs))
 		{
-			return;
+			return Plugin_Stop;
 		}
 		
 		strcopy(CZone[client].Name, MAX_ZONE_NAME_LENGTH, sArgs);
 		CZone[client].SetName = false;
 		OpenCreateZonesMenu(client);
+
+		return Plugin_Stop;
 	}
 	else if (g_bEffectKeyValue[client])
 	{
@@ -574,6 +576,8 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 		}
 
 		ListZoneEffectKeys(client, g_iEffectKeyValue_Entity[client], g_sEffectKeyValue_Effect[client]);
+
+		return Plugin_Stop;
 	}
 
 	if (g_iEditingName[client] != INVALID_ENT_REFERENCE)
@@ -582,7 +586,7 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 
 		if (!CheckZoneName(client, sArgs))
 		{
-			return;
+			return Plugin_Stop;
 		}
 
 		char sName[MAX_ZONE_NAME_LENGTH];
@@ -593,7 +597,11 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 		g_iEditingName[client] = INVALID_ENT_REFERENCE;
 
 		OpenZonePropertiesMenu(client, entity);
+
+		return Plugin_Stop;
 	}
+
+	return Plugin_Continue;
 }
 
 public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon, int &subtype, int &cmdnum, int &tickcount, int &seed, int mouse[2])
