@@ -2846,11 +2846,11 @@ public int MenuHandler_EditZoneEffectKeyVaue(Menu menu, MenuAction action, int p
 	}
 }
 
-void AddEffectToZone(int entity, const char[] effect)
+bool AddEffectToZone(int entity, const char[] effect)
 {
 	if (g_kvConfig == null)
 	{
-		return;
+		return false;
 	}
 
 	g_kvConfig.Rewind();
@@ -2861,32 +2861,46 @@ void AddEffectToZone(int entity, const char[] effect)
 	StringMap keys = null;
 	g_smEffectKeys.GetValue(effect, keys);
 
-	if (g_kvConfig.JumpToKey(sName) && g_kvConfig.JumpToKey("effects", true) && g_kvConfig.JumpToKey(effect, true))
+	if (g_kvConfig.JumpToKey(sName))
 	{
-		if (keys != null)
-		{
-			Zone[entity].Effects.SetValue(effect, CloneHandle(keys));
-
-			StringMapSnapshot map = keys.Snapshot();
-
-			for (int i = 0; i < map.Length; i++)
-			{
-				char sKey[MAX_KEY_NAME_LENGTH];
-				map.GetKey(i, sKey, sizeof(sKey));
-
-				char sValue[MAX_KEY_VALUE_LENGTH];
-				keys.GetString(sKey, sValue, sizeof(sValue));
-
-				g_kvConfig.SetString(sKey, sValue);
-			}
-
-			delete map;
-		}
-
-		g_kvConfig.Rewind();
+		return false;
 	}
 
+	if (g_kvConfig.JumpToKey("effects", true))
+	{
+		return false;
+	}
+
+	if (g_kvConfig.JumpToKey(effect, true))
+	{
+		return false;
+	}
+
+	if (keys != null)
+	{
+		Zone[entity].Effects.SetValue(effect, CloneHandle(keys));
+
+		StringMapSnapshot map = keys.Snapshot();
+
+		for (int i = 0; i < map.Length; i++)
+		{
+			char sKey[MAX_KEY_NAME_LENGTH];
+			map.GetKey(i, sKey, sizeof(sKey));
+
+			char sValue[MAX_KEY_VALUE_LENGTH];
+			keys.GetString(sKey, sValue, sizeof(sValue));
+
+			g_kvConfig.SetString(sKey, sValue);
+		}
+
+		delete map;
+	}
+
+	g_kvConfig.Rewind();
+
 	SaveMapConfig();
+
+	return true;
 }
 
 bool UpdateZoneEffectKey(int entity, const char[] effect_name, const char[] key, char[] value)
@@ -2901,17 +2915,17 @@ bool UpdateZoneEffectKey(int entity, const char[] effect_name, const char[] key,
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
-	if (!g_kvConfig.JumpToKey(sName, false))
+	if (!g_kvConfig.JumpToKey(sName))
 	{
 		return false;
 	}
 
-	if (!g_kvConfig.JumpToKey("effects", false))
+	if (!g_kvConfig.JumpToKey("effects"))
 	{
 		return false;
 	}
 
-	if (!g_kvConfig.JumpToKey(effect_name, false))
+	if (!g_kvConfig.JumpToKey(effect_name))
 	{
 		return false;
 	}
@@ -3012,11 +3026,11 @@ public int MenuHandler_RemoveZoneEffect(Menu menu, MenuAction action, int param1
 	}
 }
 
-void RemoveEffectFromZone(int entity, const char[] effect)
+bool RemoveEffectFromZone(int entity, const char[] effect)
 {
 	if (g_kvConfig == null)
 	{
-		return;
+		return false;
 	}
 
 	g_kvConfig.Rewind();
@@ -3031,13 +3045,27 @@ void RemoveEffectFromZone(int entity, const char[] effect)
 		Zone[entity].Effects.Remove(effect);
 	}
 
-	if (g_kvConfig.JumpToKey(sName) && g_kvConfig.JumpToKey("effects", true) && g_kvConfig.JumpToKey(effect))
+	if (g_kvConfig.JumpToKey(sName))
 	{
-		g_kvConfig.DeleteThis();
-		g_kvConfig.Rewind();
+		return false;
 	}
 
+	if (g_kvConfig.JumpToKey("effects"))
+	{
+		return false;
+	}
+
+	if (g_kvConfig.JumpToKey(effect))
+	{
+		return false;
+	}
+
+	g_kvConfig.DeleteThis();
+	g_kvConfig.Rewind();
+
 	SaveMapConfig();
+
+	return true;
 }
 
 void OpenZoneTypeMenu(int client)
