@@ -563,12 +563,15 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 		char sValue[MAX_KEY_VALUE_LENGTH];
 		strcopy(sValue, sizeof(sValue), sArgs);
 
-		UpdateZoneEffectKey(g_iEffectKeyValue_Entity[client], g_sEffectKeyValue_Effect[client], g_sEffectKeyValue_EffectKey[client], sValue);
+		bool success = UpdateZoneEffectKey(g_iEffectKeyValue_Entity[client], g_sEffectKeyValue_Effect[client], g_sEffectKeyValue_EffectKey[client], sValue);
 
 		char sName[MAX_ZONE_NAME_LENGTH];
 		GetZoneNameByIndex(g_iEffectKeyValue_Entity[client], sName, sizeof(sName));
 
-		CPrintToChat(client, "%T", "Chat - Effect Key Update", client, g_sEffectKeyValue_Effect[client], g_sEffectKeyValue_EffectKey[client], sName, sValue);
+		if (success)
+		{
+			CPrintToChat(client, "%T", "Chat - Effect Key Update", client, g_sEffectKeyValue_Effect[client], g_sEffectKeyValue_EffectKey[client], sName, sValue);
+		}
 
 		ListZoneEffectKeys(client, g_iEffectKeyValue_Entity[client], g_sEffectKeyValue_Effect[client]);
 	}
@@ -2886,11 +2889,11 @@ void AddEffectToZone(int entity, const char[] effect)
 	SaveMapConfig();
 }
 
-stock void UpdateZoneEffectKey(int entity, const char[] effect_name, const char[] key, char[] value)
+bool UpdateZoneEffectKey(int entity, const char[] effect_name, const char[] key, char[] value)
 {
 	if (g_kvConfig == null)
 	{
-		return;
+		return false;
 	}
 
 	g_kvConfig.Rewind();
@@ -2898,38 +2901,53 @@ stock void UpdateZoneEffectKey(int entity, const char[] effect_name, const char[
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
-	if (g_kvConfig.JumpToKey(sName) && g_kvConfig.JumpToKey("effects", true) && g_kvConfig.JumpToKey(effect_name, true))
+	if (!g_kvConfig.JumpToKey(sName, false))
 	{
-		if (strlen(value) == 0)
-		{
-			StringMap keys = null;
-			g_smEffectKeys.GetValue(effect_name, keys);
-
-			keys.GetString(key, value, MAX_KEY_VALUE_LENGTH);
-		}
-
-		g_kvConfig.SetString(key, value);
-		g_kvConfig.Rewind();
-
-		StringMap smEffects = null;
-		Zone[entity].Effects.GetValue(effect_name, smEffects);
-
-		StringMapSnapshot keys = smEffects.Snapshot();
-		for (int i = 0; i < keys.Length; i++)
-		{
-			char sKey[MAX_KEY_NAME_LENGTH];
-			keys.GetKey(i, sKey, sizeof(sKey));
-
-			if (StrEqual(sKey, key, false))
-			{
-				smEffects.SetString(key, value);
-			}
-		}
-
-		delete keys;
+		return false;
 	}
 
+	if (!g_kvConfig.JumpToKey("effects", false))
+	{
+		return false;
+	}
+
+	if (!g_kvConfig.JumpToKey(effect_name, false))
+	{
+		return false;
+	}
+
+	if (strlen(value) == 0)
+	{
+		StringMap keys = null;
+		g_smEffectKeys.GetValue(effect_name, keys);
+
+		keys.GetString(key, value, MAX_KEY_VALUE_LENGTH);
+	}
+
+	g_kvConfig.SetString(key, value);
+	g_kvConfig.Rewind();
+
+	StringMap smEffects = null;
+	Zone[entity].Effects.GetValue(effect_name, smEffects);
+
+	StringMapSnapshot keys = smEffects.Snapshot();
+	for (int i = 0; i < keys.Length; i++)
+	{
+		char sKey[MAX_KEY_NAME_LENGTH];
+		keys.GetKey(i, sKey, sizeof(sKey));
+
+		if (StrEqual(sKey, key, false))
+		{
+			smEffects.SetString(key, value);
+			break;
+		}
+	}
+
+	delete keys;
+
 	SaveMapConfig();
+
+	return true;
 }
 
 bool RemoveZoneEffectMenu(int client, int entity)
