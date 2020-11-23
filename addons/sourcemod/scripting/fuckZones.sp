@@ -2869,17 +2869,17 @@ bool AddEffectToZone(int entity, const char[] effect)
 	StringMap keys = null;
 	g_smEffectKeys.GetValue(effect, keys);
 
-	if (g_kvConfig.JumpToKey(sName))
+	if (!g_kvConfig.JumpToKey(sName))
 	{
 		return false;
 	}
 
-	if (g_kvConfig.JumpToKey("effects", true))
+	if (!g_kvConfig.JumpToKey("effects", true))
 	{
 		return false;
 	}
 
-	if (g_kvConfig.JumpToKey(effect, true))
+	if (!g_kvConfig.JumpToKey(effect, true))
 	{
 		return false;
 	}
@@ -3053,17 +3053,17 @@ bool RemoveEffectFromZone(int entity, const char[] effect)
 		Zone[entity].Effects.Remove(effect);
 	}
 
-	if (g_kvConfig.JumpToKey(sName))
+	if (!g_kvConfig.JumpToKey(sName))
 	{
 		return false;
 	}
 
-	if (g_kvConfig.JumpToKey("effects"))
+	if (!g_kvConfig.JumpToKey("effects"))
 	{
 		return false;
 	}
 
-	if (g_kvConfig.JumpToKey(effect))
+	if (!g_kvConfig.JumpToKey(effect))
 	{
 		return false;
 	}
@@ -4548,7 +4548,7 @@ bool TeleportToZone(int client, const char[] zone)
 		{
 			GetZoneNameByIndex(entity, sName, sizeof(sName));
 
-			if (StrEqual(sName, zone))
+			if (StrContains(sName, zone, false) != -1)
 			{
 				bFound = true;
 				break;
@@ -4570,8 +4570,6 @@ bool TeleportToZone(int client, const char[] zone)
 			float fStart[3], fEnd[3];
 			GetAbsBoundingBox(entity, fStart, fEnd);
 			GetMiddleOfABox(fStart, fEnd, fMiddle);
-
-			PrintToChat(client, "Box: %f / %f / %f", fMiddle[0], fMiddle[1], fMiddle[2]);
 		}
 
 		case ZONE_TYPE_TRIGGER:
@@ -4579,8 +4577,6 @@ bool TeleportToZone(int client, const char[] zone)
 			float fStart[3], fEnd[3];
 			GetAbsBoundingBox(entity, fStart, fEnd);
 			GetMiddleOfABox(fStart, fEnd, fMiddle);
-
-			PrintToChat(client, "Trigger: %f / %f / %f", fMiddle[0], fMiddle[1], fMiddle[2]);
 		}
 
 		case ZONE_TYPE_CIRCLE:
@@ -4601,7 +4597,7 @@ bool TeleportToZone(int client, const char[] zone)
 	}
 
 	TeleportEntity(client, fMiddle, NULL_VECTOR, NULL_VECTOR);
-	CPrintToChat(client, "%T", "Chat - Teleported To Zone", client, zone);
+	CPrintToChat(client, "%T", "Chat - Teleported To Zone", client, sName);
 
 	return true;
 }
