@@ -3745,7 +3745,11 @@ int CreateZone(eCreateZone Data, bool create)
 
 				DispatchSpawn(entity);
 
-				SetEntProp(entity, Prop_Send, "m_spawnflags", 257);
+				if (HasEntProp(entity, Prop_Send, "m_spawnflags"))
+				{
+					SetEntProp(entity, Prop_Send, "m_spawnflags", 257);
+				}
+				
 				SetEntProp(entity, Prop_Send, "m_nSolidType", 2);
 				SetEntProp(entity, Prop_Send, "m_fEffects", 32);
 
