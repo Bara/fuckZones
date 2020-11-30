@@ -2089,7 +2089,10 @@ void UpdateZonesSectionName(int entity, const char[] name)
 
 	SaveMapConfig();
 
-	SetEntPropString(entity, Prop_Send, "m_iName", name);
+	if (HasEntProp(entity, Prop_Send, "m_iName"))
+	{
+		SetEntPropString(entity, Prop_Send, "m_iName", name);
+	}
 }
 
 void UpdateZonesConfigKey(int entity, const char[] key, const char[] value)
@@ -3749,9 +3752,16 @@ int CreateZone(eCreateZone Data, bool create)
 				{
 					SetEntProp(entity, Prop_Send, "m_spawnflags", 257);
 				}
-				
-				SetEntProp(entity, Prop_Send, "m_nSolidType", 2);
-				SetEntProp(entity, Prop_Send, "m_fEffects", 32);
+
+				if (HasEntProp(entity, Prop_Send, "m_nSolidType"))
+				{
+					SetEntProp(entity, Prop_Send, "m_nSolidType", 2);
+				}
+
+				if (HasEntProp(entity, Prop_Send, "m_fEffects"))
+				{
+					SetEntProp(entity, Prop_Send, "m_fEffects", 32);
+				}
 
 				float fMiddle[3];
 				GetMiddleOfABox(Data.Start, Data.End, fMiddle);
@@ -3777,8 +3787,15 @@ int CreateZone(eCreateZone Data, bool create)
 					}
 				}
 
-				SetEntPropVector(entity, Prop_Send, "m_vecMins", Data.Start);
-				SetEntPropVector(entity, Prop_Send, "m_vecMaxs", Data.End);
+				if (HasEntProp(entity, Prop_Send, "m_vecMins"))
+				{
+					SetEntPropVector(entity, Prop_Send, "m_vecMins", Data.Start);
+				}
+
+				if (HasEntProp(entity, Prop_Send, "m_vecMaxs"))
+				{
+					SetEntPropVector(entity, Prop_Send, "m_vecMaxs", Data.End);
+				}
 
 				SDKHook(entity, SDKHook_StartTouchPost, Zones_StartTouch);
 				SDKHook(entity, SDKHook_TouchPost, Zones_Touch);
