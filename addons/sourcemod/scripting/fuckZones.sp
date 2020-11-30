@@ -592,7 +592,8 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		char sName[MAX_ZONE_NAME_LENGTH];
 		GetZoneNameByIndex(entity, sName, sizeof(sName));
 
-		UpdateZonesSectionName(entity, sArgs);
+		entity = RemakeZoneEntity(entity);
+
 		CPrintToChat(client, "%T", "Chat - Zone Renamed", client, sName, sArgs);
 		g_iEditingName[client] = INVALID_ENT_REFERENCE;
 
@@ -2069,32 +2070,6 @@ void GetZonesVectorData(int entity, const char[] name, float[3] vecdata)
 	}
 }
 
-void UpdateZonesSectionName(int entity, const char[] name)
-{
-	if (g_kvConfig == null)
-	{
-		return;
-	}
-
-	char sName[MAX_ZONE_NAME_LENGTH];
-	GetZoneNameByIndex(entity, sName, sizeof(sName));
-
-	g_kvConfig.Rewind();
-
-	if (g_kvConfig.JumpToKey(sName))
-	{
-		g_kvConfig.SetSectionName(name);
-		g_kvConfig.Rewind();
-	}
-
-	SaveMapConfig();
-
-	if (HasEntProp(entity, Prop_Send, "m_iName"))
-	{
-		SetEntPropString(entity, Prop_Send, "m_iName", name);
-	}
-}
-
 void UpdateZonesConfigKey(int entity, const char[] key, const char[] value)
 {
 	if (g_kvConfig == null)
@@ -3283,7 +3258,7 @@ void CreateNewZone(int client)
 			
 
 			float fOrigin[3];
-			GetEntPropVector(CZone[client].Trigger, Prop_Send, "m_vecOrigin", fOrigin);
+			GetEntPropVector(CZone[client].Trigger, Prop_Data, "m_vecOrigin", fOrigin);
 			g_kvConfig.SetVector("origin", fOrigin);
 			CZone[client].Origin = fOrigin;
 		}
@@ -3569,7 +3544,7 @@ public Action Timer_DisplayZones(Handle timer)
 
 		if (IsValidEntity(zone) && Zone[zone].Display >= 0 && Zone[zone].Display < DISPLAY_TYPE_HIDE)
 		{
-			GetEntPropVector(zone, Prop_Send, "m_vecOrigin", vecOrigin);
+			GetEntPropVector(zone, Prop_Data, "m_vecOrigin", vecOrigin);
 
 			int iColor[4];
 			iColor = Zone[zone].Color;
@@ -3682,9 +3657,9 @@ void GetAbsBoundingBox(int entity, float mins[3], float maxs[3])
 {
 	float origin[3];
 
-	GetEntPropVector(entity, Prop_Send, "m_vecOrigin", origin);
-	GetEntPropVector(entity, Prop_Send, "m_vecMins", mins);
-	GetEntPropVector(entity, Prop_Send, "m_vecMaxs", maxs);
+	GetEntPropVector(entity, Prop_Data, "m_vecOrigin", origin);
+	GetEntPropVector(entity, Prop_Data, "m_vecMins", mins);
+	GetEntPropVector(entity, Prop_Data, "m_vecMaxs", maxs);
 
 	mins[0] += origin[0];
 	mins[1] += origin[1];
@@ -3748,20 +3723,9 @@ int CreateZone(eCreateZone Data, bool create)
 
 				DispatchSpawn(entity);
 
-				if (HasEntProp(entity, Prop_Send, "m_spawnflags"))
-				{
-					SetEntProp(entity, Prop_Send, "m_spawnflags", 257);
-				}
-
-				if (HasEntProp(entity, Prop_Send, "m_nSolidType"))
-				{
-					SetEntProp(entity, Prop_Send, "m_nSolidType", 2);
-				}
-
-				if (HasEntProp(entity, Prop_Send, "m_fEffects"))
-				{
-					SetEntProp(entity, Prop_Send, "m_fEffects", 32);
-				}
+				SetEntProp(entity, Prop_Data, "m_spawnflags", 257);
+				SetEntProp(entity, Prop_Data, "m_nSolidType", 2);
+				SetEntProp(entity, Prop_Data, "m_fEffects", 32);
 
 				float fMiddle[3];
 				GetMiddleOfABox(Data.Start, Data.End, fMiddle);
@@ -3787,15 +3751,8 @@ int CreateZone(eCreateZone Data, bool create)
 					}
 				}
 
-				if (HasEntProp(entity, Prop_Send, "m_vecMins"))
-				{
-					SetEntPropVector(entity, Prop_Send, "m_vecMins", Data.Start);
-				}
-
-				if (HasEntProp(entity, Prop_Send, "m_vecMaxs"))
-				{
-					SetEntPropVector(entity, Prop_Send, "m_vecMaxs", Data.End);
-				}
+				SetEntPropVector(entity, Prop_Data, "m_vecMins", Data.Start);
+				SetEntPropVector(entity, Prop_Data, "m_vecMaxs", Data.End);
 
 				SDKHook(entity, SDKHook_StartTouchPost, Zones_StartTouch);
 				SDKHook(entity, SDKHook_TouchPost, Zones_Touch);
@@ -5478,13 +5435,10 @@ public void Frame_OnEntityCreated(int ref)
 	if (IsValidEntity(entity))
 	{
 		float fOrigin[3];
-		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", fOrigin);
+		GetEntPropVector(entity, Prop_Data, "m_vecOrigin", fOrigin);
 
 		char sName[64];
-		if (HasEntProp(entity, Prop_Send, "m_iName"))
-		{
-			GetZoneNameByIndex(entity, sName, sizeof(sName));
-		}
+		GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 		if (g_cEnableLogging.BoolValue)
 		{
@@ -5713,5 +5667,5 @@ public int MenuHandler_OpenPolyPointEditMenu(Menu menu, MenuAction action, int p
 
 void GetZoneNameByIndex(int zone, char[] name, int length)
 {
-	GetEntPropString(zone, Prop_Send, "m_iName", name, length);
+	GetEntPropString(zone, Prop_Data, "m_iName", name, length);
 }
