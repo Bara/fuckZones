@@ -5649,12 +5649,16 @@ public int MenuHandler_OpenPolyPointEditMenu(Menu menu, MenuAction action, int p
 
 		case MenuAction_Cancel:
 		{
+			int iEntity = GetMenuCell(menu, "entity");
+			
+			g_bSelectedZone[iEntity] = false;
+			
 			if (param2 == MenuCancel_ExitBack)
 			{
-				g_iConfirmZone[param1] = GetMenuCell(menu, "entity");
+				g_iConfirmZone[param1] = iEntity;
 				g_iConfirmPoint[param1] = -1;
 
-				OpenPolyEditPointMenu(param1, GetMenuCell(menu, "entity"));
+				OpenPolyEditPointMenu(param1, iEntity);
 			}
 		}
 
