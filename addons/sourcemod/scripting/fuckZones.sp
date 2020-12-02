@@ -51,6 +51,7 @@ enum struct eForwards
 	GlobalForward StartTouchZone_Post;
 	GlobalForward TouchZone_Post;
 	GlobalForward EndTouchZone_Post;
+	GlobalForward OnZoneCreate;
 }
 
 eForwards Forward;
@@ -166,6 +167,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	Forward.StartTouchZone_Post = new GlobalForward("fuckZones_OnStartTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	Forward.TouchZone_Post = new GlobalForward("fuckZones_OnTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	Forward.EndTouchZone_Post = new GlobalForward("fuckZones_OnEndTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.OnZoneCreate = new GlobalForward("fuckZones_OnZoneCreate", ET_Ignore, Param_Cell, Param_String, Param_Cell);
+	// TODO: fuckZones_OnEffectUpdate(int zone, StringMap values)
 
 	g_bLate = late;
 	return APLRes_Success;
@@ -3887,6 +3890,12 @@ int CreateZone(eCreateZone Data, bool create)
 	{
 		LogMessage("Zone %s has been spawned %s as a %s zone with the entity index %i.", Data.Name, IsValidEntity(entity) ? "successfully" : "not successfully", sType, entity);
 	}
+
+	Call_StartForward(Forward.OnZoneCreate);
+	Call_PushCell(entity);
+	Call_PushString(Data.Name);
+	Call_PushCell(Data.Type);
+	Call_Finish();
 
 	delete Data.PointsData;
 	delete Data.Effects;

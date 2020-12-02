@@ -152,6 +152,17 @@ forward void fuckZones_OnTouchZone_Post(int client, int entity, const char[] zon
 **/
 forward void fuckZones_OnEndTouchZone_Post(int client, int entity, const char[] zone_name, int type);
 
+/**
+* Called right after created zone
+*
+* param entity          Entity index.
+* param zone_name		Name of the zone.
+* param type            Type of zone.
+*
+* noreturn
+**/
+forward void fuckZones_OnZoneCreate(int entity, const char[] zone_name, int type);
+
 #if !defined REQUIRE_PLUGIN
 public void __pl_fuckZones_SetNTVOptional()
 {
