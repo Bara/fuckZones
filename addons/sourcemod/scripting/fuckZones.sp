@@ -3900,22 +3900,6 @@ int CreateZone(eCreateZone Data, bool create)
 	Call_Finish();
 
 	delete Data.PointsData;
-
-	if (Data.Effects != null)
-	{
-		StringMapSnapshot snap1 = Data.Effects.Snapshot();
-		char sKey[128];
-		StringMap temp = null;
-
-		for (int j = 0; j < snap1.Length; j++)
-		{
-			snap1.GetKey(j, sKey, sizeof(sKey));
-			Data.Effects.GetValue(sKey, temp);
-			delete temp;
-		}
-		delete snap1;
-	}
-
 	delete Data.Effects;
 	
 	return entity;
