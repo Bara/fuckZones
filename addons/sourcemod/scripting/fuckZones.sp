@@ -52,6 +52,7 @@ enum struct eForwards
 	GlobalForward TouchZone_Post;
 	GlobalForward EndTouchZone_Post;
 	GlobalForward OnZoneCreate;
+	GlobalForward OnEffectUpdate;
 }
 
 eForwards Forward;
@@ -170,7 +171,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	Forward.TouchZone_Post = new GlobalForward("fuckZones_OnTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	Forward.EndTouchZone_Post = new GlobalForward("fuckZones_OnEndTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	Forward.OnZoneCreate = new GlobalForward("fuckZones_OnZoneCreate", ET_Ignore, Param_Cell, Param_String, Param_Cell);
-	// TODO: fuckZones_OnEffectUpdate(int zone, StringMap values)
+	Forward.OnEffectUpdate = new GlobalForward("fuckZones_OnEffectUpdate", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_Cell);
 
 	g_bLate = late;
 	return APLRes_Success;
@@ -2890,6 +2891,7 @@ bool AddEffectToZone(int entity, const char[] effect)
 	g_kvConfig.Rewind();
 
 	SaveMapConfig();
+	CallZoneEffectUpdate(entity);
 
 	return true;
 }
@@ -2951,6 +2953,7 @@ bool UpdateZoneEffectKey(int entity, const char[] effect_name, const char[] key,
 	delete keys;
 
 	SaveMapConfig();
+	CallZoneEffectUpdate(entity);
 
 	return true;
 }
@@ -3055,6 +3058,7 @@ bool RemoveEffectFromZone(int entity, const char[] effect)
 	g_kvConfig.Rewind();
 
 	SaveMapConfig();
+	CallZoneEffectUpdate(entity);
 
 	return true;
 }
@@ -5728,4 +5732,19 @@ public int MenuHandler_OpenPolyPointEditMenu(Menu menu, MenuAction action, int p
 void GetZoneNameByIndex(int zone, char[] name, int length)
 {
 	GetEntPropString(zone, Prop_Data, "m_iName", name, length);
+}
+
+void CallZoneEffectUpdate(int zone)
+{
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetZoneNameByIndex(zone, sName, sizeof(sName));
+
+	int iType = GetZoneTypeByIndex(zone);
+
+	Call_StartForward(Forward.OnEffectUpdate);
+	Call_PushCell(zone);
+	Call_PushString(sName);
+	Call_PushCell(iType);
+	Call_PushCell(view_as<int>(Zone[zone].Effects));
+	Call_Finish();
 }
