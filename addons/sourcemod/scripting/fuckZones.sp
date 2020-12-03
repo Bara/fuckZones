@@ -4532,7 +4532,7 @@ bool TeleportToZone(int client, const char[] zone)
 		return false;
 	}
 
-	int entity = -1; char sName[64]; bool bFound = false;
+	int entity = -1; char sName[MAX_ZONE_NAME_LENGTH]; bool bFound = false;
 	for (int i = 0; i < g_aZoneEntities.Length; i++)
 	{
 		entity = EntRefToEntIndex(g_aZoneEntities.Get(i));
@@ -5497,7 +5497,7 @@ public void Frame_OnEntityCreated(int ref)
 		float fOrigin[3];
 		GetEntPropVector(entity, Prop_Data, "m_vecOrigin", fOrigin);
 
-		char sName[64];
+		char sName[MAX_ZONE_NAME_LENGTH];
 		GetZoneNameByIndex(entity, sName, sizeof(sName));
 
 		if (g_cEnableLogging.BoolValue)
