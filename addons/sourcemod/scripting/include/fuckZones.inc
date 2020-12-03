@@ -41,7 +41,9 @@ native void fuckZones_RegisterEffect(const char[] name, fuckZones_Effect_OnEnter
 native void fuckZones_RegisterEffectKey(const char[] name, const char[] effect, const char[] defaultvalue);
 native void fuckZones_ReloadEffects();
 native bool fuckZones_IsClientInZone(int client, const char[] name);
+native bool fuckZones_IsClientInZoneIndex(int client, int zone);
 native bool fuckZones_TeleportClientToZone(int client, const char[] name);
+native bool fuckZones_TeleportClientToZoneIndex(int client, int zone);
 
 /*
  * Don't close this ArrayList. It will handled by fuckZones.

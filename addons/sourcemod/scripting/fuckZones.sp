@@ -154,7 +154,9 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("fuckZones_RegisterEffectKey", Native_RegisterEffectKey);
 	CreateNative("fuckZones_ReloadEffects", Native_ReloadEffects);
 	CreateNative("fuckZones_IsClientInZone", Native_IsClientInZone);
+	CreateNative("fuckZones_IsClientInZoneIndex", Native_IsClientInZoneIndex);
 	CreateNative("fuckZones_TeleportClientToZone", Native_TeleportClientToZone);
+	CreateNative("fuckZones_TeleportClientToZoneIndex", Native_TeleportClientToZoneIndex);
 	CreateNative("fuckZones_GetEffectsList", Native_GetEffectsList);
 	CreateNative("fuckZones_GetZoneEffects", Native_GetZoneEffects);
 	CreateNative("fuckZones_GetZoneType", Native_GetZoneType);
@@ -5032,6 +5034,30 @@ public int Native_IsClientInZone(Handle plugin, int numParams)
 	return false;
 }
 
+public int Native_IsClientInZoneIndex(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+
+	if (!IsClientValid(client))
+	{
+		return false;
+	}
+
+	int zone = GetNativeCell(2);
+
+	if (g_aZoneEntities.FindValue(EntIndexToEntRef(zone)) == -1)
+	{
+		return false;
+	}
+
+	if (IsValidEntity(zone))
+	{
+		return g_bIsInZone[client][zone];
+	}
+
+	return false;
+}
+
 public int Native_TeleportClientToZone(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
@@ -5046,6 +5072,27 @@ public int Native_TeleportClientToZone(Handle plugin, int numParams)
 
 	char[] sName = new char[size + 1];
 	GetNativeString(2, sName, size + 1);
+
+	return TeleportToZone(client, sName);
+}
+
+public int Native_TeleportClientToZoneIndex(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+
+	if (!IsClientValid(client) || !IsPlayerAlive(client))
+	{
+		return false;
+	}
+
+	int zone = GetNativeCell(2);
+	if (!IsValidEntity(zone) || (g_aZoneEntities.FindValue(EntIndexToEntRef(zone)) == -1))
+	{
+		return false;
+	}
+
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetZoneNameByIndex(zone, sName, sizeof(sName));
 
 	return TeleportToZone(client, sName);
 }
