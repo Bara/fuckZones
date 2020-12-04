@@ -3,36 +3,100 @@
 #pragma newdecls required
 
 #include <sourcemod>
+#include <intmap>
 #include <fuckZones>
 
-#define EFFECT_NAME "Timer"
+#define EFFECT_NAME "fuck"
 
-float g_fTime[MAXPLAYERS + 1] = 0.0;
+enum struct PlayerData {
+	float Time;
+	IntMap StageTimes;
+}
+
+PlayerData Player[MAXPLAYERS + 1];
+
+IntMap g_imStages = null;
+int g_iStartZone = -1;
 
 public Plugin myinfo =
 {
-	name = "fuckZones - Test Times",
+	name = "fuck",
 	author = "Bara",
-	description = "A simple plugin to test the zones manager plugin and its API interface.",
-	version = "1.1.0",
+	description = "",
+	version = "0.0.0",
 	url = "github.com/Bara"
 };
 
+public void OnPluginStart()
+{
+	RegConsoleCmd("sm_r", Command_Restart);
+
+	g_imStages = new IntMap();
+
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		OnClientDisconnect(i);
+		OnClientPutInServer(i);
+	}
+}
+
+public void OnMapStart()
+{
+	g_imStages.Clear();
+}
+
+public void OnClientPutInServer(int client)
+{
+	Player[client].StageTimes = new IntMap();
+}
+
+public void OnClientDisconnect(int client)
+{
+	delete Player[client].StageTimes;
+}
+
+public Action Command_Restart(int client, int args)
+{
+	if (!client)
+	{
+		return Plugin_Handled;
+	}
+
+	PrintToChat(client, "In Zone: %d", fuckZones_IsClientInZoneIndex(client, g_iStartZone));
+
+	fuckZones_TeleportClientToZoneIndex(client, g_iStartZone);
+
+	return Plugin_Handled;
+}
+
+public void fuckZones_OnZoneCreate(int zone, const char[] name, int type)
+{
+	StringMap smEffects = fuckZones_GetZoneEffects(zone);
+
+	StringMap smValues = null;
+	smEffects.GetValue(EFFECT_NAME, smValues);
+
+	if (IsStartZone(smValues))
+	{
+		g_iStartZone = zone;
+	}
+
+	int iStage = GetStageNumber(smValues);
+
+	if (iStage > 0)
+	{
+		g_imStages.SetValue(iStage, EntIndexToEntRef(zone));
+	}
+}
+
 public void fuckZones_OnEffectsReady()
 {
-	fuckZones_RegisterEffect(EFFECT_NAME, INVALID_FUNCTION, INVALID_FUNCTION, OnZoneLeave);
+	fuckZones_RegisterEffect(EFFECT_NAME, OneZoneStartTouch, INVALID_FUNCTION, OnZoneEndTouch);
 
-	/*
-		Start/End Zone: 0 = Disabled, 1 = 1st Start Zone, 2 = 2nd Start Zone (for Bonus)
-		Misc Zone: 0 = Disabled, 1 = Type X, 2 = Type Y, ...
-		Stage/Checkpoint Zone: 0 = Disabled, 1 = Stage/Checkpoint 1, 2 = Stage/Checkpoint 2, ...
-		Bonus: 0 = Disabled, 1 = Enabled
-	*/
+	fuckZones_RegisterEffectKey(EFFECT_NAME, "StartZone", "0");
+	fuckZones_RegisterEffectKey(EFFECT_NAME, "EndZone", "0");
 
-	fuckZones_RegisterEffectKey(EFFECT_NAME, "Start Zone", "1");
-	fuckZones_RegisterEffectKey(EFFECT_NAME, "End Zone", "1");
-
-	fuckZones_RegisterEffectKey(EFFECT_NAME, "Misc Zone", "0");
+	fuckZones_RegisterEffectKey(EFFECT_NAME, "MiscZone", "0");
 
 	fuckZones_RegisterEffectKey(EFFECT_NAME, "Stage", "0");
 	fuckZones_RegisterEffectKey(EFFECT_NAME, "Checkpoint", "0");
@@ -40,83 +104,93 @@ public void fuckZones_OnEffectsReady()
 	fuckZones_RegisterEffectKey(EFFECT_NAME, "Bonus", "0");
 }
 
-public Action fuckZones_OnStartTouchZone(int client, int entity, const char[] zone_name, int type)
+public void OneZoneStartTouch(int client, int entity, StringMap values)
 {
-	char sName[MAX_ZONE_NAME_LENGTH];
-	fuckZones_GetZoneName(entity, sName, sizeof(sName));
-
-	int iType = fuckZones_GetZoneType(entity);
-
-	PrintToChat(client, "StartTouch: Entity: %i - Name: %s (%s) - Type: %i (%d)", entity, zone_name, sName, type, iType);
-
-	ArrayList aEffects = fuckZones_GetEffectsList();
-	char sEffect[MAX_EFFECT_NAME_LENGTH];
-	StringMap smEffect = null;
-	StringMap smKeys = null;
-	StringMapSnapshot keys = null;
-
-	for (int i = 0; i < aEffects.Length; i++)
+	if (IsEndZone(values))
 	{
-		aEffects.GetString(i, sEffect, sizeof(sEffect));
-		smEffect = fuckZones_GetZoneEffects(entity);
-		
-		if (smEffect != null)
+		if (Player[client].Time > 0.0)
 		{
-			smEffect.GetValue(sEffect, smKeys);
-
-			if (smKeys != null)
-			{
-				keys = smKeys.Snapshot();
-				for (int x = 0; x < keys.Length; x++)
-				{
-					char sKey[MAX_KEY_NAME_LENGTH];
-					keys.GetKey(x, sKey, sizeof(sKey));
-
-					char sValue[MAX_KEY_VALUE_LENGTH];
-					smKeys.GetString(sKey, sValue, sizeof(sValue));
-					
-					PrintToChat(client, "Effect: %s, Key: %s, Value: %s", sEffect, sKey, sValue);
-				}
-				delete keys;
-			}
+			PrintToChat(client, "Time: %.3f", GetGameTime()-Player[client].Time);
 		}
 	}
 
-	if (g_fTime[client] > 0.0 && StrContains(zone_name, "End", false) != -1)
-	{
-		PrintToChat(client, "Time: %f", (GetGameTime() - g_fTime[client]));
-		g_fTime[client] = 0.0;
-	}
+	int iStage = GetStageNumber(values);
 
-	return Plugin_Continue;
+	if (iStage > 1)
+	{
+		float fTime = GetGameTime();
+		Player[client].StageTimes.SetValue(iStage, fTime);
+
+		float fPrevTime;
+		if (Player[client].StageTimes.GetValue(iStage-1, fPrevTime))
+		{
+			PrintToChat(client, "Time for Stage %d to Stage %d: %.3f", iStage-1, iStage, fTime-fPrevTime);
+		}
+	}
 }
 
-public Action fuckZones_OnEndTouchZone(int client, int entity, const char[] zone_name, int type)
+public void OnZoneEndTouch(int client, int entity, StringMap values)
 {
-	PrintToChat(client, "EndTouch: Entity: %i - Name: %s - Type: %i", entity, zone_name, type);
-
-	if (StrContains(zone_name, "Start", false) != -1)
+	if (IsStartZone(values))
 	{
-		g_fTime[client] = GetGameTime();
+		Player[client].Time = GetGameTime();
 	}
 
-	return Plugin_Continue;
+	int iStage = GetStageNumber(values);
+	if (iStage > 0)
+	{
+		Player[client].StageTimes.SetValue(iStage, GetGameTime());
+	}
 }
 
-public void OnZoneLeave(int client, int entity, StringMap values)
+bool IsStartZone(StringMap values)
 {
-	PrintToChat(client, "test");
-	
-	char sKey[MAX_KEY_NAME_LENGTH];
 	char sValue[MAX_KEY_VALUE_LENGTH];
+	if (GetZoneValue(values, "StartZone", sValue, sizeof(sValue)))
+	{
+		return view_as<bool>(StringToInt(sValue));
+	}
+	return false;
+}
 
+bool IsEndZone(StringMap values)
+{
+	char sValue[MAX_KEY_VALUE_LENGTH];
+	if (GetZoneValue(values, "EndZone", sValue, sizeof(sValue)))
+	{
+		return view_as<bool>(StringToInt(sValue));
+	}
+	return false;
+}
+
+int GetStageNumber(StringMap values)
+{
+	char sValue[MAX_KEY_VALUE_LENGTH];
+	if (GetZoneValue(values, "Stage", sValue, sizeof(sValue)))
+	{
+		return StringToInt(sValue);
+	}
+	return -1;
+}
+
+bool GetZoneValue(StringMap values, const char[] key, char[] value, int length)
+{
+	char sKey[MAX_KEY_NAME_LENGTH];
 	StringMapSnapshot keys = values.Snapshot();
+
 	for (int x = 0; x < keys.Length; x++)
 	{
 		keys.GetKey(x, sKey, sizeof(sKey));
-		values.GetString(sKey, sValue, sizeof(sValue));
-		
-		PrintToChat(client, "Key: %s, Value: %s", sKey, sValue);
+
+		if (strcmp(sKey, key, false) == 0)
+		{
+			values.GetString(sKey, value, length);
+
+			delete keys;
+			return true;
+		}
 	}
+
 	delete keys;
+	return false;
 }
