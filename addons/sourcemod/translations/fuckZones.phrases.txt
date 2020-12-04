@@ -5,6 +5,7 @@
 		"en"		"Your selected zone is no longer valid."
 		"de"		"Deine ausgewählte Zone ist nicht mehr gültig."
 		"pl"		"Twoja zaznaczona strefa nie jest już prawidłowa."
+		"fr"		"La zone que vous avez selectioné n'est plus valide."
 	}
 
 	"Chat - Zone Already Exist"
@@ -12,6 +13,7 @@
 		"en"		"Zone name already exists, please pick a different name or cancel the process with {green}!cancel{default}."
 		"de"		"Zonenname existiert bereits, bitte wählen Sie einen anderen Namen oder brechen Sie den Vorgang mit {green}!cancel{default} ab."
 		"pl"		"Nazwa strefy już istnieje, proszę wybierz inną nazwę lub anuluj proces komendą {green}!cancel{default}."
+		"fr"		"Le nom de zone existe déjà, merci d'en choisir un autre, ou annuler la création avec {green}!cancel{default}."
 	}
 
 	"Chat - Effect Key Update"
@@ -20,6 +22,7 @@
 		"en"		"Effect {green}{1}{default} key {green}{2}{default} for zone {green}{3}{default} has been successfully updated to {green}{4}{default}."
 		"de"		"Effekt {green}{1}{default} Schlüssel {green}{2}{default} für zone {green}{3}{default} wurde erfolgreich aktualisiert auf {green}{4}{default}."
 		"pl"		"Efekt {green}{1}{default} klucz {green}{2}{default} dla strefy {green}{3}{default} został pomyślnie zaktualizowany na {green}{4}{default}."
+		"fr"		"L'effet {green}{1}{default} clé {green}{2}{default} pour la zone {green}{3}{default} a été mis à jour en {green}{4}{default}."
 	}
 
 	"Chat - Zone Renamed"
@@ -28,6 +31,7 @@
 		"en"		"Zone {green}{1}{default} has been renamed successfully to {green}{2}{default}."
 		"de"		"Zone {green}{1}{default} wurde erfolgreich umbenannt in {green}{2}{default}."
 		"pl"		"Pomyślnie zmieniłeś nazwę strefy {green}{1}{default} na {green}{2}{default}."
+		"fr" 		"La zone {green}{1}{default} a été renommée en {green}{2}{default}."
 	}
 
 	"Command - Teleport Usage"
@@ -36,6 +40,7 @@
 		"en"		"Usage: {1} <#userid|name> <zone>"
 		"de"		"Benutzung: {1} <#userid|name> <zone>"
 		"pl"		"Użycie: {1} <#userid|nazwa> <strefa>"
+		"fr"		"Utilisation: {1} <#userid|nom> <zone>"
 	}
 
 	"Command - Effects Reloaded"
@@ -43,6 +48,7 @@
 		"en"		"Effects data has been reloaded."
 		"de"		"Die Effektdaten wurden neu geladen."
 		"pl"		"Dane efektó zostały przeładowane."
+		"fr"		"Les données des effets ont été mises à jours."
 	}
 
 	"Command - Set Precision Usage"
@@ -50,6 +56,7 @@
 		"en"		"Usage: sm_setprecision <value>"
 		"de"		"Benutzung: sm_setprecision <value>"
 		"pl"		"Użycie: sm_setprecision <wartość>"
+		"fr"		"Utilisation: sm_setprecision <valeur>"
 	}
 
 	"Command - Only Numbers"
@@ -57,6 +64,7 @@
 		"en"		"Your input isn't valid! Only numbers."
 		"de"		"Ihre Eingabe ist ungültig! Nur Zahlen."
 		"pl"		"Wprowadzone dane są nieprawidłowe! Tylko numery."
+		"fr"		"Données non valides! Nombres uniquement."
 	}
 
 	"Command - Precision Set"
@@ -65,6 +73,7 @@
 		"en"		"Precision set to {1}."
 		"de"		"Genauigkeit eingestellt auf {1}."
 		"pl"		"Precyzja ustawiona na {1}."
+		"fr"		"Precision reglée sur {1}."
 	}
 
 	"Chat - You are not in a Zone"
@@ -72,6 +81,7 @@
 		"en"		"Error: You are not currently standing in a zone to edit."
 		"de"		"Fehler: Sie befinden sich derzeit nicht in einer zu bearbeitenden Zone."
 		"pl"		"Błąd: Nie stoisz w żadnej strefie aby rozpocząć edycje."
+		"fr"		"Erreur: Vous n'êtes pas dans une zone à editer."
 	}
 
 	"Menu - Title - Zone Main"
@@ -79,6 +89,7 @@
 		"en"		"fuckZones"
 		"de"		"fuckZones"
 		"pl"		"fuckZones"
+		"fr"		"fuckZones"
 	}
 
 	"Menu - Item - Create Zones"
@@ -86,6 +97,7 @@
 		"en"		"Create Zones"
 		"de"		"Zonen erstellen"
 		"pl"		"Stwórz strefy"
+		"fr"		"Créer une zone"
 	}
 
 	"Menu - Item - Create a Zone"
@@ -93,6 +105,7 @@
 		"en"		"Create a Zone"
 		"de"		"Erstelle eine Zone"
 		"pl"		"Stwórz strefe"
+		"fr"		"Créer une zone"
 	}
 
 	"Menu - Item - Create Zone New Line"
@@ -100,6 +113,7 @@
 		"en"		"Create Zone\n "
 		"de"		"Zone erstellen\n "
 		"pl"		"Stwórz strefe\n "
+		"fr"		"Créer une zone\n"
 	}
 
 	"Menu - Item - Manage Zones"
@@ -107,6 +121,7 @@
 		"en"		"Manage Zones"
 		"de"		"Zonen verwalten"
 		"pl"		"Zarządzaj strefami"
+		"fr"		"Gérer les zones"
 	}
 
 	"Menu - Item - Manage Zones New Line"
@@ -114,6 +129,7 @@
 		"en"		"Manage Zones\n "
 		"de"		"Zonen verwalten\n "
 		"pl"		"Zarządzaj strefami\n "
+		"fr"		"Gérer les zones\n "
 	}
 
 	"Menu - Item - Regenerate Zones"
@@ -121,6 +137,7 @@
 		"en"		"Regenerate Zones"
 		"de"		"Zonen erneuern"
 		"pl"		"Przeładuj strefy"
+		"fr"		"Régénérer les zones"
 	}
 
 	"Menu - Item - Delete All Zones"
@@ -128,6 +145,7 @@
 		"en"		"Delete all Zones"
 		"de"		"Alle Zonen löschen"
 		"pl"		"Usuń wszystkie strefy"
+		"fr"		"Supprimer toutes les zones"
 	}
 
 	"Menu - Title - Teleport To"
@@ -135,6 +153,7 @@
 		"en"		"Teleport to zone"
 		"de"		"Zur Zone teleportieren"
 		"pl"		"Teleportuj do strefy"
+		"fr"		"Se teleporter à la zone"
 	}
 
 	"Menu - Item - No Zones"
@@ -142,6 +161,7 @@
 		"en"		"No Zones"
 		"de"		"keine Zonen vorhanden"
 		"pl"		"Brak stref"
+		"fr"		"Aucune zone"
 	}
 
 	"Menu - Item - No Effects"
@@ -149,6 +169,7 @@
 		"en"		"No Effects"
 		"de"		"keine Effekte vorhanden"
 		"pl"		"Brak efektów"
+		"fr"		"Aucun effet"
 	}
 
 	"Command - Active Regenerate Spam Protection"
@@ -156,6 +177,7 @@
 		"en"		"Spam Protection active, you can not regenerate the zones yet."
 		"de"		"Spamschutz aktiv, Sie können die Zonen noch nicht erneuern."
 		"pl"		"Ochrona spamu aktywna, nie możesz teraz przeładować stref."
+		"fr"		"Protection anti-spam active, vous ne pouvez pas encore régénérer les zones." 
 	}
 
 	"Command - All Zones Regenerated"
@@ -163,6 +185,7 @@
 		"en"		"All zones have been regenerated on the map."
 		"de"		"Alle Zonen sind auf der Karte neu generiert worden."
 		"pl"		"Wszystkie strefy zostały przeładowane na tej mapie."
+		"fr"		"Toutes les zones ont été régénérer sur la map."
 	}
 
 	"Command - All Zones Deleted"
@@ -170,6 +193,7 @@
 		"en"		"All zones have been deleted from the map."
 		"de"		"Alle Zonen sind von der Karte gelöscht worden."
 		"pl"		"Wszystkie strefy zostały usunięte z mapy."
+		"fr"		"Toutes les zones ont été supprimées de la map."
 	}
 
 	"Chat - Zone Deleted"
@@ -178,6 +202,7 @@
 		"en"		"You have deleted the zone {green}{1}{default}."
 		"de"		"Sie haben die Zone gelöscht {green}{1}{default}."
 		"pl"		"Usunąłeś strefę {green}{1}{default}."
+		"fr"		"Vous avez supprimer la zone {green}{1}{default}."
 	}
 
 	"Menu - Title - Delete All Zones Confirmation"
@@ -185,6 +210,7 @@
 		"en"		"Are you sure to delete all zones on this map?"
 		"de"		"Sind Sie sicher, dass Sie alle Zonen auf dieser Karte löschen wollen?"
 		"pl"		"Jesteś pewien że chcesz usunąć wszystkie strefy na tej mapie?"
+		"fr"		"Etes-vous sure de vouloir supprimer toutes les zones de la map?"
 	}
 
 	"Menu - Title - Delete Zone Confirmation"
@@ -193,6 +219,7 @@
 		"en"		"Are you sure to delete this zone {1}?"
 		"de"		"Sind Sie sicher, dass Sie die Zone {1} löschen wollen?"
 		"pl"		"Jesteś pewien że chcesz usunąć strefę {1}?"
+		"fr"		"Etes-vous sure de vouloir supprimer la zone {1}?"
 	}
 
 	"Menu - Item - Yes"
@@ -200,6 +227,7 @@
 		"en"		"Yes"
 		"de"		"Ja"
 		"pl"		"Tak"
+		"fr"		"Oui"
 	}
 
 	"Menu - Item - No"
@@ -207,6 +235,7 @@
 		"en"		"No"
 		"de"		"Nein"
 		"pl"		"Nie"
+		"fr"		"Non"
 	}
 
 	"Menu - Title - Manage Zone Name"
@@ -215,6 +244,7 @@
 		"en"		"Manage Zone {1}"
 		"de"		"Zone verwalten {1}"
 		"pl"		"Zarządzanie strefą {1}"
+		"fr"		"Gérer la zone {1}."
 	}
 
 	"Menu - Title - Select Map Zone"
@@ -222,6 +252,7 @@
 		"en"		"Select map zone"
 		"de"		"Wähle eine Kartenzone"
 		"pl"		"Wybierz strefę na mapie"
+		"fr"		"Selection de la zone"
 	}
 
 	"Menu - Item - Edit Zone"
@@ -229,6 +260,7 @@
 		"en"		"Edit Zone"
 		"de"		"Zone bearbeiten"
 		"pl"		"Edytuj strefe"
+		"fr"		"Modifier la zone"
 	}
 
 	"Menu - Item - Delete Zone"
@@ -236,6 +268,7 @@
 		"en"		"Delete Zone\n "
 		"de"		"Zone löschen\n "
 		"pl"		"Usuń strefe\n "
+		"fr"		"Supprimer la zone\n"
 	}
 
 	"Menu - Item - Add Effect"
@@ -243,6 +276,7 @@
 		"en"		"Add Effect"
 		"de"		"Effekt hinzufügen"
 		"pl"		"Dodaj efekt"
+		"fr"		"Ajouter un effet"
 	}
 
 	"Menu - Item - Edit Effect"
@@ -250,6 +284,7 @@
 		"en"		"Edit Effect"
 		"de"		"Effekt editieren"
 		"pl"		"Edytuj efekt"
+		"fr"		"Editer un effet"
 	}
 
 	"Menu - Item - Remove Effect"
@@ -257,6 +292,7 @@
 		"en"		"Remove Effect"
 		"de"		"Effekt entfernen"
 		"pl"		"Usuń efekt"
+		"fr"		"Supprimer un effet"
 	}
 
 	"Menu - Title - Edit Zone Name"
@@ -265,6 +301,7 @@
 		"en"		"Edit zone {1}"
 		"de"		"Zone {1} editieren"
 		"pl"		"Edytuj strefe {1}"
+		"fr"		"Modifier la zone {1}"
 	}
 
 	"Chat - New Zone Name"
@@ -273,6 +310,7 @@
 		"en"		"Type the new name for the zone {green}{1}{default} in chat. Type {green}!cancel{default} to cancel this process."
 		"de"		"Geben Sie den neuen Namen für die Zone ein {green}{1}{default} in dem Chat. Schreiben Sie {green}!cancel{default} um diesen Vorgang abzubrechen."
 		"pl"		"Wprowadź nową nazwę dla strefy {green}{1}{default} na czacie. Wpisz {green}!cancel{default} aby anulować proces."
+		"fr"		"Tapez le nouveau nom de la zone {green}{1}{default} dans le chat. Tapez {green}!cancel{default} pour annuler l'opération."
 	}
 
 	"Menu - Title - Edit Zone Point Name"
@@ -281,6 +319,7 @@
 		"en"		"Edit {1} for zone {2}"
 		"de"		"Bearbeiten {1} für Zone {2}"
 		"pl"		"Edytuj {1} dla sterfy {2}"
+		"fr"		"Modifier {1} de la zone {2}"
 	}
 
 	"Menu - Title - Choose Zone Type Name"
@@ -289,6 +328,7 @@
 		"en"		"Choose zone type for {1}"
 		"de"		"Wählen Sie den Zonentyp für {1}"
 		"pl"		"Wybierz typ strefy dla {1}"
+		"fr"		"Choisissez le type de la zone {1}"
 	}
 
 	"Menu - Title - Choose Display Type Name"
@@ -297,6 +337,7 @@
 		"en"		"Choose display type for {1}"
 		"de"		"Wählen Sie die Anzeigeart für {1}"
 		"pl"		"Wybierz tryb wyświetlania dla {1}"
+		"fr"		"Choisissez le type d'affichage de {1}"
 	}
 
 	"Menu - Title - Choose Zone Color Name"
@@ -305,6 +346,7 @@
 		"en"		"Choose zone color for {1}"
 		"de"		"Wählen Sie die Zonenfarbe für {1}"
 		"pl"		"Wybierz kolor strefy dla {1}"
+		"fr"		"Choisissez la couleur de la zone {1}"
 	}
 
 	"Menu - Title - Add Effect Zone Name"
@@ -313,6 +355,7 @@
 		"en"		"Add zone effect to zone {1}"
 		"de"		"Zoneneffekt zur Zone {1} hinzufügen"
 		"pl"		"Dodaj efekt strefy do sterfy {1}"
+		"fr"		"Ajouter des effets à la zone {1}"
 	}
 
 	"Menu - Title - Pick Effect To Edit"
@@ -321,6 +364,7 @@
 		"en"		"Pick zone effect to edit for zone {1}"
 		"de"		"Zu bearbeitenden Zoneneffekt für Zone {1} auswählen"
 		"pl"		"Wybierz efekt strefy który chcesz edytować {1}"
+		"fr"		"Choisissez un effet à modifier pour la zone {1}"
 	}
 
 	"Menu - Title - Pick Effet Key To Edit"
@@ -329,6 +373,7 @@
 		"en"		"Pick zone effect key to edit for zone {1}"
 		"de"		"Wählen Sie den Zonen Effekt Schlüssel, den Sie bearbeiten möchten {1}"
 		"pl"		"Wybiecz klucz efektu strefy który chcesz edytować {1}"
+		"fr"		"Choisissez la clé de l'effet à editer pour la zone {1}"
 	}
 
 	"Chat - Type New Effect Key Value In Chat"
@@ -337,6 +382,7 @@
 		"en"		"Type the new value for the effect {green}{1}{default} key {green}{2}{default} on zone {green}{3}{default} in chat. Type {green}!cancel{default} to cancel this process."
 		"de"		"Geben Sie den neuen Wert für den Effekt ein {green}{1}{default} Taste {green}{2}{default} auf Zone {green}{3}{default} im Chat ein. Geben Sie {green}!cancel{default} ein, um diesen Vorgang abzubrechen."
 		"pl"		"Wprowadź nową wartość dla efektu {green}{1}{default} klucz {green}{2}{default} w strefie {green}{3}{default} na czacie. Wpisz {green}!cancel{default} aby anulować proces."
+		"fr"		"Entrez la nouvelle valeur de la clé {green}{2}{default} de l'effet {green}{1}{default} pour la zone {green}{3}{default} dans le chat. Tapez {green}!cancel{default} pour annuler l'opération."
 	}
 
 	"Menu - Title - Pick Effect To Remove"
@@ -345,6 +391,7 @@
 		"en"		"Pick effect to remove from zone {1}"
 		"de"		"Wähle einen Effekt zum Entfernen aus der Zone {1}"
 		"pl"		"Wybierz efekt do usunięcia z strefy {1}"
+		"fr"		"Choisissez l'effet à supprimer de la zone {1}"
 	}
 
 	"Chat - Color Set To"
@@ -353,6 +400,7 @@
 		"en"		"Zone color set to {green}{1}{default}."
 		"de"		"Zonenfarbe eingestellt auf {green}{1}{default}."
 		"pl"		"Kolor strefy ustawiony na {green}{1}{default}."
+		"fr"		"Couleur de la zone réglée sur {green}{1}{default}."
 	}
 
 	"Chat - Zone Name Required"
@@ -360,12 +408,14 @@
 		"en"		"You must set a zone name in order to create it."
 		"de"		"Sie müssen einen Zonennamen festlegen, um die Zone zu erstellen."
 		"pl"		"Musisz nazwać tą strefę, aby ją stworzyć."
+		"fr"		"Vous devez entrer un nom de zone pour pouvoir créer une zone."
 	}
 	"Chat - Zone Name Exists"
 	{
 		"en"		"Zone already exists, please pick a different name."
 		"de"		"Zone existiert bereits, bitte wählen Sie einen anderen Namen."
 		"pl"		"Strefa już istnieje, wybierz proszę inną nazwę."
+		"fr"		"La zone existe déjà, merci de choisir un autre nom."
 	}
 
 	"Chat - Zone Created"
@@ -374,6 +424,7 @@
 		"en"		"Zone {green}{1}{default} has been created successfully."
 		"de"		"Zone {green}{1}{default} wurde erfolgreich erstellt."
 		"pl"		"Strefa {green}{1}{default} została pomyślnie stworzona."
+		"fr"		"La zone {green}{1}{default} a été créée avec succès."
 	}
 
 	"Chat - Zone Not Found To Teleport"
@@ -382,6 +433,7 @@
 		"en"		"Sorry, couldn't find the zone {green}{1}{default} for you to teleport to."
 		"de"		"Sorry, konnte die Zone {green}{1}{default} nicht finden zu dem Sie sich teleportieren wollen."
 		"pl"		"Wybacz, nie mogliśmy znaleźć strefy {green}{1}{default} aby Cię do niej przeteleportować."
+		"fr"		"Désolé, impossible de trouver la zone {green}{1}{default} pour vous y téléporter."
 	}
 
 	"Chat - Teleport - Polygons Not Supported"
@@ -389,6 +441,7 @@
 		"en"		"Sorry, Polygon zones aren't currently supported for teleporting."
 		"de"		"Sorry, Polygonzonen werden derzeit nicht für Teleporting unterstützt."
 		"pl"		"Wybacz, ale strefy Polygonowe aktualnie nie wspierają teleportacji."
+		"fr"		"Désolé, les zones en polygones ne sont pas encore prises en charge pour la téléportation."
 	}
 
 	"Chat - Teleported To Zone"
@@ -397,6 +450,7 @@
 		"en"		"You have been teleported to {green}{1}{default}."
 		"de"		"Sie wurden teleportiert nach {green}{1}{default}."
 		"pl"		"Zostałeś przeteleportowany do {green}{1}{default}."
+		"fr"		"Vous avez été téléporter en {green}{1}{default}."
 	}
 
 	"Menu - Item - Points"
@@ -405,6 +459,7 @@
 		"en"		"Points: {1}"
 		"de"		"Punkte: {1}"
 		"pl"		"Punktów: {1}"
+		"fr"		"Points: {1}"
 	}
 
 	"Menu - Item - Radius"
@@ -413,6 +468,7 @@
 		"en"		"Radius: {1}"
 		"de"		"Radius: {1}"
 		"pl"		"Promień: {1}"
+		"fr"		"Rayon: {1}"
 	}
 
 	"Menu - Item - Name"
@@ -421,6 +477,7 @@
 		"en"		"Name: {1}"
 		"de"		"Name: {1}"
 		"pl"		"Nazwa: {1}"
+		"fr"		"Nom: {1}"
 	}
 
 	"Menu - Item - Trigger"
@@ -429,6 +486,7 @@
 		"en"		"Trigger: {1}"
 		"de"		"Trigger: {1}"
 		"pl"		"Trigger: {1}"
+		"fr"		"Trigger: {1}"
 	}
 
 	"Menu - Item - Type"
@@ -437,6 +495,7 @@
 		"en"		"Type: {1}"
 		"de"		"Type: {1}"
 		"pl"		"Wpisz: {1}"
+		"fr"		"Type: {1}"
 	}
 
 	"Menu - Item - Color"
@@ -445,6 +504,7 @@
 		"en"		"Color: {1}"
 		"de"		"Farbe: {1}"
 		"pl"		"Kolor: {1}"
+		"fr"		"Couleur: {1}"
 	}
 
 	"Menu - Item - Display"
@@ -453,6 +513,7 @@
 		"en"		"Display: {1}\n \n{2}"
 		"de"		"Anzeigen: {1}\n \n{2}"
 		"pl"		"Tryb wyświetlania: {1}\n \n{2}"
+		"fr"		"Affichage: {1}\n \n{2}"
 	}
 
 	"Menu - Item - Set Starting Point"
@@ -460,6 +521,7 @@
 		"en"		"Set Starting Point"
 		"de"		"Startpunkt festlegen"
 		"pl"		"Ustaw punkt startowy"
+		"fr"		"Placer le point de départ"
 	}
 
 	"Menu - Item - Set Starting Point (Ignore Z/Height)"
@@ -467,6 +529,7 @@
 		"en"		"Set Starting Point (Ignore Z/Height)"
 		"de"		"Startpunkt festlegen (Z/Höhe ignorieren)"
 		"pl"		"Ustaw punkt startowy (Ignoruj Z/Wysokość)"
+		"fr"		"Placer le point de départ (Ignorer Z/Hauteur)"
 	}
 
 	"Menu - Item - Edit Starting Point (Precision)"
@@ -474,6 +537,7 @@
 		"en"		"Edit Starting Point (Precision)"
 		"de"		"Startpunkt bearbeiten (Genauigkeit)"
 		"pl"		"Przesuń punkt startowy (Precyzyjnie)" // TODO
+		"fr"		"Modifier le point de départ (Précision)"
 	}
 
 	"Menu - Item - Set Ending Point"
@@ -481,6 +545,7 @@
 		"en"		"Set Ending Point"
 		"de"		"Endpunkt festlegen"
 		"pl"		"Ustaw punkt końcowy"
+		"fr"		"Placer le point de fin"
 	}
 
 	"Menu - Item - Set Ending Point (Ignore Z/Height)"
@@ -488,6 +553,7 @@
 		"en"		"Set Ending Point (Ignore Z/Height)"
 		"de"		"Endpunkt festlegen (Z/Höhe ignorieren)"
 		"pl"		"Ustaw punkt końcowy (Ignoruj Z/Wysokość)"
+		"fr"		"Placer le point de fin (Ignorer Z/Hauteur)"
 	}
 
 	"Menu - Item - Edit Ending Point (Precision)"
@@ -495,6 +561,7 @@
 		"en"		"Edit Ending Point (Precision)\n "
 		"de"		"Endpunkt bearbeiten (Genauigkeit)\n "
 		"pl"		"Przesuń punkt końcowy (Precyzyjnie)\n " // TODO
+		"fr"		"Modifier le point de fin (Precision)\n "
 	}
 
 	"Menu - Item - Set Center Point"
@@ -502,6 +569,7 @@
 		"en"		"Set Center Point"
 		"de"		"Mittelpunkt festlegen"
 		"pl"		"Ustaw środek punktu"
+		"fr"		"Placer le point centrale"
 	}
 
 	"Menu - Item - Edit Center Point (Precision)"
@@ -509,6 +577,7 @@
 		"en"		"Edit Center Point (Precision)"
 		"de"		"Mittelpunkt bearbeiten (Genauigkeit)"
 		"pl"		"Przesuń punkt środkowy (Precyzyjnie)" // TODO
+		"fr"		"Modifier le point centrale (Précision)"
 	}
 
 	"Menu - Item - Radius +"
@@ -516,6 +585,7 @@
 		"en"		"Radius +"
 		"de"		"Radius +"
 		"pl"		"Promień +"
+		"fr"		"Rayon +"
 	}
 
 	"Menu - Item - Radius -"
@@ -523,6 +593,7 @@
 		"en"		"Radius -"
 		"de"		"Radius -"
 		"pl"		"Promień -"
+		"fr"		"Rayon -"
 	}
 
 	"Menu - Item - Height +"
@@ -530,6 +601,7 @@
 		"en"		"Height +"
 		"de"		"Höhe +"
 		"pl"		"Wysokość +"
+		"fr"		"Hauteur +"
 	}
 
 	"Menu - Item - Height -"
@@ -537,6 +609,7 @@
 		"en"		"Height -"
 		"de"		"Höhe -"
 		"pl"		"Wysokość -"
+		"fr"		"Hauteur -"
 	}
 
 	"Menu - Item - Set Teleport Point"
@@ -544,6 +617,7 @@
 		"en"		"Set Teleport Point"
 		"de"		"Teleportpunkt setzen"
 		"pl"		"Ustaw punkt teleportu"
+		"fr"		"Placer le point de teleportation"
 	}
 
 	"Chat - Teleport Point Set"
@@ -551,6 +625,7 @@
 		"en"		"Teleport point has been set to your location."
 		"de"		"Der Teleportpunkt wurde an deiner Stelle gesetzt."
 		"pl"		"Punkt teleportacji został ustawiony na Twoją lokalizację."
+		"fr"		"Le point de teleportation a été réglé sur votre position."
 	}
 
 	"Menu - Item - Add a Point"
@@ -558,6 +633,7 @@
 		"en"		"Add a Point"
 		"de"		"Punkt hinzufügen"
 		"pl"		"Dodaj punkt"
+		"fr"		"Ajouter un point"
 	}
 
 	"Menu - Item - Edit a Point"
@@ -565,6 +641,7 @@
 		"en"		"Edit a Point"
 		"de"		"Punkt bearbeiten"
 		"pl"		"Edytuj punkt"
+		"fr"		"Modifier un point"
 	}
 
 	"Menu - Title - Info To Edit Poly Point"
@@ -572,6 +649,7 @@
 		"en"		"Edit point\n "
 		"de"		"Punkt bearbeiten\n "
 		"pl"		"Edytuj punkt\n "
+		"fr"		"Modifier un point\n"
 	}
 
 	"Menu - Item - Info To Edit Poly Point"
@@ -579,6 +657,7 @@
 		"en"		"Aim onto an polygon zone point\nconfirm it with E/your +use key"
 		"de"		"Zielen Sie auf ein Polygonzonenpunkt\nund bestätigen Sie diesen mit E/ihre '+use' Taste"
 		"pl"		"Wyceluj w punkt strefy polygonowej\nzatwierdź ją przyciskiem E/Twój '+use'"
+		"fr"		"Viser un point de la zone polygonale\nconfirmer aver E/votre touche +use"
 	}
 
 	"Menu - Title - Edit Poly Point Name"
@@ -587,6 +666,7 @@
 		"en"		"Edit Point {1} for zone {2}"
 		"de"		"Bearbeitung Punkt {1} für Zone {2}"
 		"pl"		"Edycja punktu {1} dla strefy {2}"
+		"fr"		"Modifier le point {1} de la zone {2}"
 	}
 
 	"Menu - Item - Remove last Point"
@@ -594,6 +674,7 @@
 		"en"		"Remove last Point"
 		"de"		"Letzten Punkt löschen"
 		"pl"		"Usuń ostatni punkt"
+		"fr"		"Supprimer le dernier point"
 	}
 
 	"Menu - Item - Clear all Points"
@@ -601,6 +682,7 @@
 		"en"		"Clear all Points"
 		"de"		"Alle Punkte löschen"
 		"pl"		"Wyczyść wszystkie punkty"
+		"fr"		"Supprimer tous les points"
 	}
 
 	"Menu - Text - Starting"
@@ -608,6 +690,7 @@
 		"en"		"starting point"
 		"de"		"Startpunkt"
 		"pl"		"startowy punkt"
+		"fr"		"point de départ"
 	}
 
 	"Menu - Text - Ending"
@@ -615,6 +698,7 @@
 		"en"		"ending point"
 		"de"		"Endpunkt"
 		"pl"		"końcowy punkt"
+		"fr"		"point de fin"
 	}
 
 	"Menu - Item - List Effect Key Value"
@@ -623,6 +707,7 @@
 		"en"		"{1}\nValue: {2}"
 		"de"		"{1}\nWert: {2}"
 		"pl"		"{1}\nWartość: {2}"
+		"fr"		"{1}\nValeur: {2}"
 	}
 
 	"Chat - Invalid Zone Name"
@@ -630,5 +715,6 @@
 		"en"		"Your zone name contains invalid characters. Please choose another name."
 		"de"		"Der Name der Zone enthält ungültige Zeichen. Bitte wählen Sie ein anderen."
 		"pl"		"Twoja nazwa strefy zawiera nieprawidłowe znaki. Proszę wprowadź inną nazwę."
+		"fr"		"Votre nom de zone contient un charactère invalie. Merci de choisir un autre nom."
 	}
 }
