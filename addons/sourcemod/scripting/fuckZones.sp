@@ -285,7 +285,7 @@ void ReparseMapZonesConfig(bool delete_config = false)
 	CreateDirectory(sFolder, 511);
 
 	char sMap[32];
-	GetCurrentMap(sMap, sizeof(sMap));
+	GetCurrentWorkshopMap(sMap, sizeof(sMap));
 
 	char sFile[PLATFORM_MAX_PATH];
 	Format(sFile, sizeof(sFile), "%s%s.zon", sFolder, sMap);
@@ -3423,7 +3423,7 @@ void SaveMapConfig()
 	}
 
 	char sMap[32];
-	GetCurrentMap(sMap, sizeof(sMap));
+	GetCurrentWorkshopMap(sMap, sizeof(sMap));
 
 	char sPath[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, sPath, sizeof(sPath), "data/zones/%s.zon", sMap);
@@ -5748,3 +5748,9 @@ void CallZoneEffectUpdate(int zone)
 	Call_PushCell(view_as<int>(Zone[zone].Effects));
 	Call_Finish();
 }
+
+stock GetCurrentWorkshopMap(char[] sMap, int iMapSize)
+{
+	GetCurrentMap(sMap, iMapSize);
+	ReplaceString(sMap, iMapSize, "/", "-", false);
+} 
