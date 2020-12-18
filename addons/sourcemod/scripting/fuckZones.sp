@@ -96,26 +96,6 @@ StringMap g_smEffectKeys = null;
 ArrayList g_aEffectsList = null;
 
 //Create Zones Data
-enum struct eCreateZone
-{
-	char Name[MAX_ZONE_NAME_LENGTH];
-	int Type;
-	float Start[3];
-	float End[3];
-	float Origin[3];
-	float Teleport[3];
-	float Radius;
-	char Color[64];
-	int iColors[4];
-	ArrayList PointsData;
-	float PointsHeight;
-	StringMap Effects;
-	int Display;
-	bool SetName;
-	bool Show;
-	int Trigger;
-}
-
 eCreateZone CZone[MAXPLAYERS + 1];
 
 bool g_bEffectKeyValue[MAXPLAYERS + 1];
@@ -162,6 +142,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("fuckZones_GetZoneEffects", Native_GetZoneEffects);
 	CreateNative("fuckZones_GetZoneType", Native_GetZoneType);
 	CreateNative("fuckZones_GetZoneName", Native_GetZoneName);
+	CreateNative("fuckZones_GetColorNameByCode", Native_GetColorNameByCode);
+	CreateNative("fuckZones_GetColorCodeByName", Native_GetColorCodeByName);
 
 	Forward.OnEffectsReady = new GlobalForward("fuckZones_OnEffectsReady", ET_Ignore);
 	Forward.StartTouchZone = new GlobalForward("fuckZones_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
@@ -759,7 +741,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			{
 				case ZONE_TYPE_CIRCLE:
 				{
-					if (IsPositionNull(CZone[client].Start))
+					if (fuckZones_IsPositionNull(CZone[client].Start))
 					{
 						TE_SetupBeamRingPointToClient(client, fPoint, CZone[client].Radius, CZone[client].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 
@@ -794,15 +776,15 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 
 				case ZONE_TYPE_BOX:
 				{
-					if ((!IsPositionNull(CZone[client].Start) && IsPositionNull(CZone[client].End)) || (IsPositionNull(CZone[client].Start) && !IsPositionNull(CZone[client].End)))
+					if ((!fuckZones_IsPositionNull(CZone[client].Start) && fuckZones_IsPositionNull(CZone[client].End)) || (fuckZones_IsPositionNull(CZone[client].Start) && !fuckZones_IsPositionNull(CZone[client].End)))
 					{
 						float fStart[3];
 						
-						if (!IsPositionNull(CZone[client].Start))
+						if (!fuckZones_IsPositionNull(CZone[client].Start))
 						{
 							fStart = CZone[client].Start;
 						}
-						if (!IsPositionNull(CZone[client].End))
+						if (!fuckZones_IsPositionNull(CZone[client].End))
 						{
 							fStart = CZone[client].End;
 						}
@@ -1562,7 +1544,7 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 			else if (StrEqual(sInfo, "add_radius"))
 			{
 				Zone[entity].Radius += g_fPrecision[param1];
-				Zone[entity].Radius = ClampCell(Zone[entity].Radius, 5.0, g_cMaxRadius.FloatValue);
+				Zone[entity].Radius = fuckZones_ClampCell(Zone[entity].Radius, 5.0, g_cMaxRadius.FloatValue);
 
 				char sValue[64];
 				FloatToString(Zone[entity].Radius, sValue, sizeof(sValue));
@@ -1575,7 +1557,7 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 			else if (StrEqual(sInfo, "remove_radius"))
 			{
 				Zone[entity].Radius -= g_fPrecision[param1];
-				Zone[entity].Radius = ClampCell(Zone[entity].Radius, 5.0, g_cMaxRadius.FloatValue);
+				Zone[entity].Radius = fuckZones_ClampCell(Zone[entity].Radius, 5.0, g_cMaxRadius.FloatValue);
 
 				char sValue[64];
 				FloatToString(Zone[entity].Radius, sValue, sizeof(sValue));
@@ -1588,7 +1570,7 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 			else if (StrEqual(sInfo, "add_height"))
 			{
 				Zone[entity].PointsHeight += g_fPrecision[param1];
-				Zone[entity].PointsHeight = ClampCell(Zone[entity].PointsHeight, 5.0, g_cMaxHeight.FloatValue);
+				Zone[entity].PointsHeight = fuckZones_ClampCell(Zone[entity].PointsHeight, 5.0, g_cMaxHeight.FloatValue);
 
 				char sValue[64];
 				FloatToString(Zone[entity].PointsHeight, sValue, sizeof(sValue));
@@ -1601,7 +1583,7 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 			else if (StrEqual(sInfo, "remove_height"))
 			{
 				Zone[entity].PointsHeight -= g_fPrecision[param1];
-				Zone[entity].PointsHeight = ClampCell(Zone[entity].PointsHeight, 5.0, g_cMaxHeight.FloatValue);
+				Zone[entity].PointsHeight = fuckZones_ClampCell(Zone[entity].PointsHeight, 5.0, g_cMaxHeight.FloatValue);
 
 				char sValue[64];
 				FloatToString(Zone[entity].PointsHeight, sValue, sizeof(sValue));
@@ -2420,7 +2402,7 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	}
 	else if (CZone[client].Type == ZONE_TYPE_BOX)
 	{
-		if (!IsPositionNull(CZone[client].Start) && !IsPositionNull(CZone[client].End))
+		if (!fuckZones_IsPositionNull(CZone[client].Start) && !fuckZones_IsPositionNull(CZone[client].End))
 		{
 			bValidPoints = true;
 		}
@@ -2434,7 +2416,7 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	}
 	else if (CZone[client].Type == ZONE_TYPE_CIRCLE)
 	{
-		if (!IsPositionNull(CZone[client].Start))
+		if (!fuckZones_IsPositionNull(CZone[client].Start))
 		{
 			bValidPoints = true;
 		}
@@ -2534,26 +2516,26 @@ public int MenuHandler_CreateZonesMenu(Menu menu, MenuAction action, int param1,
 			else if (StrEqual(sInfo, "add_radius"))
 			{
 				CZone[param1].Radius += g_fPrecision[param1];
-				CZone[param1].Radius = ClampCell(CZone[param1].Radius, 5.0, g_cMaxRadius.FloatValue);
+				CZone[param1].Radius = fuckZones_ClampCell(CZone[param1].Radius, 5.0, g_cMaxRadius.FloatValue);
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "remove_radius"))
 			{
 				CZone[param1].Radius -= g_fPrecision[param1];
-				CZone[param1].Radius = ClampCell(CZone[param1].Radius, 5.0, g_cMaxRadius.FloatValue);
+				CZone[param1].Radius = fuckZones_ClampCell(CZone[param1].Radius, 5.0, g_cMaxRadius.FloatValue);
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "add_height"))
 			{
 				CZone[param1].PointsHeight += g_fPrecision[param1];
-				CZone[param1].PointsHeight = ClampCell(CZone[param1].PointsHeight, 5.0, g_cMaxHeight.FloatValue);
+				CZone[param1].PointsHeight = fuckZones_ClampCell(CZone[param1].PointsHeight, 5.0, g_cMaxHeight.FloatValue);
 
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "remove_height"))
 			{
 				CZone[param1].PointsHeight -= g_fPrecision[param1];
-				CZone[param1].PointsHeight = ClampCell(CZone[param1].PointsHeight, 5.0, g_cMaxHeight.FloatValue);
+				CZone[param1].PointsHeight = fuckZones_ClampCell(CZone[param1].PointsHeight, 5.0, g_cMaxHeight.FloatValue);
 
 				OpenCreateZonesMenu(param1);
 			}
@@ -3499,7 +3481,7 @@ public Action Timer_DisplayZones(Handle timer)
 			{
 				case ZONE_TYPE_BOX,ZONE_TYPE_TRIGGER:
 				{
-					if (!IsPositionNull(CZone[i].Start) && !IsPositionNull(CZone[i].End))
+					if (!fuckZones_IsPositionNull(CZone[i].Start) && !fuckZones_IsPositionNull(CZone[i].End))
 					{
 						TE_DrawBeamBoxToClient(i, CZone[i].Start, CZone[i].End, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED, CZone[i].Display);
 					}
@@ -3507,7 +3489,7 @@ public Action Timer_DisplayZones(Handle timer)
 
 				case ZONE_TYPE_CIRCLE:
 				{
-					if (!IsPositionNull(CZone[i].Start))
+					if (!fuckZones_IsPositionNull(CZone[i].Start))
 					{
 						TE_SetupBeamRingPointToClient(i, CZone[i].Start, CZone[i].Radius, CZone[i].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 
@@ -4579,7 +4561,7 @@ bool TeleportToZone(int client, const char[] zone)
 
 		case ZONE_TYPE_POLY:
 		{
-			if (IsPositionNull(Zone[entity].Teleport))
+			if (fuckZones_IsPositionNull(Zone[entity].Teleport))
 			{
 				CPrintToChat(client, "%T", "Chat - Teleport - Polygons Not Supported", client);
 				return false;
@@ -5156,6 +5138,33 @@ public int Native_GetZoneName(Handle plugin, int numParams)
 	return false;
 }
 
+public int Native_GetColorNameByCode(Handle plugin, int numParams)
+{
+	int iColor[4];
+	GetNativeArray(1, iColor, sizeof(iColor));
+
+	int iLength = GetNativeCell(3);
+	char[] sColor = new char[iLength];
+
+	bool success = GetColorNameByCode(iColor, sColor, iLength);
+
+	SetNativeString(2, sColor, iLength);
+
+	return success;
+}
+
+public int Native_GetColorCodeByName(Handle plugin, int numParams)
+{
+	char sColor[64];
+	GetNativeString(1, sColor, sizeof(sColor));
+
+	int iColor[4];
+	bool success = g_smColorData.GetArray(sColor, iColor, sizeof(iColor));
+	SetNativeArray(2, iColor, sizeof(iColor));
+
+	return success;
+}
+
 bool AddItemFormat(Menu& menu, const char[] info, int style = ITEMDRAW_DEFAULT, const char[] format, any ...)
 {
 	char display[128];
@@ -5218,31 +5227,6 @@ bool GetMenuString(Menu hndl, const char[] id, char[] Buffer, int size)
 			}
 		}
 	}
-	return false;
-}
-
-any ClampCell(any value, any min, any max)
-{
-	if (value < min)
-	{
-		value = min;
-	}
-
-	if (value > max)
-	{
-		value = max;
-	}
-
-	return value;
-}
-
-bool IsPositionNull(float position[3])
-{
-	if (position[0] == 0.0 && position[1] == 0.0 && position[2] == 0.0)
-	{
-		return true;
-	}
-
 	return false;
 }
 
@@ -5419,17 +5403,17 @@ void AddZoneMenuItems(int client, Menu menu, bool create, int type, int pointsLe
 		case ZONE_TYPE_BOX,ZONE_TYPE_TRIGGER:
 		{
 			AddItemFormat(menu, "startpoint_a", _, "%T", "Menu - Item - Set Starting Point", client);
-			AddItemFormat(menu, "startpoint_a_no_z", IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Starting Point (Ignore Z/Height)", client);
-			AddItemFormat(menu, "startpoint_a_precision", IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Edit Starting Point (Precision)", client);
+			AddItemFormat(menu, "startpoint_a_no_z", fuckZones_IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Starting Point (Ignore Z/Height)", client);
+			AddItemFormat(menu, "startpoint_a_precision", fuckZones_IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Edit Starting Point (Precision)", client);
 			AddItemFormat(menu, "startpoint_b", _, "%T", "Menu - Item - Set Ending Point", client);
-			AddItemFormat(menu, "startpoint_b_no_z", IsPositionNull(end) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Ending Point (Ignore Z/Height)", client);
-			AddItemFormat(menu, "startpoint_b_precision", IsPositionNull(end) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Edit Ending Point (Precision)", client);
+			AddItemFormat(menu, "startpoint_b_no_z", fuckZones_IsPositionNull(end) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Ending Point (Ignore Z/Height)", client);
+			AddItemFormat(menu, "startpoint_b_precision", fuckZones_IsPositionNull(end) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Edit Ending Point (Precision)", client);
 		}
 
 		case ZONE_TYPE_CIRCLE:
 		{
 			AddItemFormat(menu, "startpoint_a", _, "%T", "Menu - Item - Set Center Point", client);
-			AddItemFormat(menu, "startpoint_a_precision", IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Edit Center Point (Precision)", client);
+			AddItemFormat(menu, "startpoint_a_precision", fuckZones_IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Edit Center Point (Precision)", client);
 			AddItemFormat(menu, "add_radius", _, "%T", "Menu - Item - Radius +", client);
 			AddItemFormat(menu, "remove_radius", _, "%T", "Menu - Item - Radius -", client);
 			AddItemFormat(menu, "add_height", _, "%T", "Menu - Item - Height +", client);

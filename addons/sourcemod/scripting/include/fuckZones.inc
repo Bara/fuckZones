@@ -5,9 +5,7 @@
 
 #define MAX_ZONE_NAME_LENGTH 32
 #define MAX_ZONE_TYPE_LENGTH 24
-
 #define MAX_EFFECT_NAME_LENGTH 32
-
 #define MAX_KEY_NAME_LENGTH 32
 #define MAX_KEY_VALUE_LENGTH 128
 
@@ -32,7 +30,26 @@ typedef fuckZones_Effect_OnEnterZone = function void (int client, int entity, St
 typedef fuckZones_Effect_OnActiveZone = function void (int client, int entity, StringMap values);
 typedef fuckZones_Effect_OnLeaveZone = function void (int client, int entity, StringMap values);
 
-
+enum struct eCreateZone
+{
+	char Name[MAX_ZONE_NAME_LENGTH];
+	int Type;
+	float Start[3];
+	float End[3];
+	float Origin[3];
+	char OriginName[32];
+	float Teleport[3];
+	float Radius;
+	char Color[64];
+	int iColors[4];
+	ArrayList PointsData;
+	float PointsHeight;
+	StringMap Effects;
+	int Display;
+	bool SetName;
+	bool Show;
+	int Trigger;
+}
 
 /**----------------------------------------------------------*/
 // Natives
@@ -68,6 +85,9 @@ native StringMap fuckZones_GetZoneEffects(int zone);
  */
 native int fuckZones_GetZoneType(int zone);
 native bool fuckZones_GetZoneName(int zone, char[] name, int length);
+
+native bool fuckZones_GetColorNameByCode(int color[4], char[] name, int length);
+native bool fuckZones_GetColorCodeByName(const char[] name, int color[4]);
 
 
 
@@ -177,6 +197,36 @@ forward void fuckZones_OnZoneCreate(int entity, const char[] zone_name, int type
 * noreturn
 **/
 forward void fuckZones_OnEffectUpdate(int zone, const char[] name, int type, StringMap values);
+
+
+
+/**----------------------------------------------------------*/
+// Stocks
+
+stock any fuckZones_ClampCell(any value, any min, any max)
+{
+	if (value < min)
+	{
+		value = min;
+	}
+
+	if (value > max)
+	{
+		value = max;
+	}
+
+	return value;
+}
+
+stock bool fuckZones_IsPositionNull(float position[3])
+{
+	if (position[0] == 0.0 && position[1] == 0.0 && position[2] == 0.0)
+	{
+		return true;
+	}
+
+	return false;
+}
 
 #if !defined REQUIRE_PLUGIN
 public void __pl_fuckZones_SetNTVOptional()
