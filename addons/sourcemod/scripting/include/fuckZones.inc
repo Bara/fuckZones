@@ -88,6 +88,8 @@ native bool fuckZones_GetZoneName(int zone, char[] name, int length);
 
 native bool fuckZones_GetColorNameByCode(int color[4], char[] name, int length);
 native bool fuckZones_GetColorCodeByName(const char[] name, int color[4]);
+native bool fuckZones_GetDisplayNameByType(int type, char[] name, int length);
+native int fuckZones_GetDisplayTypeByName(const char[] name);
 
 
 
@@ -228,28 +230,38 @@ stock bool fuckZones_IsPositionNull(float position[3])
 	return false;
 }
 
+stock void fuckZones_GetCurrentWorkshopMap(char[] sMap, int iMapSize)
+{
+	GetCurrentMap(sMap, iMapSize);
+	ReplaceString(sMap, iMapSize, "/", "-", false);
+} 
+
 #if !defined REQUIRE_PLUGIN
 public void __pl_fuckZones_SetNTVOptional()
 {
-    MarkNativeAsOptional("fuckZones_RegisterEffect");
-    MarkNativeAsOptional("fuckZones_RegisterEffectKey");
-    MarkNativeAsOptional("fuckZones_ReloadEffects");
-    MarkNativeAsOptional("fuckZones_IsClientInZone");
-    MarkNativeAsOptional("fuckZones_TeleportClientToZone");
-    MarkNativeAsOptional("fuckZones_GetEffectsList");
-    MarkNativeAsOptional("fuckZones_GetZoneEffects");
-    MarkNativeAsOptional("fuckZones_GetZoneType");
-    MarkNativeAsOptional("fuckZones_GetZoneName");
+	MarkNativeAsOptional("fuckZones_RegisterEffect");
+	MarkNativeAsOptional("fuckZones_RegisterEffectKey");
+	MarkNativeAsOptional("fuckZones_ReloadEffects");
+	MarkNativeAsOptional("fuckZones_IsClientInZone");
+	MarkNativeAsOptional("fuckZones_TeleportClientToZone");
+	MarkNativeAsOptional("fuckZones_GetEffectsList");
+	MarkNativeAsOptional("fuckZones_GetZoneEffects");
+	MarkNativeAsOptional("fuckZones_GetZoneType");
+	MarkNativeAsOptional("fuckZones_GetZoneName");
+	MarkNativeAsOptional("fuckZones_GetColorNameByCode");
+	MarkNativeAsOptional("fuckZones_GetColorCodeByName");
+	MarkNativeAsOptional("fuckZones_GetDisplayNameByType");
+	MarkNativeAsOptional("fuckZones_GetDisplayTypeByName");
 }
 #endif
 
 public SharedPlugin __pl_fuckZones =
 {
-    name = "fuckZones",
-    file = "fuckZones.smx",
+	name = "fuckZones",
+	file = "fuckZones.smx",
 #if defined REQUIRE_PLUGIN
-    required = 1,
+	required = 1,
 #else
-    required = 0,
+	required = 0,
 #endif
 };

@@ -144,6 +144,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("fuckZones_GetZoneName", Native_GetZoneName);
 	CreateNative("fuckZones_GetColorNameByCode", Native_GetColorNameByCode);
 	CreateNative("fuckZones_GetColorCodeByName", Native_GetColorCodeByName);
+	CreateNative("fuckZones_GetDisplayNameByType", Native_GetDisplayNameByType);
+	CreateNative("fuckZones_GetDisplayTypeByName", Native_GetDisplayTypeByName);
 
 	Forward.OnEffectsReady = new GlobalForward("fuckZones_OnEffectsReady", ET_Ignore);
 	Forward.StartTouchZone = new GlobalForward("fuckZones_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
@@ -267,7 +269,7 @@ void ReparseMapZonesConfig(bool delete_config = false)
 	CreateDirectory(sFolder, 511);
 
 	char sMap[32];
-	GetCurrentWorkshopMap(sMap, sizeof(sMap));
+	fuckZones_GetCurrentWorkshopMap(sMap, sizeof(sMap));
 
 	char sFile[PLATFORM_MAX_PATH];
 	Format(sFile, sizeof(sFile), "%s%s.zon", sFolder, sMap);
@@ -298,7 +300,7 @@ void ReparseMapZonesConfig(bool delete_config = false)
 		{
 			LogMessage("Config doesn't exist, creating new zones config for the map: %s", sMap);
 		}
-		KeyValuesToFile(g_kvConfig, sFile);
+		g_kvConfig.ExportToFile(sFile);
 	}
 
 	if (g_cEnableLogging.BoolValue)
@@ -3405,13 +3407,13 @@ void SaveMapConfig()
 	}
 
 	char sMap[32];
-	GetCurrentWorkshopMap(sMap, sizeof(sMap));
+	fuckZones_GetCurrentWorkshopMap(sMap, sizeof(sMap));
 
 	char sPath[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, sPath, sizeof(sPath), "data/zones/%s.zon", sMap);
 
 	g_kvConfig.Rewind();
-	KeyValuesToFile(g_kvConfig, sPath);
+	g_kvConfig.ExportToFile(sPath);
 }
 
 public Action Timer_DisplayZones(Handle timer)
@@ -4497,7 +4499,7 @@ void ParseColorsData()
 		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
 		kv.SetString("Pink", sBuffer);
 
-		KeyValuesToFile(kv, sFile);
+		kv.ExportToFile(sFile);
 	}
 
 	delete kv;
@@ -5165,6 +5167,27 @@ public int Native_GetColorCodeByName(Handle plugin, int numParams)
 	return success;
 }
 
+public int Native_GetDisplayNameByType(Handle plugin, int numParams)
+{
+	int iType = GetNativeCell(1);
+
+	int iLength = GetNativeCell(3);
+	char[] sType = new char[iLength];
+
+	GetDisplayNameByType(iType, sType, iLength);
+
+	SetNativeString(2, sType, iLength);
+
+	return (strlen(sType) > 2);
+}
+
+public int Native_GetDisplayTypeByName(Handle plugin, int numParams)
+{
+	char sType[12];
+	GetNativeString(1, sType, sizeof(sType));
+	return GetDisplayTypeByName(sType);
+}
+
 bool AddItemFormat(Menu& menu, const char[] info, int style = ITEMDRAW_DEFAULT, const char[] format, any ...)
 {
 	char display[128];
@@ -5732,9 +5755,3 @@ void CallZoneEffectUpdate(int zone)
 	Call_PushCell(view_as<int>(Zone[zone].Effects));
 	Call_Finish();
 }
-
-stock GetCurrentWorkshopMap(char[] sMap, int iMapSize)
-{
-	GetCurrentMap(sMap, iMapSize);
-	ReplaceString(sMap, iMapSize, "/", "-", false);
-} 
