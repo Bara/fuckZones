@@ -2730,6 +2730,10 @@ public int MenuHandler_EditZoneEffect(Menu menu, MenuAction action, int param1, 
 			{
 				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
 			}
+			else if (param2 == MenuCancel_Exit)
+			{
+				g_bSelectedZone[GetMenuCell(menu, "entity")] = false;
+			}
 		}
 
 		case MenuAction_End:
@@ -2812,6 +2816,10 @@ public int MenuHandler_EditZoneEffectKeyVaue(Menu menu, MenuAction action, int p
 			if (param2 == MenuCancel_ExitBack)
 			{
 				EditZoneEffectMenu(param1, GetMenuCell(menu, "entity"));
+			}
+			else if (param2 == MenuCancel_Exit)
+			{
+				g_bSelectedZone[GetMenuCell(menu, "entity")] = false;
 			}
 		}
 
@@ -2994,6 +3002,10 @@ public int MenuHandler_RemoveZoneEffect(Menu menu, MenuAction action, int param1
 			if (param2 == MenuCancel_ExitBack)
 			{
 				OpenEditZoneMenu(param1, GetMenuCell(menu, "entity"));
+			}
+			else if (param2 == MenuCancel_Exit)
+			{
+				g_bSelectedZone[GetMenuCell(menu, "entity")] = false;
 			}
 		}
 
