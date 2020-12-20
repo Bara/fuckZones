@@ -104,6 +104,16 @@ public void fuckZones_OnEffectsReady()
 	fuckZones_RegisterEffectKey(EFFECT_NAME, "Bonus", "0");
 }
 
+public Action fuckZones_OnStartTouchZone(int client, int entity, const char[] zone_name, int type)
+{
+	PrintToChat(client, "fuckZones_OnStartTouchZone->%s", zone_name);
+}
+
+public Action fuckZones_OnEndTouchZone(int client, int entity, const char[] zone_name, int type)
+{
+	PrintToChat(client, "fuckZones_OnEndTouchZone->%s", zone_name);
+}
+
 public void OneZoneStartTouch(int client, int entity, StringMap values)
 {
 	if (IsEndZone(values))
