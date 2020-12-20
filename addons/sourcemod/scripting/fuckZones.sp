@@ -9,7 +9,6 @@
 #define MAX_BUTTONS 25
 
 #define TIMER_INTERVAL 1.0
-#define TE_LIFE TIMER_INTERVAL+0.07
 #define TE_LIFE TIMER_INTERVAL+0.1
 #define TIMER_INTERVAL_CREATE 0.1
 #define TE_LIFE_CREATE TIMER_INTERVAL_CREATE+0.1
@@ -71,6 +70,7 @@ int g_iDefaultHaloIndex = -1;
 
 //Entities Data
 ArrayList g_aZoneEntities = null;
+ArrayList g_aUpdateZones = null;
 
 enum struct eEntityData
 {
@@ -87,6 +87,14 @@ enum struct eEntityData
 	float PointsDistance;
 	float PointsMin[3];
 	float PointsMax[3];
+}
+
+enum struct eUpdateData
+{
+	char Name[MAX_ZONE_NAME_LENGTH];
+	float Origin[3];
+	float Start[3];
+	float End[3];
 }
 
 eEntityData Zone[MAX_ENTITY_LIMIT];
@@ -475,6 +483,7 @@ void SpawnAllZones()
 	g_kvConfig.Rewind();
 	if (g_kvConfig.GotoFirstSubKey(false))
 	{
+		g_aUpdateZones = new ArrayList(sizeof(eUpdateData));
 		do
 		{
 			char sName[MAX_ZONE_NAME_LENGTH];
@@ -483,6 +492,8 @@ void SpawnAllZones()
 			SpawnZone(sName);
 		}
 		while(g_kvConfig.GotoNextKey(false));
+
+		UpdateZoneData();
 	}
 
 	if (g_cEnableLogging.BoolValue)
@@ -2103,6 +2114,24 @@ void UpdateZonesConfigKeyVector(int entity, const char[] key, float[3] value)
 	SaveMapConfig();
 }
 
+void UpdateZonesConfigKeyVectorByName(const char[] name, const char[] key, float[3] value)
+{
+	if (g_kvConfig == null)
+	{
+		return;
+	}
+
+	g_kvConfig.Rewind();
+
+	if (g_kvConfig.JumpToKey(name))
+	{
+		g_kvConfig.SetVector(key, value);
+		g_kvConfig.Rewind();
+	}
+
+	SaveMapConfig();
+}
+
 void SaveZonePointsData(int entity)
 {
 	if (g_kvConfig == null)
@@ -3707,11 +3736,41 @@ int CreateZone(eCreateZone Data, bool create)
 			{
 				if (!create)
 				{
-					Data.Trigger = GetNearestEntity(Data.Origin, "trigger_multiple");
+					if (fuckZones_IsPositionNull(Data.Origin) && strlen(Data.OriginName) > 1)
+					{
+						Data.Trigger = FindEntityByName(Data.OriginName, "trigger_multiple");
+					}
+
+					if (!IsValidEntity(Data.Trigger))
+					{
+						Data.Trigger = GetNearestEntity(Data.Origin, "trigger_multiple");
+					}
 				}
 				
 				if (Data.Trigger > 0 && IsValidEntity(Data.Trigger))
 				{
+					eUpdateData update;
+					strcopy(update.Name, sizeof(eUpdateData::Name), Data.Name);
+
+					update.Origin = view_as<float>({0.0, 0.0, 0.0});
+					update.Start = view_as<float>({0.0, 0.0, 0.0});
+					update.End = view_as<float>({0.0, 0.0, 0.0});
+
+					if (fuckZones_IsPositionNull(Data.Origin))
+					{
+						GetEntPropVector(Data.Trigger, Prop_Data, "m_vecOrigin", Data.Origin);
+						update.Origin = Data.Origin;
+					}
+
+					if (fuckZones_IsPositionNull(Data.Start) || fuckZones_IsPositionNull(Data.End))
+					{
+						GetAbsBoundingBox(Data.Trigger, Data.Start, Data.End);
+						update.Start = Data.Start;
+						update.End = Data.End;
+					}
+
+					g_aUpdateZones.PushArray(update, sizeof(update));
+
 					RemoveEntity(Data.Trigger);
 				}
 			}
@@ -5281,6 +5340,9 @@ int SpawnZone(const char[] name)
 	float vOrigin[3];
 	g_kvConfig.GetVector("origin", vOrigin);
 
+	char sOriginName[MAX_ZONE_NAME_LENGTH];
+	g_kvConfig.GetString("origin_name", sOriginName, sizeof(sOriginName));
+
 	float vTeleport[3];
 	g_kvConfig.GetVector("teleport", vTeleport);
 
@@ -5300,9 +5362,10 @@ int SpawnZone(const char[] name)
 
 	float points_height = g_kvConfig.GetFloat("points_height", g_cDefaultHeight.FloatValue);
 
-	ArrayList points = new ArrayList(3);
+	ArrayList points = null;
 	if (g_kvConfig.JumpToKey("points") && g_kvConfig.GotoFirstSubKey(false))
 	{
+		points = new ArrayList(3);
 		do
 		{
 			float coordinates[3];
@@ -5316,18 +5379,21 @@ int SpawnZone(const char[] name)
 		g_kvConfig.GoBack();
 	}
 
-	StringMap effects = new StringMap();
+	StringMap effects = null;
 	if (g_kvConfig.JumpToKey("effects") && g_kvConfig.GotoFirstSubKey(false))
 	{
+		effects = new StringMap();
 		do
 		{
 			char sEffect[256];
 			g_kvConfig.GetSectionName(sEffect, sizeof(sEffect));
 
-			StringMap effect_data = new StringMap();
+			StringMap effect_data = null;
 
 			if (g_kvConfig.GotoFirstSubKey(false))
 			{
+				effect_data = new StringMap();
+
 				do
 				{
 					char sKey[256];
@@ -5357,6 +5423,7 @@ int SpawnZone(const char[] name)
 	zone.Start = vStartPosition;
 	zone.End = vEndPosition;
 	zone.Origin = vOrigin;
+	strcopy(zone.OriginName, sizeof(eCreateZone::OriginName), sOriginName);
 	zone.Radius = fRadius;
 	zone.iColors = iColor;
 	zone.PointsData = points;
@@ -5569,6 +5636,7 @@ public int MenuHandler_MapZoneListMenu(Menu menu, MenuAction action, int param1,
 
 			CZone[param1].Trigger = EntRefToEntIndex(StringToInt(sRef));
 			GetZoneNameByIndex(CZone[param1].Trigger, CZone[param1].Name, sizeof(eCreateZone::Name));
+			strcopy(CZone[param1].OriginName, sizeof(eCreateZone::OriginName), CZone[param1].Name);
 			GetAbsBoundingBox(CZone[param1].Trigger, CZone[param1].Start, CZone[param1].End);
 
 			OpenCreateZonesMenu(param1);
@@ -5767,4 +5835,48 @@ void CallZoneEffectUpdate(int zone)
 	Call_PushCell(iType);
 	Call_PushCell(view_as<int>(Zone[zone].Effects));
 	Call_Finish();
+}
+
+int FindEntityByName(const char[] name, const char[] classname)
+{
+	int iEntity = -1;
+	char sName[MAX_ZONE_NAME_LENGTH];
+
+	while ((iEntity = FindEntityByClassname(iEntity, classname)) != -1)
+	{
+		GetEntPropString(iEntity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+		if (StrEqual(sName, name, false))
+		{
+			return iEntity;
+		}
+	}
+
+	return -1;
+}
+
+void UpdateZoneData()
+{
+	eUpdateData update;
+	for (int i = 0; i < g_aUpdateZones.Length; i++)
+	{
+		g_aUpdateZones.GetArray(i, update, sizeof(update));
+
+		if (!fuckZones_IsPositionNull(update.Origin))
+		{
+			UpdateZonesConfigKeyVectorByName(update.Name, "origin", update.Origin);
+		}
+
+		if (!fuckZones_IsPositionNull(update.Start))
+		{
+			UpdateZonesConfigKeyVectorByName(update.Name, "start", update.Start);
+		}
+
+		if (!fuckZones_IsPositionNull(update.End))
+		{
+			UpdateZonesConfigKeyVectorByName(update.Name, "end", update.End);
+		}
+	}
+
+	delete g_aUpdateZones;
 }
