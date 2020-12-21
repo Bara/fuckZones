@@ -428,7 +428,7 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 
 public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
-	g_aMapZones.Clear();
+	ClearAllZones();
 
 	for (int i = 1; i <= MaxClients; i++)
 	{
@@ -447,17 +447,17 @@ void ClearAllZones()
 
 		if (IsValidEntity(zone))
 		{
-			StringMapSnapshot snap1 = Zone[zone].Effects.Snapshot();
+			StringMapSnapshot snap = Zone[zone].Effects.Snapshot();
 			char sKey[128];
-			for (int j = 0; j < snap1.Length; j++)
+			for (int j = 0; j < snap.Length; j++)
 			{
-				snap1.GetKey(j, sKey, sizeof(sKey));
+				snap.GetKey(j, sKey, sizeof(sKey));
 
 				StringMap temp = null;
 				Zone[zone].Effects.GetValue(sKey, temp);
 				delete temp;
 			}
-			delete snap1;
+			delete snap;
 			delete Zone[zone].Effects;
 			delete Zone[zone].PointsData;
 
@@ -3854,7 +3854,7 @@ int CreateZone(eCreateZone Data, bool create)
 
 				if (Data.PointsData != null)
 				{
-					Zone[entity].PointsData = view_as<ArrayList>(CloneHandle(Data.PointsData));
+					Zone[entity].PointsData = Data.PointsData;
 				}
 				else
 				{
@@ -3921,24 +3921,24 @@ int CreateZone(eCreateZone Data, bool create)
 
 		if (Zone[entity].Effects != null)
 		{
-			StringMapSnapshot snap1 = Zone[entity].Effects.Snapshot();
+			StringMapSnapshot snap = Zone[entity].Effects.Snapshot();
 			char sKey[128];
-			for (int j = 0; j < snap1.Length; j++)
+			for (int j = 0; j < snap.Length; j++)
 			{
-				snap1.GetKey(j, sKey, sizeof(sKey));
+				snap.GetKey(j, sKey, sizeof(sKey));
 
 				StringMap temp = null;
 				Zone[entity].Effects.GetValue(sKey, temp);
 				delete temp;
 			}
-			delete snap1;
+			delete snap;
 		}
 
 		delete Zone[entity].Effects;
 
 		if (Data.Effects != null)
 		{
-			Zone[entity].Effects = view_as<StringMap>(CloneHandle(Data.Effects));
+			Zone[entity].Effects = Data.Effects;
 		}
 		else
 		{
@@ -3958,9 +3958,6 @@ int CreateZone(eCreateZone Data, bool create)
 	Call_PushString(Data.Name);
 	Call_PushCell(Data.Type);
 	Call_Finish();
-
-	delete Data.PointsData;
-	delete Data.Effects;
 	
 	return entity;
 }
