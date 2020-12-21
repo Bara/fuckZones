@@ -143,6 +143,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("fuckZones_RegisterEffect", Native_RegisterEffect);
 	CreateNative("fuckZones_RegisterEffectKey", Native_RegisterEffectKey);
 	CreateNative("fuckZones_ReloadEffects", Native_ReloadEffects);
+	CreateNative("fuckZones_RegenerateZones", Native_RegenerateZones);
 	CreateNative("fuckZones_IsClientInZone", Native_IsClientInZone);
 	CreateNative("fuckZones_IsClientInZoneIndex", Native_IsClientInZoneIndex);
 	CreateNative("fuckZones_TeleportClientToZone", Native_TeleportClientToZone);
@@ -5039,6 +5040,11 @@ public int Native_RegisterEffectKey(Handle plugin, int numParams)
 public int Native_ReloadEffects(Handle plugin, int numParams)
 {
 	QueueEffects();
+}
+
+public int Native_RegenerateZones(Handle plugin, int numParams)
+{
+	RegenerateZones();
 }
 
 public int Native_IsClientInZone(Handle plugin, int numParams)

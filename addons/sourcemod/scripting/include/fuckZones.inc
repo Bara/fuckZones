@@ -57,6 +57,7 @@ enum struct eCreateZone
 native void fuckZones_RegisterEffect(const char[] name, fuckZones_Effect_OnEnterZone OnEnterZone = INVALID_FUNCTION, fuckZones_Effect_OnActiveZone OnActiveZone = INVALID_FUNCTION, fuckZones_Effect_OnLeaveZone OnLeaveZone = INVALID_FUNCTION);
 native void fuckZones_RegisterEffectKey(const char[] name, const char[] effect, const char[] defaultvalue);
 native void fuckZones_ReloadEffects();
+native void fuckZones_RegenerateZones();
 native bool fuckZones_IsClientInZone(int client, const char[] name);
 native bool fuckZones_IsClientInZoneIndex(int client, int zone);
 native bool fuckZones_TeleportClientToZone(int client, const char[] name);
