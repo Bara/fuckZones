@@ -2602,6 +2602,7 @@ public int MenuHandler_CreateZonesMenu(Menu menu, MenuAction action, int param1,
 			else if (StrEqual(sInfo, "set_teleport"))
 			{
 				GetClientAbsOrigin(param1, CZone[param1].Teleport);
+
 				CPrintToChat(param1, "%T", "Chat - Teleport Point Set", param1);
 
 				OpenCreateZonesMenu(param1);
@@ -3279,6 +3280,8 @@ void CreateNewZone(int client)
 	GetDisplayNameByType(CZone[client].Display, sType, sizeof(sType));
 	g_kvConfig.SetString("display", sType);
 
+	g_kvConfig.SetVector("teleport", CZone[client].Teleport);
+
 	switch (CZone[client].Type)
 	{
 		case ZONE_TYPE_BOX:
@@ -3308,7 +3311,6 @@ void CreateNewZone(int client)
 
 		case ZONE_TYPE_POLY:
 		{
-			g_kvConfig.SetVector("teleport", CZone[client].Teleport);
 			g_kvConfig.SetFloat("points_height", CZone[client].PointsHeight);
 
 			if (g_kvConfig.JumpToKey("points", true))
@@ -3899,8 +3901,6 @@ int CreateZone(eCreateZone Data, bool create)
 				}
 
 				Zone[entity].PointsDistance = greatdiff;
-
-				Zone[entity].Teleport = Data.Teleport;
 			}
 		}
 	}
@@ -3914,6 +3914,7 @@ int CreateZone(eCreateZone Data, bool create)
 		Zone[entity].Radius = Data.Radius;
 		Zone[entity].PointsHeight = Data.PointsHeight;
 		Zone[entity].Display = Data.Display;
+		Zone[entity].Teleport = Data.Teleport;
 		
 		if (Data.Type == ZONE_TYPE_TRIGGER)
 		{
@@ -4612,23 +4613,30 @@ bool TeleportToZone(int client, const char[] zone)
 	float fMiddle[3];
 	switch (GetZoneTypeByIndex(entity))
 	{
-		case ZONE_TYPE_BOX:
+		case ZONE_TYPE_BOX,ZONE_TYPE_TRIGGER:
 		{
-			float fStart[3], fEnd[3];
-			GetAbsBoundingBox(entity, fStart, fEnd);
-			GetMiddleOfABox(fStart, fEnd, fMiddle);
-		}
-
-		case ZONE_TYPE_TRIGGER:
-		{
-			float fStart[3], fEnd[3];
-			GetAbsBoundingBox(entity, fStart, fEnd);
-			GetMiddleOfABox(fStart, fEnd, fMiddle);
+			if (fuckZones_IsPositionNull(Zone[entity].Teleport))
+			{
+				float fStart[3], fEnd[3];
+				GetAbsBoundingBox(entity, fStart, fEnd);
+				GetMiddleOfABox(fStart, fEnd, fMiddle);
+			}
+			else
+			{
+				fMiddle = Zone[entity].Teleport;
+			}
 		}
 
 		case ZONE_TYPE_CIRCLE:
 		{
-			fMiddle = Zone[entity].Start;
+			if (fuckZones_IsPositionNull(Zone[entity].Teleport))
+			{
+				fMiddle = Zone[entity].Start;
+			}
+			else
+			{
+				fMiddle = Zone[entity].Teleport;
+			}
 		}
 
 		case ZONE_TYPE_POLY:
@@ -5514,6 +5522,7 @@ void AddZoneMenuItems(int client, Menu menu, bool create, int type, int pointsLe
 			AddItemFormat(menu, "startpoint_b", _, "%T", "Menu - Item - Set Ending Point", client);
 			AddItemFormat(menu, "startpoint_b_no_z", fuckZones_IsPositionNull(end) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Ending Point (Ignore Z/Height)", client);
 			AddItemFormat(menu, "startpoint_b_precision", fuckZones_IsPositionNull(end) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Edit Ending Point (Precision)", client);
+			AddItemFormat(menu, "set_teleport", (fuckZones_IsPositionNull(start) || fuckZones_IsPositionNull(end)) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Teleport Point", client);
 		}
 
 		case ZONE_TYPE_CIRCLE:
@@ -5524,6 +5533,7 @@ void AddZoneMenuItems(int client, Menu menu, bool create, int type, int pointsLe
 			AddItemFormat(menu, "remove_radius", _, "%T", "Menu - Item - Radius -", client);
 			AddItemFormat(menu, "add_height", _, "%T", "Menu - Item - Height +", client);
 			AddItemFormat(menu, "remove_height", _, "%T", "Menu - Item - Height -", client);
+			AddItemFormat(menu, "set_teleport", fuckZones_IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Teleport Point", client);
 		}
 
 		case ZONE_TYPE_POLY:
