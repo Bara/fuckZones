@@ -243,8 +243,11 @@ public void __pl_fuckZones_SetNTVOptional()
 	MarkNativeAsOptional("fuckZones_RegisterEffect");
 	MarkNativeAsOptional("fuckZones_RegisterEffectKey");
 	MarkNativeAsOptional("fuckZones_ReloadEffects");
+	MarkNativeAsOptional("fuckZones_RegenerateZones");
 	MarkNativeAsOptional("fuckZones_IsClientInZone");
+	MarkNativeAsOptional("fuckZones_IsClientInZoneIndex");
 	MarkNativeAsOptional("fuckZones_TeleportClientToZone");
+	MarkNativeAsOptional("fuckZones_TeleportClientToZoneIndex");
 	MarkNativeAsOptional("fuckZones_GetEffectsList");
 	MarkNativeAsOptional("fuckZones_GetZoneEffects");
 	MarkNativeAsOptional("fuckZones_GetZoneType");
