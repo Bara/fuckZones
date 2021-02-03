@@ -1008,7 +1008,7 @@ public Action Command_DeleteAllZones(int client, int args)
 public Action Command_ReloadEffects(int client, int args)
 {
 	QueueEffects();
-	CReplyToCommand(client, "%T", "Command - Effect Reloaded", client);
+	CReplyToCommand(client, "%T", "Command - Effects Reloaded", client);
 	return Plugin_Handled;
 }
 
@@ -3822,9 +3822,9 @@ int CreateZone(eCreateZone Data, bool create)
 				SetEntPropVector(entity, Prop_Data, "m_vecMins", Data.Start);
 				SetEntPropVector(entity, Prop_Data, "m_vecMaxs", Data.End);
 
-				SDKHook(entity, SDKHook_StartTouchPost, Zones_StartTouch);
-				SDKHook(entity, SDKHook_TouchPost, Zones_Touch);
-				SDKHook(entity, SDKHook_EndTouchPost, Zones_EndTouch);
+				SDKHook(entity, SDKHook_StartTouch, Zones_StartTouch);
+				SDKHook(entity, SDKHook_Touch, Zones_Touch);
+				SDKHook(entity, SDKHook_EndTouch, Zones_EndTouch);
 				SDKHook(entity, SDKHook_StartTouchPost, Zones_StartTouchPost);
 				SDKHook(entity, SDKHook_TouchPost, Zones_TouchPost);
 				SDKHook(entity, SDKHook_EndTouchPost, Zones_EndTouchPost);
@@ -4216,14 +4216,32 @@ public void Zones_EndTouchPost(int entity, int other)
 
 void CallEffectCallback(int entity, int client, int callback)
 {
+	if ((fuckZones_GetZoneType(entity) != ZONE_TYPE_BOX && fuckZones_GetZoneType(entity) != ZONE_TYPE_TRIGGER) || callback == EFFECT_CALLBACK_ONACTIVEZONE)
+	{
+		return;
+	}
+
+	char sEffect[MAX_EFFECT_NAME_LENGTH];
+	Handle callbacks[MAX_EFFECT_CALLBACKS];
+	StringMap values = null;
+	bool bCBSuccess;
+	bool bVSuccess;
+
 	for (int i = 0; i < g_aEffectsList.Length; i++)
 	{
-		char sEffect[MAX_EFFECT_NAME_LENGTH];
 		g_aEffectsList.GetString(i, sEffect, sizeof(sEffect));
 
-		Handle callbacks[MAX_EFFECT_CALLBACKS];
-		StringMap values = null;
-		if (g_smEffectCalls.GetArray(sEffect, callbacks, sizeof(callbacks)) && callbacks[callback] != null && GetForwardFunctionCount(callbacks[callback]) > 0 && Zone[entity].Effects.GetValue(sEffect, values))
+		for (int j = 0; j < MAX_EFFECT_CALLBACKS; j++)
+		{
+			callbacks[j] = null;
+		}
+
+		values = null;
+
+		bCBSuccess = g_smEffectCalls.GetArray(sEffect, callbacks, sizeof(callbacks));
+		bVSuccess = Zone[entity].Effects.GetValue(sEffect, values);
+
+		if (bCBSuccess && bVSuccess && callbacks[callback] != null && GetForwardFunctionCount(callbacks[callback]) > 0)
 		{
 			Call_StartForward(callbacks[callback]);
 			Call_PushCell(client);

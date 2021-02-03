@@ -6,7 +6,7 @@
 #include <intmap>
 #include <fuckZones>
 
-#define EFFECT_NAME "fuck"
+#define EFFECT_NAME "fuckTimer"
 
 enum struct PlayerData {
 	float Time;
@@ -91,6 +91,8 @@ public void fuckZones_OnZoneCreate(int zone, const char[] name, int type)
 
 public void fuckZones_OnEffectsReady()
 {
+	PrintToChatAll("fuckZones_OnEffectsReady");
+	
 	fuckZones_RegisterEffect(EFFECT_NAME, OneZoneStartTouch, INVALID_FUNCTION, OnZoneEndTouch);
 
 	fuckZones_RegisterEffectKey(EFFECT_NAME, "StartZone", "0");
@@ -116,6 +118,8 @@ public Action fuckZones_OnEndTouchZone(int client, int entity, const char[] zone
 
 public void OneZoneStartTouch(int client, int entity, StringMap values)
 {
+	PrintToChat(client, "OneZoneStartTouch");
+
 	if (IsEndZone(values))
 	{
 		if (Player[client].Time > 0.0)
@@ -141,12 +145,23 @@ public void OneZoneStartTouch(int client, int entity, StringMap values)
 
 public void OnZoneEndTouch(int client, int entity, StringMap values)
 {
+	PrintToChat(client, "OnZoneEndTouch");
+	int iStage = -1;
+
 	if (IsStartZone(values))
 	{
 		Player[client].Time = GetGameTime();
+		iStage = 1;
 	}
 
-	int iStage = GetStageNumber(values);
+	char sName[MAX_ZONE_NAME_LENGTH];
+	fuckZones_GetZoneName(entity, sName, sizeof(sName));
+
+	if (iStage < 1)
+	{
+		iStage = GetStageNumber(values);
+	}
+
 	if (iStage > 0)
 	{
 		Player[client].StageTimes.SetValue(iStage, GetGameTime());
