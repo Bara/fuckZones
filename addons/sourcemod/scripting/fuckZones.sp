@@ -4217,7 +4217,7 @@ public void Zones_EndTouchPost(int entity, int other)
 
 void CallEffectCallback(int entity, int client, int callback)
 {
-	if ((fuckZones_GetZoneType(entity) != ZONE_TYPE_BOX && fuckZones_GetZoneType(entity) != ZONE_TYPE_TRIGGER) || callback == EFFECT_CALLBACK_ONACTIVEZONE)
+	if ((fuckZones_GetZoneType(entity) != ZONE_TYPE_BOX && fuckZones_GetZoneType(entity) != ZONE_TYPE_TRIGGER))
 	{
 		return;
 	}
