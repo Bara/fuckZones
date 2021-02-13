@@ -92,6 +92,15 @@ native bool fuckZones_GetColorCodeByName(const char[] name, int color[4]);
 native bool fuckZones_GetDisplayNameByType(int type, char[] name, int length);
 native int fuckZones_GetDisplayTypeByName(const char[] name);
 
+/* 
+ * Returns an ArrayList where all zones are saved.
+ * It's a cloned ArrayList, so it must be closed.
+ * 
+* return                ArrayList, or -1 for no ArrayList
+ *
+ */
+native ArrayList fuckZones_GetZoneList();
+
 
 
 /**----------------------------------------------------------*/
@@ -256,6 +265,7 @@ public void __pl_fuckZones_SetNTVOptional()
 	MarkNativeAsOptional("fuckZones_GetColorCodeByName");
 	MarkNativeAsOptional("fuckZones_GetDisplayNameByType");
 	MarkNativeAsOptional("fuckZones_GetDisplayTypeByName");
+	MarkNativeAsOptional("fuckZones_GetZoneList");
 }
 #endif
 

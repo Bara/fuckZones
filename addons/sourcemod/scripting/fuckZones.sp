@@ -156,6 +156,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("fuckZones_GetColorCodeByName", Native_GetColorCodeByName);
 	CreateNative("fuckZones_GetDisplayNameByType", Native_GetDisplayNameByType);
 	CreateNative("fuckZones_GetDisplayTypeByName", Native_GetDisplayTypeByName);
+	CreateNative("fuckZones_GetZoneList", Native_GetZoneList);
 
 	Forward.OnEffectsReady = new GlobalForward("fuckZones_OnEffectsReady", ET_Ignore);
 	Forward.StartTouchZone = new GlobalForward("fuckZones_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
@@ -5287,6 +5288,16 @@ public int Native_GetDisplayTypeByName(Handle plugin, int numParams)
 	char sType[12];
 	GetNativeString(1, sType, sizeof(sType));
 	return GetDisplayTypeByName(sType);
+}
+
+public int Native_GetZoneList(Handle plugin, int numParams)
+{
+	if (g_aZoneEntities == null)
+	{
+		return -1;
+	}
+
+	return view_as<int>(CloneHandle(g_aZoneEntities));
 }
 
 bool AddItemFormat(Menu& menu, const char[] info, int style = ITEMDRAW_DEFAULT, const char[] format, any ...)
