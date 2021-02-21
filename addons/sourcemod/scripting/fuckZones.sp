@@ -4111,6 +4111,12 @@ public Action Zones_Touch(int entity, int other)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
+	if (!g_bIsInZone[client][entity])
+	{
+		Zones_StartTouch(entity, client);
+		Zones_StartTouchPost(entity, client);
+	}
+
 	Call_StartForward(Forward.TouchZone);
 	Call_PushCell(client);
 	Call_PushCell(entity);
@@ -4131,8 +4137,6 @@ public Action Zones_EndTouch(int entity, int other)
 	{
 		return Plugin_Continue;
 	}
-
-	g_bIsInZone[client][entity] = false;
 
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetZoneNameByIndex(entity, sName, sizeof(sName));
@@ -4202,7 +4206,12 @@ public void Zones_EndTouchPost(int entity, int other)
 		return;
 	}
 
-	CallEffectCallback(entity, client, EFFECT_CALLBACK_ONLEAVEZONE);
+	if (g_bIsInZone[client][entity])
+	{
+		CallEffectCallback(entity, client, EFFECT_CALLBACK_ONLEAVEZONE);
+	}
+
+	g_bIsInZone[client][entity] = false;
 
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetZoneNameByIndex(entity, sName, sizeof(sName));
@@ -4630,7 +4639,9 @@ bool TeleportToZone(int client, const char[] zone)
 	}
 
 	float fMiddle[3];
-	switch (GetZoneTypeByIndex(entity))
+	int iType = GetZoneTypeByIndex(entity);
+
+	switch (iType)
 	{
 		case ZONE_TYPE_BOX,ZONE_TYPE_TRIGGER:
 		{
@@ -4667,6 +4678,35 @@ bool TeleportToZone(int client, const char[] zone)
 			}
 
 			fMiddle = Zone[entity].Teleport;
+		}
+	}
+
+	for (int i = 0; i < g_aZoneEntities.Length; i++)
+	{
+		int iZone = EntRefToEntIndex(g_aZoneEntities.Get(i));
+
+		if (IsValidEntity(iZone))
+		{
+			if (iType == ZONE_TYPE_POLY || iType == ZONE_TYPE_CIRCLE)
+			{
+				if (g_bIsInsideZone[client][iZone])
+				{
+					IsNotNearExternalZone(client, iZone, GetZoneTypeByIndex(entity));
+				}
+
+				if (g_bIsInsideZone_Post[client][iZone] || g_bIsInZone[client][iZone])
+				{
+					IsNotNearExternalZone_Post(client, iZone, GetZoneTypeByIndex(iZone));
+				}
+			}
+			else
+			{
+				if (g_bIsInZone[client][iZone])
+				{
+					Zones_EndTouch(iZone, client);
+					Zones_EndTouchPost(iZone, client);
+				}
+			}
 		}
 	}
 
