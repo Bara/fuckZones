@@ -180,7 +180,7 @@ public void OnPluginStart()
 	AutoExecConfig_SetCreateDirectory(true);
 	AutoExecConfig_SetCreateFile(true);
 	AutoExecConfig_SetFile("fuckZones");
-	g_cPrecisionValue = AutoExecConfig_CreateConVar("fuckZones_precision_offset", "10.0", "Default precision value when setting a zones precision area (Default: 10.0).", _, true, 0.1);
+	g_cPrecisionValue = AutoExecConfig_CreateConVar("fuckZones_precision_offset", "10.0", "Default precision value when setting a zones precision area (Default: 10.0).", _, true, 1.0);
 	g_cRegenerateSpam = AutoExecConfig_CreateConVar("fuckZones_regenerate_spam", "10", "Amount of time before zones can be regenerated again (spam protection) (0 to disable this feature, Default: 10)", _, true, 0.0);
 	g_cDefaultHeight = AutoExecConfig_CreateConVar("fuckZones_default_height", "256", "Default height (z-axis) for circles and polygons zones (Default: 256)");
 	g_cDefaultRadius = AutoExecConfig_CreateConVar("fuckZones_default_radius", "150", "Default radius for circle zones (Default: 150)");
