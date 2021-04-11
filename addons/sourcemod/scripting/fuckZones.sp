@@ -41,6 +41,7 @@ ConVar g_cEnableLogging = null;
 ConVar g_cMaxRadius = null;
 ConVar g_cMaxHeight = null;
 ConVar g_cNameRegex = null;
+ConVar g_cDisableCZZones = null;
 
 enum struct eForwards
 {
@@ -191,6 +192,7 @@ public void OnPluginStart()
 	g_cMaxRadius = AutoExecConfig_CreateConVar("fuckZones_max_radius", "512", "Set's the maximum radius value for circle zones. (Default: 512)");
 	g_cMaxHeight = AutoExecConfig_CreateConVar("fuckZones_max_height", "512", "Set's the maximum height value for circle/poly zones. (Default: 512)");
 	g_cNameRegex = AutoExecConfig_CreateConVar("fuckZones_name_regex", "^[a-zA-Z0-9 _]+$", "Allowed characters in zone name. (Default: \"^[a-zA-Z0-9 _]+$\"");
+	g_cDisableCZZones = AutoExecConfig_CreateConVar("fuckZones_disable_circle_polygon_zones", "0", "Disable circle and polygon zones for better performance?", _, true, 0.0, true, 1.0);
 	AutoExecConfig_ExecuteFile();
 	AutoExecConfig_CleanFile();
 
@@ -643,90 +645,93 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		GetClientAbsOrigin(client, vecPosition);
 		GetClientEyePosition(client, vecEyePosition);
 
-		for (int i = 0; i < g_aZoneEntities.Length; i++)
+		if (!g_cDisableCZZones.BoolValue)
 		{
-			int zone = EntRefToEntIndex(g_aZoneEntities.Get(i));
-
-			if (IsValidEntity(zone))
+			for (int i = 0; i < g_aZoneEntities.Length; i++)
 			{
-				switch (GetZoneTypeByIndex(zone))
+				int zone = EntRefToEntIndex(g_aZoneEntities.Get(i));
+
+				if (IsValidEntity(zone))
 				{
-					case ZONE_TYPE_CIRCLE:
+					switch (GetZoneTypeByIndex(zone))
 					{
-						if (IsPointInCircle(vecPosition, vecEyePosition, zone))
+						case ZONE_TYPE_CIRCLE:
 						{
-							Action action = IsNearExternalZone(client, zone, ZONE_TYPE_CIRCLE);
-
-							if (action <= Plugin_Changed)
+							if (IsPointInCircle(vecPosition, vecEyePosition, zone))
 							{
-								IsNearExternalZone_Post(client, zone, ZONE_TYPE_CIRCLE);
+								Action action = IsNearExternalZone(client, zone, ZONE_TYPE_CIRCLE);
+
+								if (action <= Plugin_Changed)
+								{
+									IsNearExternalZone_Post(client, zone, ZONE_TYPE_CIRCLE);
+								}
 							}
-						}
-						else
-						{
-							Action action = IsNotNearExternalZone(client, zone, ZONE_TYPE_CIRCLE);
-
-							if (action <= Plugin_Changed)
+							else
 							{
-								IsNotNearExternalZone_Post(client, zone, ZONE_TYPE_CIRCLE);
-							}
-						}
-					}
+								Action action = IsNotNearExternalZone(client, zone, ZONE_TYPE_CIRCLE);
 
-					case ZONE_TYPE_POLY:
-					{
-						float origin[3];
-						origin[0] = vecPosition[0];
-						origin[1] = vecPosition[1];
-						origin[2] = vecPosition[2];
-
-						origin[2] += 42.5;
-
-						static float offset = 16.5;
-						float clientpoints[4][3];
-
-						clientpoints[0] = origin;
-						clientpoints[0][0] -= offset;
-						clientpoints[0][1] -= offset;
-
-						clientpoints[1] = origin;
-						clientpoints[1][0] += offset;
-						clientpoints[1][1] -= offset;
-
-						clientpoints[2] = origin;
-						clientpoints[2][0] -= offset;
-						clientpoints[2][1] += offset;
-
-						clientpoints[3] = origin;
-						clientpoints[3][0] += offset;
-						clientpoints[3][1] += offset;
-
-						bool IsInZone;
-						for (int x = 0; x < 4; x++)
-						{
-							if (IsPointInZone(clientpoints[x], zone))
-							{
-								IsInZone = true;
-								break;
+								if (action <= Plugin_Changed)
+								{
+									IsNotNearExternalZone_Post(client, zone, ZONE_TYPE_CIRCLE);
+								}
 							}
 						}
 
-						if (IsInZone)
+						case ZONE_TYPE_POLY:
 						{
-							Action action = IsNearExternalZone(client, zone, ZONE_TYPE_POLY);
+							float origin[3];
+							origin[0] = vecPosition[0];
+							origin[1] = vecPosition[1];
+							origin[2] = vecPosition[2];
 
-							if (action <= Plugin_Changed)
+							origin[2] += 42.5;
+
+							static float offset = 16.5;
+							float clientpoints[4][3];
+
+							clientpoints[0] = origin;
+							clientpoints[0][0] -= offset;
+							clientpoints[0][1] -= offset;
+
+							clientpoints[1] = origin;
+							clientpoints[1][0] += offset;
+							clientpoints[1][1] -= offset;
+
+							clientpoints[2] = origin;
+							clientpoints[2][0] -= offset;
+							clientpoints[2][1] += offset;
+
+							clientpoints[3] = origin;
+							clientpoints[3][0] += offset;
+							clientpoints[3][1] += offset;
+
+							bool IsInZone;
+							for (int x = 0; x < 4; x++)
 							{
-								IsNearExternalZone_Post(client, zone, ZONE_TYPE_POLY);
+								if (IsPointInZone(clientpoints[x], zone))
+								{
+									IsInZone = true;
+									break;
+								}
 							}
-						}
-						else
-						{
-							Action action = IsNotNearExternalZone(client, zone, ZONE_TYPE_POLY);
 
-							if (action <= Plugin_Changed)
+							if (IsInZone)
 							{
-								IsNotNearExternalZone_Post(client, zone, ZONE_TYPE_POLY);
+								Action action = IsNearExternalZone(client, zone, ZONE_TYPE_POLY);
+
+								if (action <= Plugin_Changed)
+								{
+									IsNearExternalZone_Post(client, zone, ZONE_TYPE_POLY);
+								}
+							}
+							else
+							{
+								Action action = IsNotNearExternalZone(client, zone, ZONE_TYPE_POLY);
+
+								if (action <= Plugin_Changed)
+								{
+									IsNotNearExternalZone_Post(client, zone, ZONE_TYPE_POLY);
+								}
 							}
 						}
 					}
@@ -1433,6 +1438,12 @@ void OpenZonePropertiesMenu(int client, int entity)
 	g_bSelectedZone[entity] = true;
 
 	int iType = GetZoneTypeByIndex(entity);
+
+	if (g_cDisableCZZones.BoolValue && (iType == ZONE_TYPE_POLY || iType == ZONE_TYPE_CIRCLE))
+	{
+		FindZoneToEdit(client);
+		return;
+	}
 
 	char sColor[32];
 	GetColorNameByCode(Zone[entity].Color, sColor, sizeof(sColor));
@@ -2186,6 +2197,11 @@ void OpenEditZoneTypeMenu(int client, int entity)
 		char sType[MAX_ZONE_TYPE_LENGTH];
 		GetZoneNameByType(i, sType, sizeof(sType));
 
+		if (g_cDisableCZZones.BoolValue && (i == ZONE_TYPE_CIRCLE || i == ZONE_TYPE_POLY))
+		{
+			continue;
+		}
+
 		menu.AddItem(sID, sType);
 	}
 
@@ -2413,7 +2429,7 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 		ResetCreateZoneVariables(client);
 	}
 
-	if (CZone[client].Type == ZONE_TYPE_POLY && CZone[client].PointsData == null)
+	if (!g_cDisableCZZones.BoolValue && CZone[client].Type == ZONE_TYPE_POLY && CZone[client].PointsData == null)
 	{
 		CZone[client].PointsData = new ArrayList(3);
 	}
@@ -3105,6 +3121,11 @@ void OpenZoneTypeMenu(int client)
 		char sType[MAX_ZONE_TYPE_LENGTH];
 		GetZoneNameByType(i, sType, sizeof(sType));
 
+		if (g_cDisableCZZones.BoolValue && (i == ZONE_TYPE_CIRCLE || i == ZONE_TYPE_POLY))
+		{
+			continue;
+		}
+
 		menu.AddItem(sID, sType);
 	}
 
@@ -3537,7 +3558,7 @@ public Action Timer_DisplayZones(Handle timer)
 
 				case ZONE_TYPE_CIRCLE:
 				{
-					if (!fuckZones_IsPositionNull(CZone[i].Start))
+					if (!g_cDisableCZZones.BoolValue && !fuckZones_IsPositionNull(CZone[i].Start))
 					{
 						TE_SetupBeamRingPointToClient(i, CZone[i].Start, CZone[i].Radius, CZone[i].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 
@@ -3606,6 +3627,11 @@ public Action Timer_DisplayZones(Handle timer)
 
 				case ZONE_TYPE_CIRCLE:
 				{
+					if (g_cDisableCZZones.BoolValue)
+					{
+						continue;
+					}
+
 					TE_SetupBeamRingPoint(vecOrigin, Zone[zone].Radius, Zone[zone].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 					TE_SendToAll();
 
@@ -3645,7 +3671,7 @@ public Action Timer_DisplayZones(Handle timer)
 
 				case ZONE_TYPE_POLY:
 				{
-					if (Zone[zone].PointsData != null && Zone[zone].PointsData.Length > 0)
+					if (!g_cDisableCZZones.BoolValue && Zone[zone].PointsData != null && Zone[zone].PointsData.Length > 0)
 					{
 						for (int y = 0; y < Zone[zone].PointsData.Length; y++)
 						{
@@ -3714,6 +3740,11 @@ int CreateZone(eCreateZone Data, bool create)
 	char sType[MAX_ZONE_TYPE_LENGTH], sDType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneNameByType(Data.Type, sType, sizeof(sType));
 	GetDisplayNameByType(Data.Display, sDType, sizeof(sDType));
+
+	if (g_cDisableCZZones.BoolValue && (Data.Type == ZONE_TYPE_CIRCLE || Data.Type == ZONE_TYPE_POLY))
+	{
+		return -1;
+	}
 
 	if (g_cEnableLogging.BoolValue)
 	{
@@ -4640,6 +4671,11 @@ bool TeleportToZone(int client, const char[] zone)
 
 	float fMiddle[3];
 	int iType = GetZoneTypeByIndex(entity);
+
+	if (g_cDisableCZZones.BoolValue && (iType == ZONE_TYPE_POLY || iType == ZONE_TYPE_CIRCLE))
+	{
+		return false;
+	}
 
 	switch (iType)
 	{
