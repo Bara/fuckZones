@@ -2891,9 +2891,6 @@ bool AddEffectToZone(int entity, const char[] effect)
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
-	StringMap keys = null;
-	g_smEffectKeys.GetValue(effect, keys);
-
 	if (!g_kvConfig.JumpToKey(sName))
 	{
 		return false;
@@ -2909,11 +2906,15 @@ bool AddEffectToZone(int entity, const char[] effect)
 		return false;
 	}
 
+	StringMap keys = null;
+	g_smEffectKeys.GetValue(effect, keys);
+
 	if (keys != null)
 	{
-		Zone[entity].Effects.SetValue(effect, CloneHandle(keys));
+		StringMap smKeys = view_as<StringMap>(CloneHandle(keys));
+		Zone[entity].Effects.SetValue(effect, smKeys);
 
-		StringMapSnapshot map = keys.Snapshot();
+		StringMapSnapshot map = smKeys.Snapshot();
 
 		for (int i = 0; i < map.Length; i++)
 		{
@@ -2921,7 +2922,7 @@ bool AddEffectToZone(int entity, const char[] effect)
 			map.GetKey(i, sKey, sizeof(sKey));
 
 			char sValue[MAX_KEY_VALUE_LENGTH];
-			keys.GetString(sKey, sValue, sizeof(sValue));
+			smKeys.GetString(sKey, sValue, sizeof(sValue));
 
 			g_kvConfig.SetString(sKey, sValue);
 		}
@@ -2978,11 +2979,11 @@ bool UpdateZoneEffectKey(int entity, const char[] effect_name, const char[] key,
 	StringMap smEffects = null;
 	Zone[entity].Effects.GetValue(effect_name, smEffects);
 
-	StringMapSnapshot keys = smEffects.Snapshot();
-	for (int i = 0; i < keys.Length; i++)
+	StringMapSnapshot smKeys = smEffects.Snapshot();
+	for (int i = 0; i < smKeys.Length; i++)
 	{
 		char sKey[MAX_KEY_NAME_LENGTH];
-		keys.GetKey(i, sKey, sizeof(sKey));
+		smKeys.GetKey(i, sKey, sizeof(sKey));
 
 		if (StrEqual(sKey, key, false))
 		{
@@ -2991,7 +2992,7 @@ bool UpdateZoneEffectKey(int entity, const char[] effect_name, const char[] key,
 		}
 	}
 
-	delete keys;
+	delete smKeys;
 
 	SaveMapConfig();
 	CallZoneEffectUpdate(entity);
