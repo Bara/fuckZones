@@ -42,6 +42,7 @@ ConVar g_cMaxRadius = null;
 ConVar g_cMaxHeight = null;
 ConVar g_cNameRegex = null;
 ConVar g_cDisableCZZones = null;
+ConVar g_cTeleportLowestPoint = null;
 
 enum struct eForwards
 {
@@ -193,6 +194,7 @@ public void OnPluginStart()
 	g_cMaxHeight = AutoExecConfig_CreateConVar("fuckZones_max_height", "512", "Set's the maximum height value for circle/poly zones. (Default: 512)");
 	g_cNameRegex = AutoExecConfig_CreateConVar("fuckZones_name_regex", "^[a-zA-Z0-9 _]+$", "Allowed characters in zone name. (Default: \"^[a-zA-Z0-9 _]+$\"");
 	g_cDisableCZZones = AutoExecConfig_CreateConVar("fuckZones_disable_circle_polygon_zones", "0", "Disable circle and polygon zones for better performance?", _, true, 0.0, true, 1.0);
+	g_cTeleportLowestPoint = AutoExecConfig_CreateConVar("fuckZones_teleport_lowest_point", "1", "Teleport the entity/client to the lowest point of a zone (from zone middle X/Y/Z based)?", _, true, 0.0, true, 1.0);
 	AutoExecConfig_ExecuteFile();
 	AutoExecConfig_CleanFile();
 
@@ -4747,11 +4749,25 @@ bool TeleportToZone(int client, const char[] zone)
 		}
 	}
 
+	if (g_cTeleportLowestPoint.BoolValue)
+	{
+		TR_TraceRayFilter(fMiddle, view_as<float>({90.0, 0.0, 0.0}), MASK_PLAYERSOLID, RayType_Infinite, TraceRayFilter);
+		TR_GetEndPosition(fMiddle);
+	}
+
 	TeleportEntity(client, fMiddle, NULL_VECTOR, NULL_VECTOR);
 	CPrintToChat(client, "%T", "Chat - Teleported To Zone", client, sName);
 
 	return true;
 }
+
+bool TraceRayFilter(int entity, int mask, any data)
+{
+	if(entity != 0)
+		return false;
+	return true;
+}
+
 
 //Down to just above the natives, these functions are made by 'Deathknife' and repurposed by me for this plugin.
 //Fucker can maths
