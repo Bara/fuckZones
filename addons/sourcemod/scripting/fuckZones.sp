@@ -5196,7 +5196,7 @@ public int Native_IsClientInZoneIndex(Handle plugin, int numParams)
 
 	int zone = GetNativeCell(2);
 
-	if (g_aZoneEntities.FindValue(EntIndexToEntRef(zone)) == -1)
+	if (zone < 1 || g_aZoneEntities.FindValue(EntIndexToEntRef(zone)) == -1)
 	{
 		return false;
 	}
