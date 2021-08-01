@@ -159,6 +159,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("fuckZones_GetDisplayNameByType", Native_GetDisplayNameByType);
 	CreateNative("fuckZones_GetDisplayTypeByName", Native_GetDisplayTypeByName);
 	CreateNative("fuckZones_GetZoneList", Native_GetZoneList);
+	CreateNative("fuckZones_IsPointInZone", Native_IsPointInZone);
 
 	Forward.OnEffectsReady = new GlobalForward("fuckZones_OnEffectsReady", ET_Ignore);
 	Forward.StartTouchZone = new GlobalForward("fuckZones_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
@@ -5045,7 +5046,7 @@ bool IsOriginInBox(float origin[3], int zone)
 	return false;
 }
 
-bool IsPointInCircle(float origin[3], float origin2[3], int zone)
+bool IsPointInCircle(float origin[3], float origin2[3] = {0.0, 0.0, 0.0}, int zone)
 {
 	float fDisX = FloatAbs((origin[0]) - Zone[zone].Start[0]);
 	float fDisY = FloatAbs((origin[1]) - Zone[zone].Start[1]);
@@ -5054,7 +5055,7 @@ bool IsPointInCircle(float origin[3], float origin2[3], int zone)
 	float fLowest = Zone[zone].Start[2] - 10.0;
 	float fHighest = Zone[zone].Start[2] + Zone[zone].PointsHeight;
 
-	if ( (((fDisX*fDisX) + (fDisY*fDisY)) <= fRad*fRad) && ((origin[2] >= fLowest || origin2[2] >= fLowest) && origin[2] <= fHighest))
+	if ( (((fDisX*fDisX) + (fDisY*fDisY)) <= fRad*fRad) && ((origin[2] >= fLowest || ((origin2[0] == 0.0 && origin2[1] == 0.0 && origin2[2] == 0.0) || origin2[2] >= fLowest)) && origin[2] <= fHighest))
 	{
 		return true;
 	}
@@ -5391,6 +5392,37 @@ public int Native_GetZoneList(Handle plugin, int numParams)
 	}
 
 	return view_as<int>(CloneHandle(g_aZoneEntities));
+}
+
+public int Native_IsPointInZone(Handle plugin, int numParams)
+{
+	int iZone = GetNativeCell(1);
+
+	float fPoint[3];
+	GetNativeArray(2, fPoint, 3);
+
+	int iType = GetZoneTypeByIndex(iZone);
+
+	if (iType == ZONE_TYPE_BOX || iType == ZONE_TYPE_TRIGGER)
+	{
+		float fMins[3];
+		float fMaxs[3];
+
+		GetEntPropVector(iZone, Prop_Data, "m_vecMins", fMins);
+		GetEntPropVector(iZone, Prop_Data, "m_vecMaxs", fMaxs);
+
+		return IsOriginInBox(fPoint, iZone);
+	}
+	else if (iType == ZONE_TYPE_CIRCLE)
+	{
+		return IsPointInCircle(fPoint, _, iZone);
+	}
+	else if (iType == ZONE_TYPE_POLY)
+	{
+		return IsPointInZone(fPoint, iZone);
+	}
+
+	return false;
 }
 
 bool AddItemFormat(Menu& menu, const char[] info, int style = ITEMDRAW_DEFAULT, const char[] format, any ...)

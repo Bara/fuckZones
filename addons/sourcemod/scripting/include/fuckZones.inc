@@ -101,6 +101,8 @@ native int fuckZones_GetDisplayTypeByName(const char[] name);
  */
 native ArrayList fuckZones_GetZoneList();
 
+native bool fuckZones_IsPointInZone(int zone, float point[3]);
+
 
 
 /**----------------------------------------------------------*/
@@ -266,6 +268,7 @@ public void __pl_fuckZones_SetNTVOptional()
 	MarkNativeAsOptional("fuckZones_GetDisplayNameByType");
 	MarkNativeAsOptional("fuckZones_GetDisplayTypeByName");
 	MarkNativeAsOptional("fuckZones_GetZoneList");
+	MarkNativeAsOptional("fuckZones_IsPointInZone");
 }
 #endif
 
