@@ -5408,10 +5408,9 @@ public int Native_IsPointInZone(Handle plugin, int numParams)
 		float fMins[3];
 		float fMaxs[3];
 
-		GetEntPropVector(iZone, Prop_Data, "m_vecMins", fMins);
-		GetEntPropVector(iZone, Prop_Data, "m_vecMaxs", fMaxs);
+		GetAbsBoundingBox(iZone, fMins, fMaxs);
 
-		return IsOriginInBox(fPoint, iZone);
+		return IsInsideBox(fPoint, fMins, fMaxs);
 	}
 	else if (iType == ZONE_TYPE_CIRCLE)
 	{
@@ -6046,4 +6045,14 @@ void UpdateZoneData()
 	}
 
 	delete g_aUpdateZones;
+}
+
+bool IsInsideBox(float point[3], float mins[3], float maxs[3])
+{
+	if (mins[0] <= point[0] <= maxs[0] && mins[1] <= point[1] <= maxs[1] && mins[2] <= point[2] <= maxs[2])
+	{
+		return true;
+	}
+
+	return false;
 }
