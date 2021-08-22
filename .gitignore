@@ -1,3 +1,5 @@
 .vscode
 addons/sourcemod/plugins/fuck.smx
 addons/sourcemod/scripting/fuck.sp
+addons/sourcemod/scripting/fuckZones_timer.sp
+addons/sourcemod/plugins/fuckzones_timer.smx
