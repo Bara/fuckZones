@@ -923,7 +923,7 @@ void OnButtonPress(int client, int button)
 	}
 } */
 
-public Action Timer_ResetShow(Handle timer, int userid)
+public Action Timer_ResetShow(Handle timer, any userid)
 {
 	int client = GetClientOfUserId(userid);
 
@@ -5741,7 +5741,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 	}
 }
 
-public void Frame_OnEntityCreated(int ref)
+public void Frame_OnEntityCreated(any ref)
 {
 	int entity = EntRefToEntIndex(ref);
 
