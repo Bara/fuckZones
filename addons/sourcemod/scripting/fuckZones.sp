@@ -203,6 +203,7 @@ public void OnPluginStart()
 	HookEventEx("teamplay_round_win", Event_RoundEnd);
 	HookEventEx("round_start", Event_RoundStart);
 	HookEventEx("round_end", Event_RoundEnd);
+	HookEventEx("player_death", Event_PlayerDeath);
 
 	RegAdminCmd("sm_zone", Command_EditZoneMenu, ADMFLAG_ROOT, "Edit a certain zone that you're standing in.");
 	RegAdminCmd("sm_editzone", Command_EditZoneMenu, ADMFLAG_ROOT, "Edit a certain zone that you're standing in.");
@@ -435,14 +436,44 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 
 public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
-	ClearAllZones();
-
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientInGame(i) && !IsFakeClient(i))
 		{
 			CancelClientMenu(i);
+			
+			for (int zone = MaxClients; zone < MAX_ENTITY_LIMIT; zone++)
+			{
+				if (!g_bIsInZone[i][zone])
+				{
+					continue;
+				}
+
+				Zones_EndTouchPost(zone, i);
+			}
 		}
+	}
+
+	ClearAllZones();
+}
+
+public void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast)
+{
+	int client = GetClientOfUserId(event.GetInt("userid"));
+
+	if (!client)
+	{
+		return;
+	}
+
+	for (int zone = MaxClients; zone < MAX_ENTITY_LIMIT; zone++)
+	{
+		if (!g_bIsInZone[client][zone])
+		{
+			continue;
+		}
+
+		Zones_EndTouchPost(zone, client);
 	}
 }
 
