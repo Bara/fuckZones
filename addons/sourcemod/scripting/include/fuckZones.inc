@@ -62,6 +62,7 @@ native bool fuckZones_IsClientInZone(int client, const char[] name);
 native bool fuckZones_IsClientInZoneIndex(int client, int zone);
 native bool fuckZones_TeleportClientToZone(int client, const char[] name);
 native bool fuckZones_TeleportClientToZoneIndex(int client, int zone);
+native int fuckZones_GetClientZone(int client); // returns -1 if client is not in any Zone. if Client is in multiple zones returns first occure.
 
 /*
  * Don't close this ArrayList. It will handled by fuckZones.

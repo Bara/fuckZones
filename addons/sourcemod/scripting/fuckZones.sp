@@ -160,6 +160,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("fuckZones_GetDisplayTypeByName", Native_GetDisplayTypeByName);
 	CreateNative("fuckZones_GetZoneList", Native_GetZoneList);
 	CreateNative("fuckZones_IsPointInZone", Native_IsPointInZone);
+	CreateNative("fuckZones_GetClientZone", Native_GetClientZone);
 
 	Forward.OnEffectsReady = new GlobalForward("fuckZones_OnEffectsReady", ET_Ignore);
 	Forward.StartTouchZone = new GlobalForward("fuckZones_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
@@ -5255,6 +5256,28 @@ public int Native_IsClientInZoneIndex(Handle plugin, int numParams)
 	}
 
 	return false;
+}
+
+public int Native_GetClientZone(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+
+	if (!IsClientValid(client))
+	{
+		return -1;
+	}
+
+	for (int zone = MaxClients; zone < MAX_ENTITY_LIMIT; zone++)
+	{
+		if (!g_bIsInZone[client][zone])
+		{
+			continue;
+		}
+
+		return zone;
+	}
+
+	return -1;
 }
 
 public int Native_TeleportClientToZone(Handle plugin, int numParams)
