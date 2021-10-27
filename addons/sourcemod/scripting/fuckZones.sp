@@ -1018,7 +1018,7 @@ public Action Command_TeleportToZone(int client, int args)
 	int target_list[MAXPLAYERS];
 	bool tn_is_ml;
 
-	int target_count = target_count = ProcessTargetString(sArg1, client, target_list, MAXPLAYERS, COMMAND_FILTER_ALIVE, target_name, sizeof(target_name), tn_is_ml);
+	int target_count = ProcessTargetString(sArg1, client, target_list, MAXPLAYERS, COMMAND_FILTER_ALIVE, target_name, sizeof(target_name), tn_is_ml);
 
 	if (target_count <= 0)
 	{
@@ -1166,6 +1166,8 @@ public int MenuHandler_ZonesMenu(Menu menu, MenuAction action, int param1, int p
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 void OpenTeleportToZoneMenu(int client)
@@ -1215,6 +1217,8 @@ public int MenuHandler_TeleportToZoneMenu(Menu menu, MenuAction action, int para
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 void RegenerateZones(int client = -1)
@@ -1287,7 +1291,7 @@ public int MenuHandler_ConfirmDeleteAllZones(Menu menu, MenuAction action, int p
 			if (StrEqual(sInfo, "No"))
 			{
 				OpenZonesMenu(param1);
-				return;
+				return 0;
 			}
 
 			DeleteAllZones(param1, false);
@@ -1298,6 +1302,8 @@ public int MenuHandler_ConfirmDeleteAllZones(Menu menu, MenuAction action, int p
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 void OpenManageZonesMenu(int client)
@@ -1360,6 +1366,8 @@ public int MenuHandler_ManageZonesMenu(Menu menu, MenuAction action, int param1,
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 void OpenEditZoneMenu(int client, int entity)
@@ -1456,6 +1464,8 @@ public int MenuHandler_ManageEditMenu(Menu menu, MenuAction action, int param1, 
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 void OpenZonePropertiesMenu(int client, int entity)
@@ -1721,6 +1731,8 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 void OpenEditZoneStartPointMenu(int client, int entity, bool whichpoint, bool create = false, char[] name = "")
@@ -2090,6 +2102,8 @@ public int MenuHandler_ZoneEditStartPointMenu(Menu menu, MenuAction action, int 
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 int RemakeZoneEntity(int entity)
@@ -2101,7 +2115,7 @@ int RemakeZoneEntity(int entity)
 	return SpawnAZone(sName);
 }
 
-void GetZonesVectorData(int entity, const char[] name, float[3] vecdata)
+void GetZonesVectorData(int entity, const char[] name, float vecdata[3])
 {
 	if (g_kvConfig == null)
 	{
@@ -2141,7 +2155,7 @@ void UpdateZonesConfigKey(int entity, const char[] key, const char[] value)
 	SaveMapConfig();
 }
 
-void UpdateZonesConfigKeyVector(int entity, const char[] key, float[3] value)
+void UpdateZonesConfigKeyVector(int entity, const char[] key, float value[3])
 {
 	if (g_kvConfig == null)
 	{
@@ -2162,7 +2176,7 @@ void UpdateZonesConfigKeyVector(int entity, const char[] key, float[3] value)
 	SaveMapConfig();
 }
 
-void UpdateZonesConfigKeyVectorByName(const char[] name, const char[] key, float[3] value)
+void UpdateZonesConfigKeyVectorByName(const char[] name, const char[] key, float value[3])
 {
 	if (g_kvConfig == null)
 	{
@@ -2278,6 +2292,8 @@ public int MenuHandler_EditZoneTypeMenu(Menu menu, MenuAction action, int param1
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 void OpenEditZoneDisplayMenu(int client, int entity)
@@ -2336,6 +2352,8 @@ public int MenuHandler_EditZoneDisplayMenu(Menu menu, MenuAction action, int par
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 void OpenEditZoneColorMenu(int client, int entity)
@@ -2399,6 +2417,8 @@ public int MenuHandler_EditZoneColorMenu(Menu menu, MenuAction action, int param
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 void DisplayConfirmDeleteZoneMenu(int client, int entity)
@@ -2430,7 +2450,7 @@ public int MenuHandler_ManageConfirmDeleteZoneMenu(Menu menu, MenuAction action,
 			if (StrEqual(sInfo, "no"))
 			{
 				OpenEditZoneMenu(param1, entity);
-				return;
+				return 0;
 			}
 
 			char sName[MAX_ZONE_NAME_LENGTH];
@@ -2455,6 +2475,8 @@ public int MenuHandler_ManageConfirmDeleteZoneMenu(Menu menu, MenuAction action,
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 void OpenCreateZonesMenu(int client, bool reset = false)
@@ -2696,6 +2718,8 @@ public int MenuHandler_CreateZonesMenu(Menu menu, MenuAction action, int param1,
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 bool AddZoneEffectMenu(int client, int entity)
@@ -2763,6 +2787,8 @@ public int MenuHandler_AddZoneEffect(Menu menu, MenuAction action, int param1, i
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 bool EditZoneEffectMenu(int client, int entity)
@@ -2825,6 +2851,8 @@ public int MenuHandler_EditZoneEffect(Menu menu, MenuAction action, int param1, 
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 bool ListZoneEffectKeys(int client, int entity, const char[] effect)
@@ -2912,6 +2940,8 @@ public int MenuHandler_EditZoneEffectKeyVaue(Menu menu, MenuAction action, int p
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 bool AddEffectToZone(int entity, const char[] effect)
@@ -3099,6 +3129,8 @@ public int MenuHandler_RemoveZoneEffect(Menu menu, MenuAction action, int param1
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 bool RemoveEffectFromZone(int entity, const char[] effect)
@@ -3199,6 +3231,8 @@ public int MenuHandler_ZoneTypeMenu(Menu menu, MenuAction action, int param1, in
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 void OpenZoneDisplayMenu(int client)
@@ -3251,6 +3285,8 @@ public int MenuHandler_ZoneDisplayMenu(Menu menu, MenuAction action, int param1,
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 void OpenZonesColorMenu(int client)
@@ -3294,6 +3330,8 @@ public int MenuHandler_ZoneColorMenu(Menu menu, MenuAction action, int param1, i
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 void CreateNewZone(int client)
@@ -3752,6 +3790,8 @@ public Action Timer_DisplayZones(Handle timer)
 			}
 		}
 	}
+
+	return Plugin_Continue;
 }
 
 void GetAbsBoundingBox(int entity, float mins[3], float maxs[3])
@@ -4501,14 +4541,14 @@ void Array_Copy(const any[] array, any[] newArray, int size)
 	}
 }
 
-void TE_DrawBeamBoxToClient(int client, float bottomCorner[3], float upperCorner[3], int modelIndex, int haloIndex, int startFrame, int frameRate, float life, float width, float endWidth, int fadeLength, float amplitude, const color[4], int speed, int displayType)
+void TE_DrawBeamBoxToClient(int client, float bottomCorner[3], float upperCorner[3], int modelIndex, int haloIndex, int startFrame, int frameRate, float life, float width, float endWidth, int fadeLength, float amplitude, const int color[4], int speed, int displayType)
 {
 	int clients[1];
 	clients[0] = client;
 	TE_DrawBeamBox(clients, 1, bottomCorner, upperCorner, modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed, displayType);
 }
 
-stock void TE_DrawBeamBoxToAll(float bottomCorner[3], float upperCorner[3], int modelIndex, int haloIndex, int startFrame, int frameRate, float life, float width, float endWidth, int fadeLength, float amplitude, const color[4], int speed, int displayType)
+stock void TE_DrawBeamBoxToAll(float bottomCorner[3], float upperCorner[3], int modelIndex, int haloIndex, int startFrame, int frameRate, float life, float width, float endWidth, int fadeLength, float amplitude, const int color[4], int speed, int displayType)
 {
 	int[] clients = new int[MaxClients];
 	int numClients;
@@ -4524,7 +4564,7 @@ stock void TE_DrawBeamBoxToAll(float bottomCorner[3], float upperCorner[3], int 
 	TE_DrawBeamBox(clients, numClients, bottomCorner, upperCorner, modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed, displayType);
 }
 
-void TE_DrawBeamBox(int[] clients, int numClients, float bottomCorner[3], float upperCorner[3], int modelIndex, int haloIndex, int startFrame, int frameRate, float life, float width, float endWidth, int fadeLength, float amplitude, const color[4], int speed, int displayType)
+void TE_DrawBeamBox(int[] clients, int numClients, float bottomCorner[3], float upperCorner[3], int modelIndex, int haloIndex, int startFrame, int frameRate, float life, float width, float endWidth, int fadeLength, float amplitude, const int color[4], int speed, int displayType)
 {
 	float corners[8][3];
 
@@ -5165,6 +5205,8 @@ public int Native_RegisterEffect(Handle plugin, int numParams)
 	Function function3 = GetNativeFunction(4);
 
 	RegisterNewEffect(plugin, sEffect, function1, function2, function3);
+
+	return 0;
 }
 
 public int Native_RegisterEffectKey(Handle plugin, int numParams)
@@ -5188,16 +5230,22 @@ public int Native_RegisterEffectKey(Handle plugin, int numParams)
 	GetNativeString(3, sDefaultValue, size + 1);
 
 	RegisterNewEffectKey(sEffect, sKey, sDefaultValue);
+
+	return 0;
 }
 
 public int Native_ReloadEffects(Handle plugin, int numParams)
 {
 	QueueEffects();
+
+	return 0;
 }
 
 public int Native_RegenerateZones(Handle plugin, int numParams)
 {
 	RegenerateZones();
+
+	return 0;
 }
 
 public int Native_IsClientInZone(Handle plugin, int numParams)
@@ -5681,7 +5729,7 @@ bool GetColorNameByCode(int iColor[4], char[] color, int maxlen)
 	return false;
 }
 
-void AddZoneMenuItems(int client, Menu menu, bool create, int type, int pointsLength, float radius, char[] name, char[] color, int display, float[3] start, float[3] end)
+void AddZoneMenuItems(int client, Menu menu, bool create, int type, int pointsLength, float radius, char[] name, char[] color, int display, float start[3], float end[3])
 {
 	char sBuffer[256];
 	if (type == ZONE_TYPE_POLY)
@@ -5875,9 +5923,11 @@ public int MenuHandler_MapZoneListMenu(Menu menu, MenuAction action, int param1,
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
-int GetNearestEntity(float[3] origin, char[] classname)
+int GetNearestEntity(float origin[3], char[] classname)
 {
 	int iEntity = -1;
 	float fEntOrigin[3];
@@ -5931,6 +5981,8 @@ public int MenuHandler_OpenPolyEditPointMenu(Menu menu, MenuAction action, int p
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 void OpenPolyPointEditMenu(int client)
@@ -6035,6 +6087,8 @@ public int MenuHandler_OpenPolyPointEditMenu(Menu menu, MenuAction action, int p
 			delete menu;
 		}
 	}
+
+	return 0;
 }
 
 void GetZoneNameByIndex(int zone, char[] name, int length)
