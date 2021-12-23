@@ -4903,6 +4903,12 @@ bool IsPointInZone(float point[3], int zone)
 	//float lEq2 = (lSlope2 * point[0]) - point[1];
 	//lEq2 = -lEq2;
 
+	// Prevent error spam, but do we break something here? We'll see.
+	if (Zone[zone].PointsData == null)
+	{
+		return false;
+	}
+
 	//Loop through every point of the zone
 	int size = Zone[zone].PointsData.Length;
 
