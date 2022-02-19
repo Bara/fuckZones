@@ -5683,6 +5683,12 @@ int SpawnZone(const char[] name)
 	
 	int iEntity = CreateZone(zone, false);
 
+	if (iEntity == -1)
+	{
+		LogStackTrace("Zone \"%s\" (CreateZone return: %d) can not be spawned.", zone.Name, iEntity);
+		return -1;
+	}
+
 	g_bSelectedZone[iEntity] = false;
 
 	return iEntity;
