@@ -252,11 +252,6 @@ public void OnMapStart()
 	g_iDefaultHaloIndex = PrecacheModel(DEFAULT_HALOINDEX, true);
 	PrecacheModel(ZONE_MODEL, true);
 
-	if (g_cEnableLogging.BoolValue)
-	{
-		LogMessage("Deleting current zones map configuration from memory.");
-	}
-
 	ReparseMapZonesConfig();
 
 	for (int i = 1; i <= MaxClients; i++)
@@ -297,33 +292,15 @@ void ReparseMapZonesConfig(bool delete_config = false)
 		DeleteFile(sFile);
 	}
 
-	if (g_cEnableLogging.BoolValue)
-	{
-		LogMessage("Creating keyvalues for the new map before pulling new map zones info.");
-	}
 	g_kvConfig = new KeyValues("zones");
 
 	if (FileExists(sFile))
 	{
-		if (g_cEnableLogging.BoolValue)
-		{
-			LogMessage("Config exists, retrieving the zones...");
-		}
-
 		g_kvConfig.ImportFromFile(sFile);
 	}
 	else
 	{
-		if (g_cEnableLogging.BoolValue)
-		{
-			LogMessage("Config doesn't exist, creating new zones config for the map: %s", sMap);
-		}
 		g_kvConfig.ExportToFile(sFile);
-	}
-
-	if (g_cEnableLogging.BoolValue)
-	{
-		LogMessage("New config successfully loaded.");
 	}
 }
 
