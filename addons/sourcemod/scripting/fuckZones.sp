@@ -3875,20 +3875,34 @@ int CreateZone(eCreateZone Data, bool create)
 				}
 			}
 
-			entity = CreateEntityByName("trigger_multiple");
+			bool bSolid = Data.Type == ZONE_TYPE_SOLID;
+
+			if (bSolid)
+				entity = CreateEntityByName("func_brush");
+
+			else
+				entity = CreateEntityByName("trigger_multiple");
 
 			if (IsValidEntity(entity))
 			{
 				SetEntityModel(entity, ZONE_MODEL);
 
 				DispatchKeyValue(entity, "targetname", Data.Name);
-				DispatchKeyValue(entity, "spawnflags", "257");
-				DispatchKeyValue(entity, "StartDisabled", "0");
-				DispatchKeyValue(entity, "wait", "0");
+
+				if (!bSolid)
+				{
+					DispatchKeyValue(entity, "spawnflags", "257");
+					DispatchKeyValue(entity, "StartDisabled", "0");
+					DispatchKeyValue(entity, "wait", "0");
+				}
 
 				DispatchSpawn(entity);
 
-				SetEntProp(entity, Prop_Data, "m_spawnflags", 257);
+				if (!bSolid)
+				{
+					SetEntProp(entity, Prop_Data, "m_spawnflags", 257);
+				}
+
 				SetEntProp(entity, Prop_Data, "m_nSolidType", 2);
 				SetEntProp(entity, Prop_Data, "m_fEffects", 32);
 
@@ -3927,58 +3941,6 @@ int CreateZone(eCreateZone Data, bool create)
 				SDKHook(entity, SDKHook_EndTouchPost, Zones_EndTouchPost);
 			}
 		}
-
-		case ZONE_TYPE_SOLID:
-		{
-			entity = CreateEntityByName("func_brush");
-
-			if (IsValidEntity(entity))
-			{
-				SetEntityModel(entity, ZONE_MODEL);
-
-				DispatchKeyValue(entity, "targetname", Data.Name);
-
-				DispatchSpawn(entity);
-
-				SetEntProp(entity, Prop_Data, "m_nSolidType", 2);
-				SetEntProp(entity, Prop_Data, "m_fEffects", 32);
-
-				float fMiddle[3];
-				GetMiddleOfABox(Data.Start, Data.End, fMiddle);
-				TeleportEntity(entity, fMiddle, NULL_VECTOR, NULL_VECTOR);
-
-				// Have the mins always be negative
-				for (int i = 0; i < 3; i++)
-				{
-					Data.Start[i] = Data.Start[i] - fMiddle[i];
-					if (Data.Start[i] > 0.0)
-					{
-						Data.Start[i] *= -1.0;
-					}
-				}
-
-				// And the maxs always be positive
-				for (int i = 0; i < 3; i++)
-				{
-					Data.End[i] = Data.End[i] - fMiddle[i];
-					if (Data.End[i] < 0.0)
-					{
-						Data.End[i] *= -1.0;
-					}
-				}
-
-				SetEntPropVector(entity, Prop_Data, "m_vecMins", Data.Start);
-				SetEntPropVector(entity, Prop_Data, "m_vecMaxs", Data.End);
-
-				SDKHook(entity, SDKHook_StartTouch, Zones_StartTouch);
-				SDKHook(entity, SDKHook_Touch, Zones_Touch);
-				SDKHook(entity, SDKHook_EndTouch, Zones_EndTouch);
-				SDKHook(entity, SDKHook_StartTouchPost, Zones_StartTouchPost);
-				SDKHook(entity, SDKHook_TouchPost, Zones_TouchPost);
-				SDKHook(entity, SDKHook_EndTouchPost, Zones_EndTouchPost);
-			}
-		}
-
 		case ZONE_TYPE_CIRCLE:
 		{
 			entity = CreateEntityByName("info_target");
