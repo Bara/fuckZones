@@ -30,6 +30,8 @@
 #include <sdktools>
 #include <sourcemod>
 
+#include <fuckZones\converter.sp>
+
 ConVar g_cPrecisionValue      = null;
 ConVar g_cRegenerateSpam      = null;
 ConVar g_cDefaultHeight       = null;
@@ -216,6 +218,8 @@ public void OnPluginStart()
 	RegAdminCmd("sm_deleteallzones", Command_DeleteAllZones, ADMFLAG_ROOT, "Delete all zones on the map.");
 	RegAdminCmd("sm_reloadeffects", Command_ReloadEffects, ADMFLAG_ROOT, "Reload all effects data and their callbacks.");
 	RegAdminCmd("sm_setprecision", Command_SetPrecision, ADMFLAG_ROOT, "Set your precision value");
+	RegAdminCmd("sm_zoneconvert", Command_ZonesConvert, ADMFLAG_ROOT, "Convert devZones configs to fuckZones");
+	RegAdminCmd("sm_zonesconvert", Command_ZonesConvert, ADMFLAG_ROOT, "Convert devZones configs to fuckZones");
 
 	g_aZoneEntities = new ArrayList();
 
@@ -1065,6 +1069,26 @@ public Action Command_SetPrecision(int client, int args)
 	return Plugin_Handled;
 }
 
+public Action Command_ZonesConvert(int client, int args)
+{
+	int iFailedCount = ConvertZones();
+
+	if (iFailedCount == -1)
+		ReplyToCommand(client, "Could not parse devzones folder.");
+
+	else if (iFailedCount == 0)
+		ReplyToCommand(client, "Successfully converted all devZones configs to fuckZones.");
+
+	else
+		ReplyToCommand(client, "%i devZones configs were unable to convert", iFailedCount);
+
+	ReparseMapZonesConfig();
+
+	RegenerateZones(client);
+
+	return Plugin_Handled;
+}
+
 void FindZoneToEdit(int client)
 {
 	int entity = GetEarliestTouchZone(client);
@@ -1198,7 +1222,7 @@ public int MenuHandler_TeleportToZoneMenu(Menu menu, MenuAction action, int para
 	return 0;
 }
 
-void RegenerateZones(int client = -1)
+bool RegenerateZones(int client = -1)
 {
 	if (client == -1)
 	{
@@ -1216,7 +1240,7 @@ void RegenerateZones(int client = -1)
 			PrintToServer("%T", "Command - Active Regenerate Spam Protection", LANG_SERVER);
 		}
 
-		return;
+		return false;
 	}
 
 	g_iRegenerationTime = GetTime();
@@ -1228,6 +1252,8 @@ void RegenerateZones(int client = -1)
 	{
 		CReplyToCommand(client, "%T", "Command - All Zones Regenerated", client);
 	}
+
+	return false;
 }
 
 void DeleteAllZones(int client = -1, bool confirmation = true)
@@ -3878,13 +3904,10 @@ int CreateZone(eCreateZone Data, bool create)
 			bool bSolid = Data.Type == ZONE_TYPE_SOLID;
 
 			if (bSolid)
-			{
 				entity = CreateEntityByName("func_brush");
-			}
+
 			else
-			{
 				entity = CreateEntityByName("trigger_multiple");
-			}
 
 			if (IsValidEntity(entity))
 			{
