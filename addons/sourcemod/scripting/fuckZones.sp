@@ -30,7 +30,7 @@
 #include <sdktools>
 #include <sourcemod>
 
-#include <fuckZones\converter.sp>
+#include <fuckZones/converter.sp>
 
 ConVar g_cPrecisionValue      = null;
 ConVar g_cRegenerateSpam      = null;
