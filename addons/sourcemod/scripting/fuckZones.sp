@@ -3878,10 +3878,13 @@ int CreateZone(eCreateZone Data, bool create)
 			bool bSolid = Data.Type == ZONE_TYPE_SOLID;
 
 			if (bSolid)
+			{
 				entity = CreateEntityByName("func_brush");
-
+			}
 			else
+			{
 				entity = CreateEntityByName("trigger_multiple");
+			}
 
 			if (IsValidEntity(entity))
 			{
