@@ -2,46 +2,46 @@
 #pragma newdecls required
 
 #define DEFAULT_MODELINDEX "sprites/laserbeam.vmt"
-#define DEFAULT_HALOINDEX "materials/sprites/halo.vmt"
-#define ZONE_MODEL "models/error.mdl"
+#define DEFAULT_HALOINDEX  "materials/sprites/halo.vmt"
+#define ZONE_MODEL         "models/error.mdl"
 
 #define MAX_ENTITY_LIMIT 4096
-#define MAX_BUTTONS 25
+#define MAX_BUTTONS      25
 
-#define TIMER_INTERVAL 1.0
-#define TE_LIFE TIMER_INTERVAL+0.1
+#define TIMER_INTERVAL        1.0
+#define TE_LIFE               TIMER_INTERVAL + 0.1
 #define TIMER_INTERVAL_CREATE 0.1
-#define TE_LIFE_CREATE TIMER_INTERVAL_CREATE+0.1
-#define TE_DRAW_RADIUS 15.0
-#define TE_STARTFRAME 0
-#define TE_FRAMERATE 0
-#define TE_FADELENGTH 0
-#define TE_AMPLITUDE 0.0
-#define TE_WIDTH 1.0
-#define TE_ENDWIDTH TE_WIDTH
-#define TE_SPEED 0
-#define TE_FLAGS 0
+#define TE_LIFE_CREATE        TIMER_INTERVAL_CREATE + 0.1
+#define TE_DRAW_RADIUS        15.0
+#define TE_STARTFRAME         0
+#define TE_FRAMERATE          0
+#define TE_FADELENGTH         0
+#define TE_AMPLITUDE          0.0
+#define TE_WIDTH              1.0
+#define TE_ENDWIDTH           TE_WIDTH
+#define TE_SPEED              0
+#define TE_FLAGS              0
 
-#include <sourcemod>
-#include <sdktools>
-#include <sdkhooks>
-#include <clientprefs>
-#include <multicolors>
 #include <autoexecconfig>
+#include <clientprefs>
 #include <fuckZones>
+#include <multicolors>
+#include <sdkhooks>
+#include <sdktools>
+#include <sourcemod>
 
-ConVar g_cPrecisionValue = null;
-ConVar g_cRegenerateSpam = null;
-ConVar g_cDefaultHeight = null;
-ConVar g_cDefaultRadius = null;
-ConVar g_cDefaultZOffset = null;
-ConVar g_cDefaultColor = null;
-ConVar g_cDefaultDisplay = null;
-ConVar g_cEnableLogging = null;
-ConVar g_cMaxRadius = null;
-ConVar g_cMaxHeight = null;
-ConVar g_cNameRegex = null;
-ConVar g_cDisableCZZones = null;
+ConVar g_cPrecisionValue      = null;
+ConVar g_cRegenerateSpam      = null;
+ConVar g_cDefaultHeight       = null;
+ConVar g_cDefaultRadius       = null;
+ConVar g_cDefaultZOffset      = null;
+ConVar g_cDefaultColor        = null;
+ConVar g_cDefaultDisplay      = null;
+ConVar g_cEnableLogging       = null;
+ConVar g_cMaxRadius           = null;
+ConVar g_cMaxHeight           = null;
+ConVar g_cNameRegex           = null;
+ConVar g_cDisableCZZones      = null;
 ConVar g_cTeleportLowestPoint = null;
 
 enum struct eForwards
@@ -61,39 +61,39 @@ eForwards Forward;
 
 bool g_bLate;
 
-KeyValues g_kvConfig = null;
-int g_iRegenerationTime = -1;
+KeyValues g_kvConfig          = null;
+int       g_iRegenerationTime = -1;
 
-ArrayList g_aColors = null;
+ArrayList g_aColors     = null;
 StringMap g_smColorData = null;
 
 int g_iDefaultModelIndex = -1;
-int g_iDefaultHaloIndex = -1;
+int g_iDefaultHaloIndex  = -1;
 
-//Entities Data
+// Entities Data
 ArrayList g_aZoneEntities = null;
-ArrayList g_aUpdateZones = null;
+ArrayList g_aUpdateZones  = null;
 
 enum struct eEntityData
 {
-	float Radius;
-	int Color[4];
-	int Display;
-	bool Trigger;
+	float     Radius;
+	int       Color[4];
+	int       Display;
+	bool      Trigger;
 	StringMap Effects;
 	ArrayList PointsData;
-	float Start[3];
-	float End[3];
-	float Teleport[3];
-	float PointsHeight;
-	float PointsDistance;
-	float PointsMin[3];
-	float PointsMax[3];
+	float     Start[3];
+	float     End[3];
+	float     Teleport[3];
+	float     PointsHeight;
+	float     PointsDistance;
+	float     PointsMin[3];
+	float     PointsMax[3];
 }
 
 enum struct eUpdateData
 {
-	char Name[MAX_ZONE_NAME_LENGTH];
+	char  Name[MAX_ZONE_NAME_LENGTH];
 	float Origin[3];
 	float Start[3];
 	float End[3];
@@ -101,29 +101,29 @@ enum struct eUpdateData
 
 eEntityData Zone[MAX_ENTITY_LIMIT];
 
-//Effects Data
+// Effects Data
 StringMap g_smEffectCalls = null;
-StringMap g_smEffectKeys = null;
-ArrayList g_aEffectsList = null;
+StringMap g_smEffectKeys  = null;
+ArrayList g_aEffectsList  = null;
 
-//Create Zones Data
+// Create Zones Data
 eCreateZone CZone[MAXPLAYERS + 1];
 
 bool g_bEffectKeyValue[MAXPLAYERS + 1];
-int g_iEffectKeyValue_Entity[MAXPLAYERS + 1];
+int  g_iEffectKeyValue_Entity[MAXPLAYERS + 1];
 char g_sEffectKeyValue_Effect[MAXPLAYERS + 1][MAX_EFFECT_NAME_LENGTH];
 char g_sEffectKeyValue_EffectKey[MAXPLAYERS + 1][MAX_KEY_NAME_LENGTH];
-int g_iEditingName[MAXPLAYERS + 1] = {INVALID_ENT_REFERENCE, ...};
+int  g_iEditingName[MAXPLAYERS + 1] = { INVALID_ENT_REFERENCE, ... };
 bool g_bIsInZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 bool g_bIsInsideZone[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 bool g_bIsInsideZone_Post[MAXPLAYERS + 1][MAX_ENTITY_LIMIT];
 bool g_bSelectedZone[MAX_ENTITY_LIMIT] = { false, ... };
-int g_iConfirmZone[MAXPLAYERS + 1] = { -1, ... };
-int g_iConfirmPoint[MAXPLAYERS + 1] = { -1, ... };
-int g_iLastButtons[MAXPLAYERS+1] = { 0, ... };
+int  g_iConfirmZone[MAXPLAYERS + 1]    = { -1, ... };
+int  g_iConfirmPoint[MAXPLAYERS + 1]   = { -1, ... };
+int  g_iLastButtons[MAXPLAYERS + 1]    = { 0, ... };
 
-Handle g_coPrecision = null;
-float g_fPrecision[MAXPLAYERS + 1] = { 0.0, ... };
+Handle g_coPrecision                = null;
+float  g_fPrecision[MAXPLAYERS + 1] = { 0.0, ... };
 
 StringMap g_smSites[MAXPLAYERS + 1] = { null, ... };
 
@@ -131,11 +131,11 @@ ArrayList g_aMapZones = null;
 
 public Plugin myinfo =
 {
-	name = "fuckZones - Core",
-	author = "Bara (Original author: Drixevel)",
+	name        = "fuckZones - Core",
+	author      = "Bara (Original author: Drixevel)",
 	description = "A sourcemod plugin with rich features for dynamic zone development.",
-	version = "1.0.0",
-	url = "github.com/Bara"
+	version     = "1.0.0",
+	url         = "github.com/Bara"
 };
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -162,15 +162,15 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("fuckZones_IsPointInZone", Native_IsPointInZone);
 	CreateNative("fuckZones_GetClientZone", Native_GetClientZone);
 
-	Forward.OnEffectsReady = new GlobalForward("fuckZones_OnEffectsReady", ET_Ignore);
-	Forward.StartTouchZone = new GlobalForward("fuckZones_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
-	Forward.TouchZone = new GlobalForward("fuckZones_OnTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
-	Forward.EndTouchZone = new GlobalForward("fuckZones_OnEndTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.OnEffectsReady      = new GlobalForward("fuckZones_OnEffectsReady", ET_Ignore);
+	Forward.StartTouchZone      = new GlobalForward("fuckZones_OnStartTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.TouchZone           = new GlobalForward("fuckZones_OnTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.EndTouchZone        = new GlobalForward("fuckZones_OnEndTouchZone", ET_Event, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	Forward.StartTouchZone_Post = new GlobalForward("fuckZones_OnStartTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
-	Forward.TouchZone_Post = new GlobalForward("fuckZones_OnTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
-	Forward.EndTouchZone_Post = new GlobalForward("fuckZones_OnEndTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
-	Forward.OnZoneCreate = new GlobalForward("fuckZones_OnZoneCreate", ET_Ignore, Param_Cell, Param_String, Param_Cell);
-	Forward.OnEffectUpdate = new GlobalForward("fuckZones_OnEffectUpdate", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_Cell);
+	Forward.TouchZone_Post      = new GlobalForward("fuckZones_OnTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.EndTouchZone_Post   = new GlobalForward("fuckZones_OnEndTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.OnZoneCreate        = new GlobalForward("fuckZones_OnZoneCreate", ET_Ignore, Param_Cell, Param_String, Param_Cell);
+	Forward.OnEffectUpdate      = new GlobalForward("fuckZones_OnEffectUpdate", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_Cell);
 
 	g_bLate = late;
 	return APLRes_Success;
@@ -184,18 +184,18 @@ public void OnPluginStart()
 	AutoExecConfig_SetCreateDirectory(true);
 	AutoExecConfig_SetCreateFile(true);
 	AutoExecConfig_SetFile("fuckZones");
-	g_cPrecisionValue = AutoExecConfig_CreateConVar("fuckZones_precision_offset", "10.0", "Default precision value when setting a zones precision area (Default: 10.0).", _, true, 1.0);
-	g_cRegenerateSpam = AutoExecConfig_CreateConVar("fuckZones_regenerate_spam", "10", "Amount of time before zones can be regenerated again (spam protection) (0 to disable this feature, Default: 10)", _, true, 0.0);
-	g_cDefaultHeight = AutoExecConfig_CreateConVar("fuckZones_default_height", "256", "Default height (z-axis) for circles and polygons zones (Default: 256)");
-	g_cDefaultRadius = AutoExecConfig_CreateConVar("fuckZones_default_radius", "150", "Default radius for circle zones (Default: 150)");
-	g_cDefaultZOffset = AutoExecConfig_CreateConVar("fuckZones_default_z_offset", "5", "Adds a offset to the z-axis for all points. (Default: 5)");
-	g_cDefaultColor = AutoExecConfig_CreateConVar("fuckZones_default_color", "Pink", "Default zone color (Default: Pink)");
-	g_cDefaultDisplay = AutoExecConfig_CreateConVar("fuckZones_default_display", "1", "Default zone display (0 - Full, 1 - Bottom (Default), 2 - Hide)", _, true, 0.0, true, 2.0);
-	g_cEnableLogging = AutoExecConfig_CreateConVar("fuckZones_enable_logging", "1", "Enable logging? (Default: 1)", _, true, 0.0, true, 1.0);
-	g_cMaxRadius = AutoExecConfig_CreateConVar("fuckZones_max_radius", "512", "Set's the maximum radius value for circle zones. (Default: 512)");
-	g_cMaxHeight = AutoExecConfig_CreateConVar("fuckZones_max_height", "512", "Set's the maximum height value for circle/poly zones. (Default: 512)");
-	g_cNameRegex = AutoExecConfig_CreateConVar("fuckZones_name_regex", "^[a-zA-Z0-9 _]+$", "Allowed characters in zone name. (Default: \"^[a-zA-Z0-9 _]+$\"");
-	g_cDisableCZZones = AutoExecConfig_CreateConVar("fuckZones_disable_circle_polygon_zones", "0", "Disable circle and polygon zones for better performance?", _, true, 0.0, true, 1.0);
+	g_cPrecisionValue      = AutoExecConfig_CreateConVar("fuckZones_precision_offset", "10.0", "Default precision value when setting a zones precision area (Default: 10.0).", _, true, 1.0);
+	g_cRegenerateSpam      = AutoExecConfig_CreateConVar("fuckZones_regenerate_spam", "10", "Amount of time before zones can be regenerated again (spam protection) (0 to disable this feature, Default: 10)", _, true, 0.0);
+	g_cDefaultHeight       = AutoExecConfig_CreateConVar("fuckZones_default_height", "256", "Default height (z-axis) for circles and polygons zones (Default: 256)");
+	g_cDefaultRadius       = AutoExecConfig_CreateConVar("fuckZones_default_radius", "150", "Default radius for circle zones (Default: 150)");
+	g_cDefaultZOffset      = AutoExecConfig_CreateConVar("fuckZones_default_z_offset", "5", "Adds a offset to the z-axis for all points. (Default: 5)");
+	g_cDefaultColor        = AutoExecConfig_CreateConVar("fuckZones_default_color", "Pink", "Default zone color (Default: Pink)");
+	g_cDefaultDisplay      = AutoExecConfig_CreateConVar("fuckZones_default_display", "1", "Default zone display (0 - Full, 1 - Bottom (Default), 2 - Hide)", _, true, 0.0, true, 2.0);
+	g_cEnableLogging       = AutoExecConfig_CreateConVar("fuckZones_enable_logging", "1", "Enable logging? (Default: 1)", _, true, 0.0, true, 1.0);
+	g_cMaxRadius           = AutoExecConfig_CreateConVar("fuckZones_max_radius", "512", "Set's the maximum radius value for circle zones. (Default: 512)");
+	g_cMaxHeight           = AutoExecConfig_CreateConVar("fuckZones_max_height", "512", "Set's the maximum height value for circle/poly zones. (Default: 512)");
+	g_cNameRegex           = AutoExecConfig_CreateConVar("fuckZones_name_regex", "^[a-zA-Z0-9 _]+$", "Allowed characters in zone name. (Default: \"^[a-zA-Z0-9 _]+$\"");
+	g_cDisableCZZones      = AutoExecConfig_CreateConVar("fuckZones_disable_circle_polygon_zones", "0", "Disable circle and polygon zones for better performance?", _, true, 0.0, true, 1.0);
 	g_cTeleportLowestPoint = AutoExecConfig_CreateConVar("fuckZones_teleport_lowest_point", "1", "Teleport the entity/client to the lowest point of a zone (from zone middle X/Y/Z based)?", _, true, 0.0, true, 1.0);
 	AutoExecConfig_ExecuteFile();
 	AutoExecConfig_CleanFile();
@@ -220,16 +220,16 @@ public void OnPluginStart()
 	g_aZoneEntities = new ArrayList();
 
 	g_smEffectCalls = new StringMap();
-	g_smEffectKeys = new StringMap();
-	g_aEffectsList = new ArrayList(ByteCountToCells(MAX_EFFECT_NAME_LENGTH));
+	g_smEffectKeys  = new StringMap();
+	g_aEffectsList  = new ArrayList(ByteCountToCells(MAX_EFFECT_NAME_LENGTH));
 
-	g_aColors = new ArrayList(ByteCountToCells(64));
+	g_aColors     = new ArrayList(ByteCountToCells(64));
 	g_smColorData = new StringMap();
 
 	g_coPrecision = RegClientCookie("fuckZones_precision", "Set client precision value", CookieAccess_Public);
 
 	g_iRegenerationTime = -1;
-	
+
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		for (int x = MaxClients; x < MAX_ENTITY_LIMIT; x++)
@@ -247,9 +247,9 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
-	g_iRegenerationTime = -1;
+	g_iRegenerationTime  = -1;
 	g_iDefaultModelIndex = PrecacheModel(DEFAULT_MODELINDEX, true);
-	g_iDefaultHaloIndex = PrecacheModel(DEFAULT_HALOINDEX, true);
+	g_iDefaultHaloIndex  = PrecacheModel(DEFAULT_HALOINDEX, true);
 	PrecacheModel(ZONE_MODEL, true);
 
 	ReparseMapZonesConfig();
@@ -419,7 +419,7 @@ public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 		if (IsClientInGame(i) && !IsFakeClient(i))
 		{
 			CancelClientMenu(i);
-			
+
 			for (int zone = MaxClients; zone < MAX_ENTITY_LIMIT; zone++)
 			{
 				if (!g_bIsInZone[i][zone])
@@ -464,7 +464,7 @@ void ClearAllZones()
 		if (IsValidEntity(zone))
 		{
 			StringMapSnapshot snap = Zone[zone].Effects.Snapshot();
-			char sKey[128];
+			char              sKey[128];
 			for (int j = 0; j < snap.Length; j++)
 			{
 				snap.GetKey(j, sKey, sizeof(sKey));
@@ -504,10 +504,10 @@ void SpawnAllZones()
 		{
 			char sName[MAX_ZONE_NAME_LENGTH];
 			g_kvConfig.GetSectionName(sName, sizeof(sName));
-			
+
 			SpawnZone(sName);
 		}
-		while(g_kvConfig.GotoNextKey(false));
+		while (g_kvConfig.GotoNextKey(false));
 
 		UpdateZoneData();
 	}
@@ -555,7 +555,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		}
 		else if (g_iEditingName[client] != INVALID_ENT_REFERENCE)
 		{
-			int entity = EntRefToEntIndex(g_iEditingName[client]);
+			int entity             = EntRefToEntIndex(g_iEditingName[client]);
 			g_iEditingName[client] = INVALID_ENT_REFERENCE;
 			OpenZonePropertiesMenu(client, entity);
 		}
@@ -569,7 +569,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		{
 			return Plugin_Stop;
 		}
-		
+
 		strcopy(CZone[client].Name, MAX_ZONE_NAME_LENGTH, sArgs);
 		CZone[client].SetName = false;
 		OpenCreateZonesMenu(client);
@@ -623,7 +623,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 	return Plugin_Continue;
 }
 
-public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon, int &subtype, int &cmdnum, int &tickcount, int &seed, int mouse[2])
+public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2])
 {
 	if (client == 0 || client > MaxClients || !IsClientInGame(client))
 	{
@@ -635,7 +635,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 	for (int i = 0; i < MAX_BUTTONS; i++)
 	{
 		int button = (1 << i);
-		
+
 		if ((buttons & button))
 		{
 			if (!(g_iLastButtons[client] & button))
@@ -645,10 +645,10 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		}
 		/* else if ((g_iLastButtons[client] & button))
 		{
-			OnButtonRelease(client, button);
+		    OnButtonRelease(client, button);
 		} */
 	}
-	
+
 	g_iLastButtons[client] = buttons;
 
 	if (IsPlayerAlive(client))
@@ -699,7 +699,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							origin[2] += 42.5;
 
 							static float offset = 16.5;
-							float clientpoints[4][3];
+							float        clientpoints[4][3];
 
 							clientpoints[0] = origin;
 							clientpoints[0][0] -= offset;
@@ -782,7 +782,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 						for (int j = 0; j < 4; j++)
 						{
 							fStart = fPoint;
-							fEnd = fPoint;
+							fEnd   = fPoint;
 
 							if (j < 2)
 							{
@@ -801,18 +801,18 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 						}
 
 						float fUpper[3];
-						fUpper = fPoint;
+						fUpper    = fPoint;
 						fUpper[2] = fPoint[2] + CZone[client].PointsHeight;
 						TE_SetupBeamRingPointToClient(client, fUpper, CZone[client].Radius, CZone[client].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 					}
 				}
 
-				case ZONE_TYPE_BOX:
+				case ZONE_TYPE_BOX, ZONE_TYPE_SOLID:
 				{
 					if ((!fuckZones_IsPositionNull(CZone[client].Start) && fuckZones_IsPositionNull(CZone[client].End)) || (fuckZones_IsPositionNull(CZone[client].Start) && !fuckZones_IsPositionNull(CZone[client].End)))
 					{
 						float fStart[3];
-						
+
 						if (!fuckZones_IsPositionNull(CZone[client].Start))
 						{
 							fStart = CZone[client].Start;
@@ -898,7 +898,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 
 						TE_SetupBeamPointsToClient(client, fUpperLast, fUpperPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 						TE_SetupBeamPointsToClient(client, fUpperStart, fUpperPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
-						
+
 						TE_SetupBeamPointsToClient(client, fUpperPoint, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 					}
 				}
@@ -926,12 +926,11 @@ void OnButtonPress(int client, int button)
 
 /* void OnButtonRelease(int client, int button)
 {
-	if (client && button)
-	{
-		// Hello.
-	}
+    if (client && button)
+    {
+        // Hello.
+    }
 } */
-
 public Action Timer_ResetShow(Handle timer, int userid)
 {
 	int client = GetClientOfUserId(userid);
@@ -992,7 +991,7 @@ public Action Command_TeleportToZone(int client, int args)
 	}
 
 	char target_name[MAX_TARGET_LENGTH];
-	int target_list[MAXPLAYERS];
+	int  target_list[MAXPLAYERS];
 	bool tn_is_ml;
 
 	int target_count = ProcessTargetString(sArg1, client, target_list, MAXPLAYERS, COMMAND_FILTER_ALIVE, target_name, sizeof(target_name), tn_is_ml);
@@ -1183,7 +1182,8 @@ public int MenuHandler_TeleportToZoneMenu(Menu menu, MenuAction action, int para
 	{
 		case MenuAction_Select:
 		{
-			char sEntity[64]; char sName[MAX_ZONE_NAME_LENGTH];
+			char sEntity[64];
+			char sName[MAX_ZONE_NAME_LENGTH];
 			menu.GetItem(param2, sEntity, sizeof(sEntity), _, sName, sizeof(sName));
 
 			TeleportToZone(param1, sName);
@@ -1215,7 +1215,7 @@ void RegenerateZones(int client = -1)
 		{
 			PrintToServer("%T", "Command - Active Regenerate Spam Protection", LANG_SERVER);
 		}
-		
+
 		return;
 	}
 
@@ -1324,7 +1324,8 @@ public int MenuHandler_ManageZonesMenu(Menu menu, MenuAction action, int param1,
 		{
 			g_smSites[param1].SetValue("OpenManageZonesMenu", menu.Selection);
 
-			char sEntity[12]; char sName[MAX_ZONE_NAME_LENGTH];
+			char sEntity[12];
+			char sName[MAX_ZONE_NAME_LENGTH];
 			menu.GetItem(param2, sEntity, sizeof(sEntity), _, sName, sizeof(sName));
 
 			OpenEditZoneMenu(param1, StringToInt(sEntity));
@@ -1429,7 +1430,7 @@ public int MenuHandler_ManageEditMenu(Menu menu, MenuAction action, int param1, 
 		case MenuAction_Cancel:
 		{
 			g_bSelectedZone[GetMenuCell(menu, "entity")] = false;
-			
+
 			if (param2 == MenuCancel_ExitBack)
 			{
 				OpenManageZonesMenu(param1);
@@ -1453,7 +1454,7 @@ void OpenZonePropertiesMenu(int client, int entity)
 		FindZoneToEdit(client);
 		return;
 	}
-	
+
 	char sName[MAX_ZONE_NAME_LENGTH];
 	GetZoneNameByIndex(entity, sName, sizeof(sName));
 
@@ -1555,7 +1556,7 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 
 				float vecLook[3];
 				GetClientLookPoint(param1, vecLook);
-				
+
 				vecStart[0] = vecLook[0];
 				vecStart[1] = vecLook[1];
 
@@ -1572,7 +1573,7 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 
 				float vecLook[3];
 				GetClientLookPoint(param1, vecLook);
-				
+
 				vecEnd[0] = vecLook[0];
 				vecEnd[1] = vecLook[1];
 
@@ -1600,7 +1601,7 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 				UpdateZonesConfigKey(entity, "radius", sValue);
 
 				entity = RemakeZoneEntity(entity);
-				
+
 				OpenZonePropertiesMenu(param1, entity);
 			}
 			else if (StrEqual(sInfo, "remove_radius"))
@@ -1613,7 +1614,7 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 				UpdateZonesConfigKey(entity, "radius", sValue);
 
 				entity = RemakeZoneEntity(entity);
-				
+
 				OpenZonePropertiesMenu(param1, entity);
 			}
 			else if (StrEqual(sInfo, "add_height"))
@@ -1626,7 +1627,7 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 				UpdateZonesConfigKey(entity, "points_height", sValue);
 
 				entity = RemakeZoneEntity(entity);
-				
+
 				OpenZonePropertiesMenu(param1, entity);
 			}
 			else if (StrEqual(sInfo, "remove_height"))
@@ -1639,7 +1640,7 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 				UpdateZonesConfigKey(entity, "points_height", sValue);
 
 				entity = RemakeZoneEntity(entity);
-				
+
 				OpenZonePropertiesMenu(param1, entity);
 			}
 			else if (StrEqual(sInfo, "add_point"))
@@ -1660,7 +1661,7 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 			}
 			else if (StrEqual(sInfo, "remove_point"))
 			{
-				int size = Zone[entity].PointsData.Length;
+				int size   = Zone[entity].PointsData.Length;
 				int actual = size - 1;
 
 				if (size > 0)
@@ -2049,7 +2050,6 @@ public int MenuHandler_ZoneEditStartPointMenu(Menu menu, MenuAction action, int 
 					OpenEditZoneStartPointMenu(param1, -1, whichpoint, true, sName);
 				}
 			}
-			
 		}
 
 		case MenuAction_Cancel:
@@ -2243,9 +2243,10 @@ public int MenuHandler_EditZoneTypeMenu(Menu menu, MenuAction action, int param1
 	{
 		case MenuAction_Select:
 		{
-			char sID[12]; char sType[MAX_ZONE_TYPE_LENGTH];
+			char sID[12];
+			char sType[MAX_ZONE_TYPE_LENGTH];
 			menu.GetItem(param2, sID, sizeof(sID), _, sType, sizeof(sType));
-			//int type = StringToInt(sID);
+			// int type = StringToInt(sID);
 
 			int entity = GetMenuCell(menu, "entity");
 
@@ -2304,7 +2305,8 @@ public int MenuHandler_EditZoneDisplayMenu(Menu menu, MenuAction action, int par
 	{
 		case MenuAction_Select:
 		{
-			char sID[12]; char sType[MAX_ZONE_TYPE_LENGTH];
+			char sID[12];
+			char sType[MAX_ZONE_TYPE_LENGTH];
 			menu.GetItem(param2, sID, sizeof(sID), _, sType, sizeof(sType));
 			int type = StringToInt(sID);
 
@@ -2367,7 +2369,8 @@ public int MenuHandler_EditZoneColorMenu(Menu menu, MenuAction action, int param
 	{
 		case MenuAction_Select:
 		{
-			char sVector[64]; char sColor[64];
+			char sVector[64];
+			char sColor[64];
 			menu.GetItem(param2, sVector, sizeof(sVector), _, sColor, sizeof(sColor));
 
 			int entity = GetMenuCell(menu, "entity");
@@ -2473,7 +2476,7 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 	}
 
 	bool bValidPoints = false;
-	int iLength = 0;
+	int  iLength      = 0;
 
 	if (CZone[client].Type == ZONE_TYPE_POLY && CZone[client].PointsData != null)
 	{
@@ -2484,7 +2487,7 @@ void OpenCreateZonesMenu(int client, bool reset = false)
 			bValidPoints = true;
 		}
 	}
-	else if (CZone[client].Type == ZONE_TYPE_BOX)
+	else if (CZone[client].Type == ZONE_TYPE_BOX || CZone[client].Type == ZONE_TYPE_SOLID)
 	{
 		if (!fuckZones_IsPositionNull(CZone[client].Start) && !fuckZones_IsPositionNull(CZone[client].End))
 		{
@@ -2573,7 +2576,7 @@ public int MenuHandler_CreateZonesMenu(Menu menu, MenuAction action, int param1,
 			{
 				float vecLook[3];
 				GetClientLookPoint(param1, vecLook);
-				
+
 				CZone[param1].Start[0] = vecLook[0];
 				CZone[param1].Start[1] = vecLook[1];
 
@@ -2583,7 +2586,7 @@ public int MenuHandler_CreateZonesMenu(Menu menu, MenuAction action, int param1,
 			{
 				float vecLook[3];
 				GetClientLookPoint(param1, vecLook);
-				
+
 				CZone[param1].End[0] = vecLook[0];
 				CZone[param1].End[1] = vecLook[1];
 
@@ -2639,7 +2642,7 @@ public int MenuHandler_CreateZonesMenu(Menu menu, MenuAction action, int param1,
 
 				if (size > 0)
 				{
-					CZone[param1].PointsData.Erase(size-1);
+					CZone[param1].PointsData.Erase(size - 1);
 				}
 
 				OpenCreateZonesMenu(param1);
@@ -2853,7 +2856,7 @@ bool ListZoneEffectKeys(int client, int entity, const char[] effect)
 
 			char sValue[MAX_KEY_VALUE_LENGTH];
 			smEffects.GetString(sKey, sValue, sizeof(sValue));
-			
+
 			AddItemFormat(menu, sKey, _, "%T", "Menu - Item - List Effect Key Value", client, sKey, sValue);
 		}
 		delete keys;
@@ -2873,8 +2876,8 @@ bool ListZoneEffectKeys(int client, int entity, const char[] effect)
 	PushMenuCell(menu, "entity", entity);
 	PushMenuString(menu, "effect", effect);
 
-	g_iEffectKeyValue_Entity[client] = -1;
-	g_sEffectKeyValue_Effect[client][0] = '\0';
+	g_iEffectKeyValue_Entity[client]       = -1;
+	g_sEffectKeyValue_Effect[client][0]    = '\0';
 	g_sEffectKeyValue_EffectKey[client][0] = '\0';
 
 	menu.ExitBackButton = true;
@@ -3183,7 +3186,8 @@ public int MenuHandler_ZoneTypeMenu(Menu menu, MenuAction action, int param1, in
 	{
 		case MenuAction_Select:
 		{
-			char sID[12]; char sType[MAX_ZONE_TYPE_LENGTH];
+			char sID[12];
+			char sType[MAX_ZONE_TYPE_LENGTH];
 			menu.GetItem(param2, sID, sizeof(sID), _, sType, sizeof(sType));
 			int type = StringToInt(sID);
 
@@ -3237,7 +3241,8 @@ public int MenuHandler_ZoneDisplayMenu(Menu menu, MenuAction action, int param1,
 	{
 		case MenuAction_Select:
 		{
-			char sID[12]; char sType[MAX_ZONE_TYPE_LENGTH];
+			char sID[12];
+			char sType[MAX_ZONE_TYPE_LENGTH];
 			menu.GetItem(param2, sID, sizeof(sID), _, sType, sizeof(sType));
 			int type = StringToInt(sID);
 
@@ -3279,7 +3284,7 @@ void OpenZonesColorMenu(int client)
 	}
 
 	menu.ExitBackButton = true;
-	menu.ExitButton = false;
+	menu.ExitButton     = false;
 	menu.Display(client, MENU_TIME_FOREVER);
 }
 
@@ -3357,7 +3362,7 @@ void CreateNewZone(int client)
 
 	switch (CZone[client].Type)
 	{
-		case ZONE_TYPE_BOX:
+		case ZONE_TYPE_BOX, ZONE_TYPE_SOLID:
 		{
 			g_kvConfig.SetVector("start", CZone[client].Start);
 			g_kvConfig.SetVector("end", CZone[client].End);
@@ -3367,7 +3372,6 @@ void CreateNewZone(int client)
 		{
 			g_kvConfig.SetVector("start", CZone[client].Start);
 			g_kvConfig.SetVector("end", CZone[client].End);
-			
 
 			float fOrigin[3];
 			GetEntPropVector(CZone[client].Trigger, Prop_Data, "m_vecOrigin", fOrigin);
@@ -3410,25 +3414,25 @@ void CreateNewZone(int client)
 
 void ResetCreateZoneVariables(int client)
 {
-	CZone[client].Name[0] = '\0';
-	CZone[client].Color[0] = '\0';
-	CZone[client].Type = ZONE_TYPE_NONE;
-	CZone[client].Start[0] = 0.0;
-	CZone[client].Start[1] = 0.0;
-	CZone[client].Start[2] = 0.0;
-	CZone[client].End[0] = 0.0;
-	CZone[client].End[1] = 0.0;
-	CZone[client].End[2] = 0.0;
+	CZone[client].Name[0]   = '\0';
+	CZone[client].Color[0]  = '\0';
+	CZone[client].Type      = ZONE_TYPE_NONE;
+	CZone[client].Start[0]  = 0.0;
+	CZone[client].Start[1]  = 0.0;
+	CZone[client].Start[2]  = 0.0;
+	CZone[client].End[0]    = 0.0;
+	CZone[client].End[1]    = 0.0;
+	CZone[client].End[2]    = 0.0;
 	CZone[client].Origin[0] = 0.0;
 	CZone[client].Origin[1] = 0.0;
 	CZone[client].Origin[2] = 0.0;
-	CZone[client].Radius = g_cDefaultRadius.FloatValue;
+	CZone[client].Radius    = g_cDefaultRadius.FloatValue;
 	delete CZone[client].PointsData;
 	CZone[client].PointsHeight = g_cDefaultHeight.FloatValue;
-	CZone[client].SetName = false;
-	CZone[client].Display = g_cDefaultDisplay.IntValue;
-	CZone[client].Show = true;
-	CZone[client].Trigger = -1;
+	CZone[client].SetName      = false;
+	CZone[client].Display      = g_cDefaultDisplay.IntValue;
+	CZone[client].Show         = true;
+	CZone[client].Trigger      = -1;
 }
 
 void GetZoneNameByType(int type, char[] buffer, int size)
@@ -3440,6 +3444,7 @@ void GetZoneNameByType(int type, char[] buffer, int size)
 		case ZONE_TYPE_CIRCLE: strcopy(buffer, size, "Circle");
 		case ZONE_TYPE_POLY: strcopy(buffer, size, "Polygon");
 		case ZONE_TYPE_TRIGGER: strcopy(buffer, size, "Trigger");
+		case ZONE_TYPE_SOLID: strcopy(buffer, size, "Solid");
 	}
 }
 
@@ -3463,6 +3468,10 @@ int GetZoneTypeByIndex(int entity)
 	{
 		return Zone[entity].PointsData != null ? ZONE_TYPE_POLY : ZONE_TYPE_CIRCLE;
 	}
+	else if (StrEqual(sClassname, "func_brush"))
+	{
+		return ZONE_TYPE_SOLID;
+	}
 
 	return ZONE_TYPE_BOX;
 }
@@ -3484,6 +3493,10 @@ int GetZoneTypeByName(const char[] sType)
 	else if (StrEqual(sType, "Trigger"))
 	{
 		return ZONE_TYPE_TRIGGER;
+	}
+	else if (StrEqual(sType, "Solid"))
+	{
+		return ZONE_TYPE_SOLID;
 	}
 
 	return ZONE_TYPE_BOX;
@@ -3552,7 +3565,7 @@ public Action Timer_DisplayZones(Handle timer)
 			float fDistance = -1.0;
 			float fPoint[3];
 
-			int index = -1;
+			int   index    = -1;
 			float fNearest = -1.0;
 			float fNearestPoint[3];
 
@@ -3566,9 +3579,9 @@ public Action Timer_DisplayZones(Handle timer)
 
 				if (fDistance < 20.0 && (fDistance < fNearest || fNearest == -1.0))
 				{
-					index = x;
+					index         = x;
 					fNearestPoint = fPoint;
-					fNearest = fDistance;
+					fNearest      = fDistance;
 				}
 			}
 
@@ -3596,10 +3609,10 @@ public Action Timer_DisplayZones(Handle timer)
 			{
 				g_smColorData.GetArray(CZone[i].Color, iColor, sizeof(iColor));
 			}
-			
+
 			switch (CZone[i].Type)
 			{
-				case ZONE_TYPE_BOX,ZONE_TYPE_TRIGGER:
+				case ZONE_TYPE_BOX, ZONE_TYPE_TRIGGER, ZONE_TYPE_SOLID:
 				{
 					if (!fuckZones_IsPositionNull(CZone[i].Start) && !fuckZones_IsPositionNull(CZone[i].End))
 					{
@@ -3617,7 +3630,7 @@ public Action Timer_DisplayZones(Handle timer)
 						for (int j = 0; j < 4; j++)
 						{
 							fStart = CZone[i].Start;
-							fEnd = CZone[i].Start;
+							fEnd   = CZone[i].Start;
 
 							if (j < 2)
 							{
@@ -3636,7 +3649,7 @@ public Action Timer_DisplayZones(Handle timer)
 						}
 
 						float fUpper[3];
-						fUpper = CZone[i].Start;
+						fUpper    = CZone[i].Start;
 						fUpper[2] = CZone[i].Start[2] + CZone[i].PointsHeight;
 						TE_SetupBeamRingPointToClient(i, fUpper, CZone[i].Radius, CZone[i].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 					}
@@ -3670,7 +3683,7 @@ public Action Timer_DisplayZones(Handle timer)
 
 			switch (GetZoneTypeByIndex(zone))
 			{
-				case ZONE_TYPE_BOX,ZONE_TYPE_TRIGGER:
+				case ZONE_TYPE_BOX, ZONE_TYPE_TRIGGER, ZONE_TYPE_SOLID:
 				{
 					GetAbsBoundingBox(zone, vecStart, vecEnd);
 					TE_DrawBeamBoxToAll(vecStart, vecEnd, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED, Zone[zone].Display);
@@ -3692,7 +3705,7 @@ public Action Timer_DisplayZones(Handle timer)
 						for (int j = 0; j < 4; j++)
 						{
 							fStart = Zone[zone].Start;
-							fEnd = Zone[zone].Start;
+							fEnd   = Zone[zone].Start;
 
 							if (j < 2)
 							{
@@ -3711,9 +3724,8 @@ public Action Timer_DisplayZones(Handle timer)
 							TE_SendToAll();
 						}
 
-					
 						float fUpper[3];
-						fUpper = Zone[zone].Start;
+						fUpper    = Zone[zone].Start;
 						fUpper[2] = Zone[zone].Start[2] + Zone[zone].PointsHeight;
 						TE_SetupBeamRingPoint(fUpper, Zone[zone].Radius, Zone[zone].Radius + 0.1, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_AMPLITUDE, iColor, TE_SPEED, TE_FLAGS);
 						TE_SendToAll();
@@ -3801,7 +3813,7 @@ int CreateZone(eCreateZone Data, bool create)
 
 	if (g_cEnableLogging.BoolValue)
 	{
-		if (Data.Type == ZONE_TYPE_BOX || Data.Type == ZONE_TYPE_TRIGGER)
+		if (Data.Type == ZONE_TYPE_BOX || Data.Type == ZONE_TYPE_TRIGGER || Data.Type == ZONE_TYPE_SOLID)
 		{
 			LogMessage("Spawning Zone: %s, Type: %s, Display: %s, Color: {%d,%d,%d,%d}, Start: %.2f/%.2f/%.2f, End: %.2f/%.2f/%.2f", Data.Name, sType, sDType, Data.iColors[0], Data.iColors[1], Data.iColors[2], Data.iColors[3], Data.Start[0], Data.Start[1], Data.Start[2], Data.End[0], Data.End[1], Data.End[2]);
 		}
@@ -3818,7 +3830,7 @@ int CreateZone(eCreateZone Data, bool create)
 	int entity = -1;
 	switch (Data.Type)
 	{
-		case ZONE_TYPE_BOX,ZONE_TYPE_TRIGGER:
+		case ZONE_TYPE_BOX, ZONE_TYPE_TRIGGER:
 		{
 			if (Data.Type == ZONE_TYPE_TRIGGER)
 			{
@@ -3834,15 +3846,15 @@ int CreateZone(eCreateZone Data, bool create)
 						Data.Trigger = GetNearestEntity(Data.Origin, "trigger_multiple");
 					}
 				}
-				
+
 				if (Data.Trigger > 0 && IsValidEntity(Data.Trigger))
 				{
 					eUpdateData update;
 					strcopy(update.Name, sizeof(eUpdateData::Name), Data.Name);
 
-					update.Origin = view_as<float>({0.0, 0.0, 0.0});
-					update.Start = view_as<float>({0.0, 0.0, 0.0});
-					update.End = view_as<float>({0.0, 0.0, 0.0});
+					update.Origin = view_as<float>({ 0.0, 0.0, 0.0 });
+					update.Start  = view_as<float>({ 0.0, 0.0, 0.0 });
+					update.End    = view_as<float>({ 0.0, 0.0, 0.0 });
 
 					if (fuckZones_IsPositionNull(Data.Origin))
 					{
@@ -3854,7 +3866,7 @@ int CreateZone(eCreateZone Data, bool create)
 					{
 						GetAbsBoundingBox(Data.Trigger, Data.Start, Data.End);
 						update.Start = Data.Start;
-						update.End = Data.End;
+						update.End   = Data.End;
 					}
 
 					g_aUpdateZones.PushArray(update, sizeof(update));
@@ -3863,20 +3875,37 @@ int CreateZone(eCreateZone Data, bool create)
 				}
 			}
 
-			entity = CreateEntityByName("trigger_multiple");
+			bool bSolid = Data.Type == ZONE_TYPE_SOLID;
+
+			if (bSolid)
+			{
+				entity = CreateEntityByName("func_brush");
+			}
+			else
+			{
+				entity = CreateEntityByName("trigger_multiple");
+			}
 
 			if (IsValidEntity(entity))
 			{
 				SetEntityModel(entity, ZONE_MODEL);
 
 				DispatchKeyValue(entity, "targetname", Data.Name);
-				DispatchKeyValue(entity, "spawnflags", "257");
-				DispatchKeyValue(entity, "StartDisabled", "0");
-				DispatchKeyValue(entity, "wait", "0");
+
+				if (!bSolid)
+				{
+					DispatchKeyValue(entity, "spawnflags", "257");
+					DispatchKeyValue(entity, "StartDisabled", "0");
+					DispatchKeyValue(entity, "wait", "0");
+				}
 
 				DispatchSpawn(entity);
 
-				SetEntProp(entity, Prop_Data, "m_spawnflags", 257);
+				if (!bSolid)
+				{
+					SetEntProp(entity, Prop_Data, "m_spawnflags", 257);
+				}
+
 				SetEntProp(entity, Prop_Data, "m_nSolidType", 2);
 				SetEntProp(entity, Prop_Data, "m_fEffects", 32);
 
@@ -3888,7 +3917,7 @@ int CreateZone(eCreateZone Data, bool create)
 				for (int i = 0; i < 3; i++)
 				{
 					Data.Start[i] = Data.Start[i] - fMiddle[i];
-					if(Data.Start[i] > 0.0)
+					if (Data.Start[i] > 0.0)
 					{
 						Data.Start[i] *= -1.0;
 					}
@@ -3898,7 +3927,7 @@ int CreateZone(eCreateZone Data, bool create)
 				for (int i = 0; i < 3; i++)
 				{
 					Data.End[i] = Data.End[i] - fMiddle[i];
-					if(Data.End[i] < 0.0)
+					if (Data.End[i] < 0.0)
 					{
 						Data.End[i] *= -1.0;
 					}
@@ -3915,7 +3944,6 @@ int CreateZone(eCreateZone Data, bool create)
 				SDKHook(entity, SDKHook_EndTouchPost, Zones_EndTouchPost);
 			}
 		}
-
 		case ZONE_TYPE_CIRCLE:
 		{
 			entity = CreateEntityByName("info_target");
@@ -3962,10 +3990,12 @@ int CreateZone(eCreateZone Data, bool create)
 
 					for (int j = 0; j < 3; j++)
 					{
-						if(tempMin[j] == 0.0 || tempMin[j] > coordinates[j]) {
+						if (tempMin[j] == 0.0 || tempMin[j] > coordinates[j])
+						{
 							tempMin[j] = coordinates[j];
 						}
-						if(tempMax[j] == 0.0 || tempMax[j] < coordinates[j]) {
+						if (tempMax[j] == 0.0 || tempMax[j] < coordinates[j])
+						{
 							tempMax[j] = coordinates[j];
 						}
 					}
@@ -3974,7 +4004,8 @@ int CreateZone(eCreateZone Data, bool create)
 					Zone[entity].PointsData.GetArray(0, coordinates2, sizeof(coordinates2));
 
 					float diff = CalculateHorizontalDistance(coordinates2, coordinates, false);
-					if(diff > greatdiff) {
+					if (diff > greatdiff)
+					{
 						greatdiff = diff;
 					}
 				}
@@ -3994,13 +4025,13 @@ int CreateZone(eCreateZone Data, bool create)
 	{
 		g_aZoneEntities.Push(EntIndexToEntRef(entity));
 
-		Zone[entity].Start = Data.Start;
-		Zone[entity].End = Data.End;
-		Zone[entity].Radius = Data.Radius;
+		Zone[entity].Start        = Data.Start;
+		Zone[entity].End          = Data.End;
+		Zone[entity].Radius       = Data.Radius;
 		Zone[entity].PointsHeight = Data.PointsHeight;
-		Zone[entity].Display = Data.Display;
-		Zone[entity].Teleport = Data.Teleport;
-		
+		Zone[entity].Display      = Data.Display;
+		Zone[entity].Teleport     = Data.Teleport;
+
 		if (Data.Type == ZONE_TYPE_TRIGGER)
 		{
 			Zone[entity].Trigger = true;
@@ -4009,7 +4040,7 @@ int CreateZone(eCreateZone Data, bool create)
 		if (Zone[entity].Effects != null)
 		{
 			StringMapSnapshot snap = Zone[entity].Effects.Snapshot();
-			char sKey[128];
+			char              sKey[128];
 			for (int j = 0; j < snap.Length; j++)
 			{
 				snap.GetKey(j, sKey, sizeof(sKey));
@@ -4045,7 +4076,7 @@ int CreateZone(eCreateZone Data, bool create)
 	Call_PushString(Data.Name);
 	Call_PushCell(Data.Type);
 	Call_Finish();
-	
+
 	return entity;
 }
 
@@ -4315,11 +4346,11 @@ void CallEffectCallback(int entity, int client, int callback)
 		return;
 	}
 
-	char sEffect[MAX_EFFECT_NAME_LENGTH];
-	Handle callbacks[MAX_EFFECT_CALLBACKS];
+	char      sEffect[MAX_EFFECT_NAME_LENGTH];
+	Handle    callbacks[MAX_EFFECT_CALLBACKS];
 	StringMap values = null;
-	bool bCBSuccess;
-	bool bVSuccess;
+	bool      bCBSuccess;
+	bool      bVSuccess;
 
 	for (int i = 0; i < g_aEffectsList.Length; i++)
 	{
@@ -4333,7 +4364,7 @@ void CallEffectCallback(int entity, int client, int callback)
 		values = null;
 
 		bCBSuccess = g_smEffectCalls.GetArray(sEffect, callbacks, sizeof(callbacks));
-		bVSuccess = Zone[entity].Effects.GetValue(sEffect, values);
+		bVSuccess  = Zone[entity].Effects.GetValue(sEffect, values);
 
 		if (bCBSuccess && bVSuccess && callbacks[callback] != null && GetForwardFunctionCount(callbacks[callback]) > 0)
 		{
@@ -4355,7 +4386,7 @@ void DeleteZone(int entity, bool permanent = false, int client = -1)
 	g_aZoneEntities.Erase(index);
 
 	StringMapSnapshot snap1 = Zone[entity].Effects.Snapshot();
-	char sKey[128];
+	char              sKey[128];
 	for (int j = 0; j < snap1.Length; j++)
 	{
 		snap1.GetKey(j, sKey, sizeof(sKey));
@@ -4396,7 +4427,7 @@ void RegisterNewEffect(Handle plugin, const char[] effect_name, Function functio
 	}
 
 	Handle callbacks[MAX_EFFECT_CALLBACKS];
-	int index = g_aEffectsList.FindString(effect_name);
+	int    index = g_aEffectsList.FindString(effect_name);
 
 	if (index != -1)
 	{
@@ -4479,7 +4510,7 @@ bool GetClientLookPoint(int client, float lookposition[3], bool beam = false)
 	GetClientEyeAngles(client, vEyeAng);
 
 	Handle hTrace = TR_TraceRayFilterEx(vEyePos, vEyeAng, MASK_SHOT, RayType_Infinite, TraceEntityFilter_NoPlayers);
-	bool bHit = TR_DidHit(hTrace);
+	bool   bHit   = TR_DidHit(hTrace);
 
 	TR_GetEndPosition(lookposition, hTrace);
 
@@ -4498,7 +4529,7 @@ bool GetClientLookPoint(int client, float lookposition[3], bool beam = false)
 		{
 			g_smColorData.GetArray(CZone[client].Color, iColor, sizeof(iColor));
 		}
-		
+
 		TE_SetupBeamPointsToClient(client, vEyePos, lookposition, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 	}
 
@@ -4548,9 +4579,9 @@ void TE_DrawBeamBox(int[] clients, int numClients, float bottomCorner[3], float 
 	if (upperCorner[2] < bottomCorner[2])
 	{
 		float buffer[3];
-		buffer = bottomCorner;
+		buffer       = bottomCorner;
 		bottomCorner = upperCorner;
-		upperCorner = buffer;
+		upperCorner  = buffer;
 	}
 
 	for (int i = 0; i < 4; i++)
@@ -4570,7 +4601,7 @@ void TE_DrawBeamBox(int[] clients, int numClients, float bottomCorner[3], float 
 
 	for (int i = 0; i < 4; i++)
 	{
-		int j = ( i == 3 ? 0 : i+1 );
+		int j = (i == 3 ? 0 : i + 1);
 		TE_SetupBeamPoints(corners[i], corners[j], modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
 		TE_Send(clients, numClients);
 	}
@@ -4579,14 +4610,14 @@ void TE_DrawBeamBox(int[] clients, int numClients, float bottomCorner[3], float 
 	{
 		for (int i = 4; i < 8; i++)
 		{
-			int j = ( i == 7 ? 4 : i+1 );
+			int j = (i == 7 ? 4 : i + 1);
 			TE_SetupBeamPoints(corners[i], corners[j], modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
 			TE_Send(clients, numClients);
 		}
 
 		for (int i = 0; i < 4; i++)
 		{
-			TE_SetupBeamPoints(corners[i], corners[i+4], modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
+			TE_SetupBeamPoints(corners[i], corners[i + 4], modelIndex, haloIndex, startFrame, frameRate, life, width, endWidth, fadeLength, amplitude, color, speed);
 			TE_Send(clients, numClients);
 		}
 	}
@@ -4618,7 +4649,7 @@ void ParseColorsData()
 
 	KeyValues kv = new KeyValues("colors");
 
-	int color[4];
+	int  color[4];
 	char sBuffer[64];
 
 	if (FileExists(sFile))
@@ -4641,43 +4672,43 @@ void ParseColorsData()
 	else
 	{
 		g_aColors.PushString("Clear");
-		color = {255, 255, 255, 0};
+		color = { 255, 255, 255, 0 };
 		g_smColorData.SetArray("Clear", color, sizeof(color));
 		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
 		kv.SetString("Clear", sBuffer);
 
 		g_aColors.PushString("Red");
-		color = {255, 0, 0, 255};
+		color = { 255, 0, 0, 255 };
 		g_smColorData.SetArray("Red", color, sizeof(color));
 		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
 		kv.SetString("Red", sBuffer);
 
 		g_aColors.PushString("Green");
-		color = {0, 255, 0, 255};
+		color = { 0, 255, 0, 255 };
 		g_smColorData.SetArray("Green", color, sizeof(color));
 		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
 		kv.SetString("Green", sBuffer);
 
 		g_aColors.PushString("Blue");
-		color = {0, 0, 255, 255};
+		color = { 0, 0, 255, 255 };
 		g_smColorData.SetArray("Blue", color, sizeof(color));
 		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
 		kv.SetString("Blue", sBuffer);
 
 		g_aColors.PushString("Yellow");
-		color = {255, 255, 0, 255};
+		color = { 255, 255, 0, 255 };
 		g_smColorData.SetArray("Yellow", color, sizeof(color));
 		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
 		kv.SetString("Yellow", sBuffer);
 
 		g_aColors.PushString("White");
-		color = {255, 255, 255, 255};
+		color = { 255, 255, 255, 255 };
 		g_smColorData.SetArray("White", color, sizeof(color));
 		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
 		kv.SetString("White", sBuffer);
 
 		g_aColors.PushString("Pink");
-		color = {255, 20, 147, 255};
+		color = { 255, 20, 147, 255 };
 		g_smColorData.SetArray("Pink", color, sizeof(color));
 		FormatEx(sBuffer, sizeof(sBuffer), "%i %i %i %i", color[0], color[1], color[2], color[3]);
 		kv.SetString("Pink", sBuffer);
@@ -4699,7 +4730,9 @@ bool TeleportToZone(int client, const char[] zone)
 		return false;
 	}
 
-	int entity = -1; char sName[MAX_ZONE_NAME_LENGTH]; bool bFound = false;
+	int  entity = -1;
+	char sName[MAX_ZONE_NAME_LENGTH];
+	bool bFound = false;
 	for (int i = 0; i < g_aZoneEntities.Length; i++)
 	{
 		entity = EntRefToEntIndex(g_aZoneEntities.Get(i));
@@ -4723,7 +4756,7 @@ bool TeleportToZone(int client, const char[] zone)
 	}
 
 	float fMiddle[3];
-	int iType = GetZoneTypeByIndex(entity);
+	int   iType = GetZoneTypeByIndex(entity);
 
 	if (g_cDisableCZZones.BoolValue && (iType == ZONE_TYPE_POLY || iType == ZONE_TYPE_CIRCLE))
 	{
@@ -4732,7 +4765,7 @@ bool TeleportToZone(int client, const char[] zone)
 
 	switch (iType)
 	{
-		case ZONE_TYPE_BOX,ZONE_TYPE_TRIGGER:
+		case ZONE_TYPE_BOX, ZONE_TYPE_TRIGGER:
 		{
 			if (fuckZones_IsPositionNull(Zone[entity].Teleport))
 			{
@@ -4744,6 +4777,29 @@ bool TeleportToZone(int client, const char[] zone)
 			{
 				fMiddle = Zone[entity].Teleport;
 			}
+		}
+
+		case ZONE_TYPE_SOLID:
+		{
+			bool bNoclip = GetEntityMoveType(client) == MOVETYPE_NOCLIP;
+
+			if (fuckZones_IsPositionNull(Zone[entity].Teleport))
+			{
+				if (bNoclip)
+				{
+					float fStart[3], fEnd[3];
+					GetAbsBoundingBox(entity, fStart, fEnd);
+					GetMiddleOfABox(fStart, fEnd, fMiddle);
+				}
+				else
+				{
+					CPrintToChat(client, "%T", "Chat - Teleport - Solid Not Supported", client);
+					return false;
+				}
+			}
+
+			else
+				fMiddle = Zone[entity].Teleport;
 		}
 
 		case ZONE_TYPE_CIRCLE:
@@ -4801,7 +4857,7 @@ bool TeleportToZone(int client, const char[] zone)
 
 	if (g_cTeleportLowestPoint.BoolValue)
 	{
-		TR_TraceRayFilter(fMiddle, view_as<float>({90.0, 0.0, 0.0}), MASK_PLAYERSOLID, RayType_Infinite, TraceRayFilter);
+		TR_TraceRayFilter(fMiddle, view_as<float>({ 90.0, 0.0, 0.0 }), MASK_PLAYERSOLID, RayType_Infinite, TraceRayFilter);
 		TR_GetEndPosition(fMiddle);
 	}
 
@@ -4813,72 +4869,71 @@ bool TeleportToZone(int client, const char[] zone)
 
 bool TraceRayFilter(int entity, int mask, any data)
 {
-	if(entity != 0)
+	if (entity != 0)
 		return false;
 	return true;
 }
 
-
-//Down to just above the natives, these functions are made by 'Deathknife' and repurposed by me for this plugin.
-//Fucker can maths
-//by Deathknife
+// Down to just above the natives, these functions are made by 'Deathknife' and repurposed by me for this plugin.
+// Fucker can maths
+// by Deathknife
 bool IsPointInZone(float point[3], int zone)
 {
-	//Check if point is in the zone
+	// Check if point is in the zone
 	if (!IsOriginInBox(point, zone))
 	{
 		return false;
 	}
 
-	//Get a ray outside of the polygon
+	// Get a ray outside of the polygon
 	float ray[3];
 	ray = point;
 	ray[1] += Zone[zone].PointsDistance + 50.0;
 	ray[2] = point[2];
 
-	//Store the x and y intersections of where the ray hits the line
+	// Store the x and y intersections of where the ray hits the line
 	float xint;
 	float yint;
 
-	//Intersections for base bottom and top(2)
+	// Intersections for base bottom and top(2)
 	float baseY;
 	float baseZ;
 	float baseY2;
 	float baseZ2;
 
-	//Calculate equation for x + y
+	// Calculate equation for x + y
 	float eq[2];
 	eq[0] = point[0] - ray[0];
 	eq[1] = point[2] - ray[2];
 
-	//This is for checking if the line intersected the base
-	//The method is messy, came up with it myself, and might not work 100% of the time.
-	//Should work though.
+	// This is for checking if the line intersected the base
+	// The method is messy, came up with it myself, and might not work 100% of the time.
+	// Should work though.
 
-	//Bottom
-	int lIntersected[64];
+	// Bottom
+	int   lIntersected[64];
 	float fIntersect[64][3];
 
-	//Top
-	int lIntersectedT[64];
+	// Top
+	int   lIntersectedT[64];
 	float fIntersectT[64][3];
 
-	//Count amount of intersetcions
+	// Count amount of intersetcions
 	int intersections = 0;
 
-	//Count amount of intersection for BASE
-	int lIntNum = 0;
+	// Count amount of intersection for BASE
+	int lIntNum  = 0;
 	int lIntNumT = 0;
 
-	//Get slope
+	// Get slope
 	float lSlope = (ray[2] - point[2]) / (ray[1] - point[1]);
-	float lEq = (lSlope & ray[0]) - ray[2];
-	lEq = -lEq;
+	float lEq    = (lSlope & ray[0]) - ray[2];
+	lEq          = -lEq;
 
-	//Get second slope
-	//float lSlope2 = (ray[1] - point[1]) / (ray[0] - point[0]);
-	//float lEq2 = (lSlope2 * point[0]) - point[1];
-	//lEq2 = -lEq2;
+	// Get second slope
+	// float lSlope2 = (ray[1] - point[1]) / (ray[0] - point[0]);
+	// float lEq2 = (lSlope2 * point[0]) - point[1];
+	// lEq2 = -lEq2;
 
 	// Prevent error spam, but do we break something here? We'll see.
 	if (Zone[zone].PointsData == null)
@@ -4886,18 +4941,18 @@ bool IsPointInZone(float point[3], int zone)
 		return false;
 	}
 
-	//Loop through every point of the zone
+	// Loop through every point of the zone
 	int size = Zone[zone].PointsData.Length;
 
 	for (int i = 0; i < size; i++)
 	{
-		//Get current & next point
+		// Get current & next point
 		float currentpoint[3];
 		Zone[zone].PointsData.GetArray(i, currentpoint, sizeof(currentpoint));
 
 		float nextpoint[3];
 
-		//Check if its the last point, if it is, join it with the first
+		// Check if its the last point, if it is, join it with the first
 		if (size == i + 1)
 		{
 			Zone[zone].PointsData.GetArray(0, nextpoint, sizeof(nextpoint));
@@ -4907,20 +4962,20 @@ bool IsPointInZone(float point[3], int zone)
 			Zone[zone].PointsData.GetArray(i + 1, nextpoint, sizeof(nextpoint));
 		}
 
-		//Check if the ray intersects the point
-		//Ignore the height parameter as we will check against that later
+		// Check if the ray intersects the point
+		// Ignore the height parameter as we will check against that later
 		bool didinter = get_line_intersection(ray[0], ray[1], point[0], point[1], currentpoint[0], currentpoint[1], nextpoint[0], nextpoint[1], xint, yint);
 
-		//Get intersections of the bottom
+		// Get intersections of the bottom
 		bool baseInter = get_line_intersection(ray[1], ray[2], point[1], point[2], currentpoint[1], currentpoint[2], nextpoint[1], nextpoint[2], baseY, baseZ);
 
-		//Get intersections of the top
+		// Get intersections of the top
 		bool baseInter2 = get_line_intersection(ray[1], ray[2], point[1], point[2], currentpoint[1] + Zone[zone].PointsHeight, currentpoint[2] + Zone[zone].PointsHeight, nextpoint[1] + Zone[zone].PointsHeight, nextpoint[2] + Zone[zone].PointsHeight, baseY2, baseZ2);
 
-		//If base intersected, store the line for later
+		// If base intersected, store the line for later
 		if (baseInter && lIntNum < sizeof(fIntersect))
 		{
-			lIntersected[lIntNum] = i;
+			lIntersected[lIntNum]  = i;
 			fIntersect[lIntNum][1] = baseY;
 			fIntersect[lIntNum][2] = baseZ;
 			lIntNum++;
@@ -4928,39 +4983,39 @@ bool IsPointInZone(float point[3], int zone)
 
 		if (baseInter2 && lIntNumT < sizeof(fIntersectT))
 		{
-			lIntersectedT[lIntNumT] = i;
+			lIntersectedT[lIntNumT]  = i;
 			fIntersectT[lIntNumT][1] = baseY2;
-			fIntersectT[lIntNum][2] = baseZ2;
+			fIntersectT[lIntNum][2]  = baseZ2;
 			lIntNumT++;
 		}
 
-		//If ray intersected line, check against height
+		// If ray intersected line, check against height
 		if (didinter)
 		{
-			//Get the height of intersection
+			// Get the height of intersection
 
-			//Get slope of line it hit
+			// Get slope of line it hit
 			float m1 = (nextpoint[2] - currentpoint[2]) / (nextpoint[0] - currentpoint[0]);
 
-			//Equation y = mx + c | mx - y = -c
+			// Equation y = mx + c | mx - y = -c
 			float l1 = (m1 * currentpoint[0]) - currentpoint[2];
-			l1 = -l1;
+			l1       = -l1;
 
 			float y2 = (m1 * xint) + l1;
 
-			//Get slope of ray
+			// Get slope of ray
 			float y = (lSlope * xint) + lEq;
 
 			if (y > y2 && y < y2 + 128.0 + Zone[zone].PointsHeight)
 			{
-				//The ray intersected the line and is within the height
+				// The ray intersected the line and is within the height
 				intersections++;
 			}
 		}
 	}
 
-	//Now we check for base hitting
-	//This method is weird, but works most of the time
+	// Now we check for base hitting
+	// This method is weird, but works most of the time
 	for (int k = 0; k < lIntNum; k++)
 	{
 		for (int l = k + 1; l < lIntNum; l++)
@@ -5003,15 +5058,15 @@ bool IsPointInZone(float point[3], int zone)
 				Zone[zone].PointsData.GetArray(j + 1, nextpoint[1], 3);
 			}
 
-			//Get equation of both lines then find slope of them
-			float m1 = (nextpoint[0][1] - currentpoint[0][1]) / (nextpoint[0][0] - currentpoint[0][0]);
-			float m2 = (nextpoint[1][1] - currentpoint[1][1]) / (nextpoint[1][0] - currentpoint[1][0]);
+			// Get equation of both lines then find slope of them
+			float m1   = (nextpoint[0][1] - currentpoint[0][1]) / (nextpoint[0][0] - currentpoint[0][0]);
+			float m2   = (nextpoint[1][1] - currentpoint[1][1]) / (nextpoint[1][0] - currentpoint[1][0]);
 			float lEq1 = (m1 * currentpoint[0][0]) - currentpoint[0][1];
 			float lEq2 = (m2 * currentpoint[1][0]) - currentpoint[1][1];
-			lEq1 = -lEq1;
-			lEq2 = -lEq2;
+			lEq1       = -lEq1;
+			lEq2       = -lEq2;
 
-			//Get x point of intersection
+			// Get x point of intersection
 			float xPoint1 = ((fIntersect[k][1] - lEq1) / m1);
 			float xPoint2 = ((fIntersect[l][1] - lEq2 / m2));
 
@@ -5064,15 +5119,15 @@ bool IsPointInZone(float point[3], int zone)
 				Zone[zone].PointsData.GetArray(j + 1, nextpoint[1], 3);
 			}
 
-			//Get equation of both lines then find slope of them
-			float m1 = (nextpoint[0][1] - currentpoint[0][1]) / (nextpoint[0][0] - currentpoint[0][0]);
-			float m2 = (nextpoint[1][1] - currentpoint[1][1]) / (nextpoint[1][0] - currentpoint[1][0]);
+			// Get equation of both lines then find slope of them
+			float m1   = (nextpoint[0][1] - currentpoint[0][1]) / (nextpoint[0][0] - currentpoint[0][0]);
+			float m2   = (nextpoint[1][1] - currentpoint[1][1]) / (nextpoint[1][0] - currentpoint[1][0]);
 			float lEq1 = (m1 * currentpoint[0][0]) - currentpoint[0][1];
 			float lEq2 = (m2 * currentpoint[1][0]) - currentpoint[1][1];
-			lEq1 = -lEq1;
-			lEq2 = -lEq2;
+			lEq1       = -lEq1;
+			lEq2       = -lEq2;
 
-			//Get x point of intersection
+			// Get x point of intersection
 			float xPoint1 = ((fIntersectT[k][1] - lEq1) / m1);
 			float xPoint2 = ((fIntersectT[l][1] - lEq2 / m2));
 
@@ -5093,7 +5148,7 @@ bool IsPointInZone(float point[3], int zone)
 
 bool IsOriginInBox(float origin[3], int zone)
 {
-	if(origin[0] >= Zone[zone].PointsMin[0] && origin[1] >= Zone[zone].PointsMin[1] && origin[2] >= Zone[zone].PointsMin[2] && origin[0] <= Zone[zone].PointsMax[0] + Zone[zone].PointsHeight && origin[1] <= Zone[zone].PointsMax[1] + Zone[zone].PointsHeight && origin[2] <= Zone[zone].PointsMax[2] + Zone[zone].PointsHeight)
+	if (origin[0] >= Zone[zone].PointsMin[0] && origin[1] >= Zone[zone].PointsMin[1] && origin[2] >= Zone[zone].PointsMin[2] && origin[0] <= Zone[zone].PointsMax[0] + Zone[zone].PointsHeight && origin[1] <= Zone[zone].PointsMax[1] + Zone[zone].PointsHeight && origin[2] <= Zone[zone].PointsMax[2] + Zone[zone].PointsHeight)
 	{
 		return true;
 	}
@@ -5101,16 +5156,16 @@ bool IsOriginInBox(float origin[3], int zone)
 	return false;
 }
 
-bool IsPointInCircle(float origin[3], float origin2[3] = {0.0, 0.0, 0.0}, int zone)
+bool IsPointInCircle(float origin[3], float origin2[3] = { 0.0, 0.0, 0.0 }, int zone)
 {
 	float fDisX = FloatAbs((origin[0]) - Zone[zone].Start[0]);
 	float fDisY = FloatAbs((origin[1]) - Zone[zone].Start[1]);
-	float fRad = (Zone[zone].Radius / 2.0) + 10.0;
+	float fRad  = (Zone[zone].Radius / 2.0) + 10.0;
 
-	float fLowest = Zone[zone].Start[2] - 10.0;
+	float fLowest  = Zone[zone].Start[2] - 10.0;
 	float fHighest = Zone[zone].Start[2] + Zone[zone].PointsHeight;
 
-	if ( (((fDisX*fDisX) + (fDisY*fDisY)) <= fRad*fRad) && ((origin[2] >= fLowest || ((origin2[0] == 0.0 && origin2[1] == 0.0 && origin2[2] == 0.0) || origin2[2] >= fLowest)) && origin[2] <= fHighest))
+	if ((((fDisX * fDisX) + (fDisY * fDisY)) <= fRad * fRad) && ((origin[2] >= fLowest || ((origin2[0] == 0.0 && origin2[1] == 0.0 && origin2[2] == 0.0) || origin2[2] >= fLowest)) && origin[2] <= fHighest))
 	{
 		return true;
 	}
@@ -5118,7 +5173,7 @@ bool IsPointInCircle(float origin[3], float origin2[3] = {0.0, 0.0, 0.0}, int zo
 	return false;
 }
 
-bool get_line_intersection(float p0_x, float p0_y, float p1_x, float p1_y, float p2_x, float p2_y, float p3_x, float p3_y, float &i_x, float &i_y)
+bool get_line_intersection(float p0_x, float p0_y, float p1_x, float p1_y, float p2_x, float p2_y, float p3_x, float p3_y, float& i_x, float& i_y)
 {
 	float s1_x = p1_x - p0_x;
 	float s1_y = p1_y - p0_y;
@@ -5126,7 +5181,7 @@ bool get_line_intersection(float p0_x, float p0_y, float p1_x, float p1_y, float
 	float s2_y = p3_y - p2_y;
 
 	float s = (-s1_y * (p0_x - p2_x) + s1_x * (p0_y - p2_y)) / (-s2_x * s1_y + s1_x * s2_y);
-	float t = ( s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / (-s2_x * s1_y + s1_x * s2_y);
+	float t = (s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / (-s2_x * s1_y + s1_x * s2_y);
 
 	if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
 	{
@@ -5137,7 +5192,7 @@ bool get_line_intersection(float p0_x, float p0_y, float p1_x, float p1_y, float
 		return true;
 	}
 
-	return false; // No collision
+	return false;    // No collision
 }
 
 float CalculateHorizontalDistance(float vec1[3], float vec2[3], bool squared = false)
@@ -5171,10 +5226,10 @@ float CalculateHorizontalDistance(float vec1[3], float vec2[3], bool squared = f
 		vec2[1] = SquareRoot(vec2[1]);
 	}
 
-	return SquareRoot( Pow((vec1[0] - vec2[0]), 2.0) +  Pow((vec1[1] - vec2[1]), 2.0) );
+	return SquareRoot(Pow((vec1[0] - vec2[0]), 2.0) + Pow((vec1[1] - vec2[1]), 2.0));
 }
 
-//Natives
+// Natives
 public int Native_RegisterEffect(Handle plugin, int numParams)
 {
 	int size;
@@ -5356,7 +5411,7 @@ public int Native_GetEffectsList(Handle plugin, int numParams)
 	{
 		return view_as<int>(g_aEffectsList);
 	}
-	
+
 	return -1;
 }
 
@@ -5373,7 +5428,7 @@ public int Native_GetZoneEffects(Handle plugin, int numParams)
 	{
 		return -1;
 	}
-	
+
 	return view_as<int>(Zone[zone].Effects);
 }
 
@@ -5390,7 +5445,7 @@ public int Native_GetZoneType(Handle plugin, int numParams)
 	{
 		return -1;
 	}
-	
+
 	return GetZoneTypeByIndex(zone);
 }
 
@@ -5407,9 +5462,9 @@ public int Native_GetZoneName(Handle plugin, int numParams)
 	{
 		return false;
 	}
-	
+
 	int length = GetNativeCell(3);
-	
+
 	char[] name = new char[length];
 	GetZoneNameByIndex(zone, name, length);
 
@@ -5426,7 +5481,7 @@ public int Native_GetColorNameByCode(Handle plugin, int numParams)
 	int iColor[4];
 	GetNativeArray(1, iColor, sizeof(iColor));
 
-	int iLength = GetNativeCell(3);
+	int iLength   = GetNativeCell(3);
 	char[] sColor = new char[iLength];
 
 	bool success = GetColorNameByCode(iColor, sColor, iLength);
@@ -5441,7 +5496,7 @@ public int Native_GetColorCodeByName(Handle plugin, int numParams)
 	char sColor[64];
 	GetNativeString(1, sColor, sizeof(sColor));
 
-	int iColor[4];
+	int  iColor[4];
 	bool success = g_smColorData.GetArray(sColor, iColor, sizeof(iColor));
 	SetNativeArray(2, iColor, sizeof(iColor));
 
@@ -5452,7 +5507,7 @@ public int Native_GetDisplayNameByType(Handle plugin, int numParams)
 {
 	int iType = GetNativeCell(1);
 
-	int iLength = GetNativeCell(3);
+	int iLength  = GetNativeCell(3);
 	char[] sType = new char[iLength];
 
 	GetDisplayNameByType(iType, sType, iLength);
@@ -5488,7 +5543,7 @@ public int Native_IsPointInZone(Handle plugin, int numParams)
 
 	int iType = GetZoneTypeByIndex(iZone);
 
-	if (iType == ZONE_TYPE_BOX || iType == ZONE_TYPE_TRIGGER)
+	if (iType == ZONE_TYPE_BOX || iType == ZONE_TYPE_TRIGGER || iType == ZONE_TYPE_SOLID)
 	{
 		float fMins[3];
 		float fMaxs[3];
@@ -5509,7 +5564,7 @@ public int Native_IsPointInZone(Handle plugin, int numParams)
 	return false;
 }
 
-bool AddItemFormat(Menu& menu, const char[] info, int style = ITEMDRAW_DEFAULT, const char[] format, any ...)
+bool AddItemFormat(Menu& menu, const char[] info, int style = ITEMDRAW_DEFAULT, const char[] format, any...)
 {
 	char display[128];
 	VFormat(display, sizeof(display), format, 5);
@@ -5544,14 +5599,16 @@ void PushMenuString(Menu hndl, const char[] id, const char[] data)
 
 int GetMenuCell(Menu hndl, const char[] id, int DefaultValue = 0)
 {
-	int ItemCount = hndl.ItemCount;
-	char info[64]; char data[64];
+	int  ItemCount = hndl.ItemCount;
+	char info[64];
+	char data[64];
 
-	for (int i = 0; i < ItemCount; i++) {
+	for (int i = 0; i < ItemCount; i++)
+	{
 		if (hndl.GetItem(i, info, sizeof(info), _, data, sizeof(data)))
 		{
 			if (StrEqual(info, id))
-			return StringToInt(data);
+				return StringToInt(data);
 		}
 	}
 	return DefaultValue;
@@ -5559,13 +5616,16 @@ int GetMenuCell(Menu hndl, const char[] id, int DefaultValue = 0)
 
 bool GetMenuString(Menu hndl, const char[] id, char[] Buffer, int size)
 {
-	int ItemCount = hndl.ItemCount;
-	char info[64]; char data[64];
+	int  ItemCount = hndl.ItemCount;
+	char info[64];
+	char data[64];
 
-	for (int i = 0; i < ItemCount; i++) {
+	for (int i = 0; i < ItemCount; i++)
+	{
 		if (hndl.GetItem(i, info, sizeof(info), _, data, sizeof(data)))
 		{
-			if (StrEqual(info, id)) {
+			if (StrEqual(info, id))
+			{
 				strcopy(Buffer, size, data);
 				return true;
 			}
@@ -5606,7 +5666,7 @@ int SpawnZone(const char[] name)
 		g_kvConfig.SetFloat("radius", fRadius);
 	}
 
-	int iColor[4] = {0, 255, 255, 255};
+	int iColor[4] = { 0, 255, 255, 255 };
 	g_kvConfig.GetColor("color", iColor[0], iColor[1], iColor[2], iColor[3]);
 
 	float points_height = g_kvConfig.GetFloat("points_height", g_cDefaultHeight.FloatValue);
@@ -5668,19 +5728,19 @@ int SpawnZone(const char[] name)
 
 	eCreateZone zone;
 	strcopy(zone.Name, sizeof(eCreateZone::Name), name);
-	zone.Type = type;
-	zone.Start = vStartPosition;
-	zone.End = vEndPosition;
+	zone.Type   = type;
+	zone.Start  = vStartPosition;
+	zone.End    = vEndPosition;
 	zone.Origin = vOrigin;
 	strcopy(zone.OriginName, sizeof(eCreateZone::OriginName), sOriginName);
-	zone.Radius = fRadius;
-	zone.iColors = iColor;
-	zone.PointsData = points;
+	zone.Radius       = fRadius;
+	zone.iColors      = iColor;
+	zone.PointsData   = points;
 	zone.PointsHeight = points_height;
-	zone.Effects = effects;
-	zone.Display = display;
-	zone.Teleport = vTeleport;
-	
+	zone.Effects      = effects;
+	zone.Display      = display;
+	zone.Teleport     = vTeleport;
+
 	int iEntity = CreateZone(zone, false);
 
 	if (iEntity == -1)
@@ -5699,7 +5759,7 @@ bool GetColorNameByCode(int iColor[4], char[] color, int maxlen)
 	StringMapSnapshot snap = g_smColorData.Snapshot();
 
 	char sBuffer[32];
-	int iBuffer[4];
+	int  iBuffer[4];
 
 	for (int i = 0; i < snap.Length; i++)
 	{
@@ -5743,11 +5803,11 @@ void AddZoneMenuItems(int client, Menu menu, bool create, int type, int pointsLe
 	{
 		AddItemFormat(menu, "trigger", g_aMapZones.Length > 0 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED, "%T", "Menu - Item - Trigger", client, strlen(name) > 0 ? name : "N/A");
 	}
-	
+
 	char sColor[32];
 	g_cDefaultColor.GetString(sColor, sizeof(sColor));
 	AddItemFormat(menu, "color", _, "%T", "Menu - Item - Color", client, (strlen(color) > 0) ? color : sColor);
-	
+
 	GetDisplayNameByType(display, sType, sizeof(sType));
 	AddItemFormat(menu, "display", _, "%T", "Menu - Item - Display", client, sType, sBuffer);
 
@@ -5758,7 +5818,7 @@ void AddZoneMenuItems(int client, Menu menu, bool create, int type, int pointsLe
 
 	switch (type)
 	{
-		case ZONE_TYPE_BOX,ZONE_TYPE_TRIGGER:
+		case ZONE_TYPE_BOX, ZONE_TYPE_TRIGGER, ZONE_TYPE_SOLID:
 		{
 			AddItemFormat(menu, "startpoint_a", _, "%T", "Menu - Item - Set Starting Point", client);
 			AddItemFormat(menu, "startpoint_a_no_z", fuckZones_IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Starting Point (Ignore Z/Height)", client);
@@ -5783,7 +5843,7 @@ void AddZoneMenuItems(int client, Menu menu, bool create, int type, int pointsLe
 		case ZONE_TYPE_POLY:
 		{
 			AddItemFormat(menu, "add_point", _, "%T", "Menu - Item - Add a Point", client);
-			
+
 			if (!create)
 			{
 				AddItemFormat(menu, "edit_point", (pointsLength > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED, "%T", "Menu - Item - Edit a Point", client);
@@ -5813,7 +5873,7 @@ bool CheckZoneName(int client, const char[] name)
 	g_cNameRegex.GetString(sRegex, sizeof(sRegex));
 	Regex rRegex = new Regex(sRegex);
 
-	if(rRegex.Match(name) != 1)
+	if (rRegex.Match(name) != 1)
 	{
 		CPrintToChat(client, "%T", "Chat - Invalid Zone Name", client);
 		return false;
@@ -5918,25 +5978,25 @@ public int MenuHandler_MapZoneListMenu(Menu menu, MenuAction action, int param1,
 
 int GetNearestEntity(float origin[3], char[] classname)
 {
-	int iEntity = -1;
+	int   iEntity = -1;
 	float fEntOrigin[3];
 	float fDistance, fNearestDistance = -1.0;
-	int iTempEntity = -1;
-	
+	int   iTempEntity = -1;
+
 	while ((iTempEntity = FindEntityByClassname(iTempEntity, classname)) != -1)
 	{
 		GetEntPropVector(iTempEntity, Prop_Data, "m_vecOrigin", fEntOrigin);
 		fDistance = GetVectorDistance(origin, fEntOrigin);
-		
+
 		if (fDistance < 10.0 && (fDistance < fNearestDistance || fNearestDistance == -1.0))
 		{
-			iEntity = iTempEntity;
+			iEntity          = iTempEntity;
 			fNearestDistance = fDistance;
 		}
 	}
-	
+
 	return iEntity;
-} 
+}
 
 void OpenPolyEditPointMenu(int client, int zone)
 {
@@ -5947,7 +6007,7 @@ void OpenPolyEditPointMenu(int client, int zone)
 	AddItemFormat(menu, "", ITEMDRAW_DISABLED, "%T", "Menu - Item - Info To Edit Poly Point", client);
 	PushMenuCell(menu, "entity", zone);
 	menu.ExitBackButton = true;
-	menu.ExitButton = false;
+	menu.ExitButton     = false;
 	menu.Display(client, MENU_TIME_FOREVER);
 }
 
@@ -5959,7 +6019,7 @@ public int MenuHandler_OpenPolyEditPointMenu(Menu menu, MenuAction action, int p
 		{
 			if (param2 == MenuCancel_ExitBack)
 			{
-				g_iConfirmZone[param1] = -1;
+				g_iConfirmZone[param1]  = -1;
 				g_iConfirmPoint[param1] = -1;
 				OpenZonePropertiesMenu(param1, GetMenuCell(menu, "entity"));
 			}
@@ -5976,10 +6036,10 @@ public int MenuHandler_OpenPolyEditPointMenu(Menu menu, MenuAction action, int p
 
 void OpenPolyPointEditMenu(int client)
 {
-	int zone = g_iConfirmZone[client];
+	int zone       = g_iConfirmZone[client];
 	int pointIndex = g_iConfirmPoint[client];
 
-	g_iConfirmZone[client] = -1;
+	g_iConfirmZone[client]  = -1;
 	g_iConfirmPoint[client] = -1;
 	CancelClientMenu(client);
 
@@ -6012,7 +6072,7 @@ public int MenuHandler_OpenPolyPointEditMenu(Menu menu, MenuAction action, int p
 			char sInfo[32];
 			menu.GetItem(param2, sInfo, sizeof(sInfo));
 
-			int entity = GetMenuCell(menu, "entity");
+			int entity     = GetMenuCell(menu, "entity");
 			int pointIndex = GetMenuCell(menu, "pointIndex");
 
 			float fPoint[3];
@@ -6047,24 +6107,24 @@ public int MenuHandler_OpenPolyPointEditMenu(Menu menu, MenuAction action, int p
 			SaveZonePointsData(entity);
 
 			g_bSelectedZone[entity] = false;
-			entity = RemakeZoneEntity(entity);
+			entity                  = RemakeZoneEntity(entity);
 			g_bSelectedZone[entity] = true;
-			
-			g_iConfirmZone[param1] = entity;
+
+			g_iConfirmZone[param1]  = entity;
 			g_iConfirmPoint[param1] = pointIndex;
-			
+
 			OpenPolyPointEditMenu(param1);
 		}
 
 		case MenuAction_Cancel:
 		{
 			int iEntity = GetMenuCell(menu, "entity");
-			
+
 			g_bSelectedZone[iEntity] = false;
-			
+
 			if (param2 == MenuCancel_ExitBack)
 			{
-				g_iConfirmZone[param1] = iEntity;
+				g_iConfirmZone[param1]  = iEntity;
 				g_iConfirmPoint[param1] = -1;
 
 				OpenPolyEditPointMenu(param1, iEntity);
@@ -6102,7 +6162,7 @@ void CallZoneEffectUpdate(int zone)
 
 int FindEntityByName(const char[] name, const char[] classname)
 {
-	int iEntity = -1;
+	int  iEntity = -1;
 	char sName[MAX_ZONE_NAME_LENGTH];
 
 	while ((iEntity = FindEntityByClassname(iEntity, classname)) != -1)

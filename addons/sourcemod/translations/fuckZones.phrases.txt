@@ -443,6 +443,12 @@
 		"pl"		"Wybacz, ale strefy Polygonowe aktualnie nie wspierają teleportacji."
 		"fr"		"Désolé, les zones en polygones ne sont pas encore prises en charge pour la téléportation."
 	}
+	
+	"Chat - Teleport - Solid Not Supported"
+	{
+		"en"		"You need to enable noclip to teleport to a solid zone."
+	}
+
 
 	"Chat - Teleported To Zone"
 	{
