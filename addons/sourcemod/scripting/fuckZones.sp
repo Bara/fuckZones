@@ -3856,7 +3856,7 @@ int CreateZone(eCreateZone Data, bool create)
 	int entity = -1;
 	switch (Data.Type)
 	{
-		case ZONE_TYPE_BOX, ZONE_TYPE_TRIGGER:
+		case ZONE_TYPE_BOX, ZONE_TYPE_TRIGGER, ZONE_TYPE_SOLID:
 		{
 			if (Data.Type == ZONE_TYPE_TRIGGER)
 			{
