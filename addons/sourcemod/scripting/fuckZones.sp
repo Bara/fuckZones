@@ -268,6 +268,8 @@ public void OnMapStart()
 
 	delete g_aMapZones;
 	g_aMapZones = new ArrayList();
+
+	RegenerateZones();
 }
 
 public void OnMapEnd()
@@ -413,7 +415,9 @@ public void OnClientDisconnect(int client)
 
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
-	RegenerateZones();
+	// Accounts for L4D2 having rounds start earlier than OnMapStart
+	if (IsModelPrecached(ZONE_MODEL))
+		RegenerateZones();
 }
 
 public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
