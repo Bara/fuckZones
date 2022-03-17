@@ -652,7 +652,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 			g_iBecameZone[client] = 0;
 			SetEntityMoveType(client, MOVETYPE_WALK);
 			SetEntProp(client, Prop_Data, "m_takedamage", 2);
-			TeleportEntity(client, g_fOldOrigin[client]);
+			TeleportEntity(client, g_fOldOrigin[client], NULL_VECTOR, NULL_VECTOR);
 		}
 		else if ((buttons & IN_FORWARD || buttons & IN_BACK) && g_fNextMoveZone[client] <= GetGameTime() && !(buttons & IN_RELOAD))
 		{
