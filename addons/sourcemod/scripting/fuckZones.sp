@@ -638,7 +638,9 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		return Plugin_Continue;
 	}
 
-	else if (g_iBecameZone[client] != 0)
+	Action rtn = Plugin_Continue;
+
+	if (g_iBecameZone[client] != 0)
 	{
 		int entity = g_iBecameZone[client];
 
@@ -653,10 +655,12 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 			SetEntityMoveType(client, MOVETYPE_WALK);
 			SetEntProp(client, Prop_Data, "m_takedamage", 2);
 			TeleportEntity(client, g_fOldOrigin[client], NULL_VECTOR, NULL_VECTOR);
+
+			return Plugin_Continue;
 		}
 		else if ((buttons & IN_FORWARD || buttons & IN_BACK) && g_fNextMoveZone[client] <= GetGameTime() && !(buttons & IN_RELOAD))
 		{
-			float fSpeed = 1.0;
+			float fSpeed = 4.0;
 
 			if (buttons & IN_DUCK)
 				fSpeed /= 3.0;
@@ -671,6 +675,21 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 			GetClientEyeAngles(client, fEyeAngles);
 			GetAngleVectors(fEyeAngles, fFwdAngles, NULL_VECTOR, NULL_VECTOR);
 
+			float fOrigin[3], fMins[3], fMaxs[3];
+			GetEntPropVector(client, Prop_Data, "m_vecAbsOrigin", fOrigin);
+
+			GetAbsBoundingBox(entity, fMins, fMaxs);
+
+			if (!IsInsideBox(fOrigin, fMins, fMaxs))
+			{
+				fEyeAngles[1] += 180.0;
+				if (fEyeAngles[1] > 180.0)
+					fEyeAngles[1] -= 360.0;
+
+				fFwdAngles[2] *= -1.0;
+
+				fSpeed *= -1.0;
+			}
 			float fMiddle[3];
 			float vecPointA[3], vecPointB[3];
 			GetZonesVectorData(entity, "start", vecPointA);
@@ -775,13 +794,16 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 			fMiddle[2] -= fHeight;
 
 			if (!(buttons & IN_USE))
+			{
 				TeleportEntity(client, fMiddle, NULL_VECTOR, NULL_VECTOR);
+			}
 
 			g_fNextMoveZone[client] = GetGameTime() + 0.1;
 		}
 
 		if (!(buttons & IN_RELOAD))
 		{
+			SetEntityMoveType(client, MOVETYPE_NONE);
 			buttons &= ~IN_SPEED;
 			buttons &= ~IN_DUCK;
 			buttons &= ~IN_FORWARD;
@@ -794,8 +816,12 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 				vel[2] = 0.0;
 			}
 		}
+		else
+		{
+			SetEntityMoveType(client, MOVETYPE_NOCLIP);
+		}
 
-		return Plugin_Changed;
+		rtn = Plugin_Changed;
 	}
 
 	// Thanks to psychonic for this
@@ -1076,7 +1102,7 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 		}
 	}
 
-	return Plugin_Continue;
+	return rtn;
 }
 
 void OnButtonPress(int client, int button)
@@ -6434,4 +6460,69 @@ bool IsInsideBox(float point[3], float mins[3], float maxs[3])
 	}
 
 	return false;
+}
+
+/**
+ * Rotates a vector around its zero-point.
+ * Note: As example you can rotate mins and maxs of an entity and then add its origin to mins and maxs to get its bounding box in relation to the world and its rotation.
+ * When used with players use the following angle input:
+ *   angles[0] = 0.0;
+ *   angles[1] = 0.0;
+ *   angles[2] = playerEyeAngles[1];
+ *
+ * @param vec 			Vector to rotate.
+ * @param angles 		How to rotate the vector.
+ * @param result		Output vector.
+ * @noreturn
+ */
+stock void RotateVector(const float vec[3], const float angles[3], float result[3])
+{
+	float sinAlpha, sinBeta, sinGamma;
+	float cosAlpha, cosBeta, cosGamma;
+
+	{
+		// First the angle/radiant calculations
+		float rad[3];
+		// I don't really know why, but the alpha, beta, gamma order of the angles are messed up...
+		// 2 = xAxis
+		// 0 = yAxis
+		// 1 = zAxis
+		rad[0] = DegToRad(angles[2]);
+		rad[1] = DegToRad(angles[0]);
+		rad[2] = DegToRad(angles[1]);
+
+		// Pre-calc function calls
+		cosAlpha = Cosine(rad[0]);
+		sinAlpha = Sine(rad[0]);
+		cosBeta  = Cosine(rad[1]);
+		sinBeta  = Sine(rad[1]);
+		cosGamma = Cosine(rad[2]);
+		sinGamma = Sine(rad[2]);
+	}
+
+	// 3D rotation matrix for more information: http://en.wikipedia.org/wiki/Rotation_matrix#In_three_dimensions
+	float x = vec[0], y = vec[1], z = vec[2];
+
+	{
+		float newX, newY, newZ;
+		newY = (cosAlpha * y) - (sinAlpha * z);
+		newZ = (cosAlpha * z) + (sinAlpha * y);
+		y    = newY;
+		z    = newZ;
+
+		newX = (cosBeta * x) + (sinBeta * z);
+		newZ = (cosBeta * z) - (sinBeta * x);
+		x    = newX;
+		z    = newZ;
+
+		newX = (cosGamma * x) - (sinGamma * y);
+		newY = (cosGamma * y) + (sinGamma * x);
+		x    = newX;
+		y    = newY;
+	}
+
+	// Store everything...
+	result[0] = x;
+	result[1] = y;
+	result[2] = z;
 }
