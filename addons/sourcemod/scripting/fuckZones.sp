@@ -667,7 +667,6 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 			if (buttons & IN_BACK)
 				fSpeed *= -1.0;
 
-			PrintToChatAll("%.2f", fSpeed);
 			float fEyeAngles[3], fFwdAngles[3];
 			GetClientEyeAngles(client, fEyeAngles);
 			GetAngleVectors(fEyeAngles, fFwdAngles, NULL_VECTOR, NULL_VECTOR);
