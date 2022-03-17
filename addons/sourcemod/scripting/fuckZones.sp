@@ -124,6 +124,10 @@ int  g_iConfirmZone[MAXPLAYERS + 1]    = { -1, ... };
 int  g_iConfirmPoint[MAXPLAYERS + 1]   = { -1, ... };
 int  g_iLastButtons[MAXPLAYERS + 1]    = { 0, ... };
 
+int   g_iBecameZone[MAXPLAYERS + 1];
+float g_fNextMoveZone[MAXPLAYERS + 1];
+float g_fOldOrigin[MAXPLAYERS + 1][3];
+
 Handle g_coPrecision                = null;
 float  g_fPrecision[MAXPLAYERS + 1] = { 0.0, ... };
 
@@ -242,8 +246,6 @@ public void OnPluginStart()
 		}
 	}
 
-	ReparseMapZonesConfig();
-
 	CreateTimer(TIMER_INTERVAL, Timer_DisplayZones, _, TIMER_REPEAT);
 
 	CSetPrefix("{darkred}[fuckZones] {default}");
@@ -316,8 +318,6 @@ public void OnConfigsExecuted()
 
 	if (g_bLate)
 	{
-		SpawnAllZones();
-
 		for (int i = 1; i <= MaxClients; i++)
 		{
 			if (IsClientConnected(i))
@@ -636,6 +636,167 @@ public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3
 	if (client == 0 || client > MaxClients || !IsClientInGame(client))
 	{
 		return Plugin_Continue;
+	}
+
+	else if (g_iBecameZone[client] != 0)
+	{
+		int entity = g_iBecameZone[client];
+
+		if (!IsValidEntity(entity))
+		{
+			buttons |= IN_JUMP;
+		}
+
+		if (buttons & IN_JUMP)
+		{
+			g_iBecameZone[client] = 0;
+			SetEntityMoveType(client, MOVETYPE_WALK);
+			SetEntProp(client, Prop_Data, "m_takedamage", 2);
+			TeleportEntity(client, g_fOldOrigin[client]);
+		}
+		else if ((buttons & IN_FORWARD || buttons & IN_BACK) && g_fNextMoveZone[client] <= GetGameTime() && !(buttons & IN_RELOAD))
+		{
+			float fSpeed = 1.0;
+
+			if (buttons & IN_DUCK)
+				fSpeed /= 3.0;
+
+			if (buttons & IN_SPEED)
+				fSpeed /= 2.0;
+
+			if (buttons & IN_BACK)
+				fSpeed *= -1.0;
+
+			PrintToChatAll("%.2f", fSpeed);
+			float fEyeAngles[3], fFwdAngles[3];
+			GetClientEyeAngles(client, fEyeAngles);
+			GetAngleVectors(fEyeAngles, fFwdAngles, NULL_VECTOR, NULL_VECTOR);
+
+			float fMiddle[3];
+			float vecPointA[3], vecPointB[3];
+			GetZonesVectorData(entity, "start", vecPointA);
+			GetZonesVectorData(entity, "end", vecPointB);
+
+			// Upper Face
+			if (fFwdAngles[2] >= 0.45)
+			{
+				if (vecPointA[2] > vecPointB[2])
+				{
+					vecPointA[2] += fSpeed;
+					UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+				}
+				else
+				{
+					vecPointB[2] += fSpeed;
+					UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+				}
+			}
+			// Lower face
+			else if (fFwdAngles[2] <= -0.45)
+			{
+				if (vecPointA[2] < vecPointB[2])
+				{
+					vecPointA[2] -= fSpeed;
+					UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+				}
+				else
+				{
+					vecPointB[2] -= fSpeed;
+					UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+				}
+			}
+			else if (-45.0 < fEyeAngles[1] < 45.0)
+			{
+				if (vecPointA[0] > vecPointB[0])
+				{
+					vecPointA[0] += fSpeed;
+					UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+				}
+				else
+				{
+					vecPointB[0] += fSpeed;
+					UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+				}
+			}
+			else if (-145.0 > fEyeAngles[1] || fEyeAngles[1] > 145.0)
+			{
+				if (vecPointA[0] < vecPointB[0])
+				{
+					vecPointA[0] -= fSpeed;
+					UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+				}
+				else
+				{
+					vecPointB[0] -= fSpeed;
+					UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+				}
+			}
+			else if (145.0 > fEyeAngles[1] > 45.0)
+			{
+				if (vecPointA[1] > vecPointB[1])
+				{
+					vecPointA[1] += fSpeed;
+					UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+				}
+				else
+				{
+					vecPointB[1] += fSpeed;
+					UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+				}
+			}
+			else if (-145.0 < fEyeAngles[1] < -45.0)
+			{
+				if (vecPointA[1] < vecPointB[1])
+				{
+					vecPointA[1] -= fSpeed;
+					UpdateZonesConfigKeyVector(entity, "start", vecPointA);
+				}
+				else
+				{
+					vecPointB[1] -= fSpeed;
+					UpdateZonesConfigKeyVector(entity, "end", vecPointB);
+				}
+			}
+
+			g_iBecameZone[client] = RemakeZoneEntity(entity);
+
+			entity = g_iBecameZone[client];
+			GetMiddleOfABox(vecPointA, vecPointB, fMiddle);
+
+			SetEntProp(client, Prop_Data, "m_takedamage", 0);
+
+			float fHeight;
+			float fEyePosition[3], fAbsOrigin[3];
+
+			GetClientEyePosition(client, fEyePosition);
+			GetClientAbsOrigin(client, fAbsOrigin);
+
+			fHeight = fEyePosition[2] - fAbsOrigin[2];
+
+			fMiddle[2] -= fHeight;
+
+			if (!(buttons & IN_USE))
+				TeleportEntity(client, fMiddle, NULL_VECTOR, NULL_VECTOR);
+
+			g_fNextMoveZone[client] = GetGameTime() + 0.1;
+		}
+
+		if (!(buttons & IN_RELOAD))
+		{
+			buttons &= ~IN_SPEED;
+			buttons &= ~IN_DUCK;
+			buttons &= ~IN_FORWARD;
+			buttons &= ~IN_BACK;
+
+			if (buttons & IN_USE)
+			{
+				vel[0] = 0.0;
+				vel[1] = 0.0;
+				vel[2] = 0.0;
+			}
+		}
+
+		return Plugin_Changed;
 	}
 
 	// Thanks to psychonic for this
@@ -1717,6 +1878,40 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 				CPrintToChat(param1, "%T", "Chat - Teleport Point Set", param1);
 
 				OpenZonePropertiesMenu(param1, entity);
+			}
+			else if (StrEqual(sInfo, "become_the_zone"))
+			{
+				GetClientAbsOrigin(param1, g_fOldOrigin[param1]);
+				g_iBecameZone[param1] = entity;
+
+				float fMiddle[3];
+				float vecPointA[3], vecPointB[3];
+				GetZonesVectorData(entity, "start", vecPointA);
+				GetZonesVectorData(entity, "end", vecPointB);
+
+				GetMiddleOfABox(vecPointA, vecPointB, fMiddle);
+
+				SetEntProp(param1, Prop_Data, "m_takedamage", 0);
+				SetEntityMoveType(param1, MOVETYPE_NOCLIP);
+
+				float fHeight;
+				float fEyePosition[3], fAbsOrigin[3];
+
+				GetClientEyePosition(param1, fEyePosition);
+				GetClientAbsOrigin(param1, fAbsOrigin);
+
+				fHeight = fEyePosition[2] - fAbsOrigin[2];
+
+				fMiddle[2] -= fHeight;
+
+				TeleportEntity(param1, fMiddle, NULL_VECTOR, NULL_VECTOR);
+
+				g_fNextMoveZone[param1] = 0.0;
+				OpenZonePropertiesMenu(param1, entity);
+
+				CPrintToChat(param1, "Look at a face and move forward or backwards. Hold +RELOAD to fly in the zone.");
+				CPrintToChat(param1, "Hold +USE to avoid teleportation when editing, but always stay inside the zone.");
+				CPrintToChat(param1, "Crouch or Shift to reduce the speed at which the zone is edited");
 			}
 			else
 			{
@@ -5854,6 +6049,7 @@ void AddZoneMenuItems(int client, Menu menu, bool create, int type, int pointsLe
 			AddItemFormat(menu, "startpoint_b_no_z", fuckZones_IsPositionNull(end) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Ending Point (Ignore Z/Height)", client);
 			AddItemFormat(menu, "startpoint_b_precision", fuckZones_IsPositionNull(end) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Edit Ending Point (Precision)", client);
 			AddItemFormat(menu, "set_teleport", (fuckZones_IsPositionNull(start) || fuckZones_IsPositionNull(end)) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Teleport Point", client);
+			AddItemFormat(menu, "become_the_zone", (fuckZones_IsPositionNull(start) || fuckZones_IsPositionNull(end)) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "Become The Zone", client);
 		}
 
 		case ZONE_TYPE_CIRCLE:
