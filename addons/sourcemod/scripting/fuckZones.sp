@@ -4963,7 +4963,7 @@ bool IsPointInZone(float point[3], int zone)
 	// lEq2 = -lEq2;
 
 	// Prevent error spam, but do we break something here? We'll see.
-	if (Zone[zone].PointsData == null)
+	if (Zone[zone].PointsData == null || Zone[zone].PointsData.Length < 3)
 	{
 		return false;
 	}
