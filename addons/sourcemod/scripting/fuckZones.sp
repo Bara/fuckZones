@@ -3997,7 +3997,7 @@ int CreateZone(eCreateZone Data, bool create)
 
 				if (Data.PointsData != null)
 				{
-					Zone[entity].PointsData = Data.PointsData;
+					Zone[entity].PointsData = view_as<ArrayList>(CloneHandle(Data.PointsData));
 				}
 				else
 				{
@@ -5769,6 +5769,8 @@ int SpawnZone(const char[] name)
 	zone.Teleport     = vTeleport;
 
 	int iEntity = CreateZone(zone, false);
+
+	delete points;
 
 	if (iEntity == -1)
 	{
