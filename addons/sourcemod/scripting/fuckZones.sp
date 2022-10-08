@@ -45,6 +45,7 @@ ConVar g_cMaxHeight           = null;
 ConVar g_cNameRegex           = null;
 ConVar g_cDisableCZZones      = null;
 ConVar g_cTeleportLowestPoint = null;
+ConVar g_cCheckZoneNameExist  = null;
 
 enum struct eForwards
 {
@@ -199,6 +200,7 @@ public void OnPluginStart()
 	g_cNameRegex           = AutoExecConfig_CreateConVar("fuckZones_name_regex", "^[a-zA-Z0-9 _]+$", "Allowed characters in zone name. (Default: \"^[a-zA-Z0-9 _]+$\"");
 	g_cDisableCZZones      = AutoExecConfig_CreateConVar("fuckZones_disable_circle_polygon_zones", "0", "Disable circle and polygon zones for better performance?", _, true, 0.0, true, 1.0);
 	g_cTeleportLowestPoint = AutoExecConfig_CreateConVar("fuckZones_teleport_lowest_point", "1", "Teleport the entity/client to the lowest point of a zone (from zone middle X/Y/Z based)?", _, true, 0.0, true, 1.0);
+	g_cCheckZoneNameExist  = AutoExecConfig_CreateConVar("fuckZones_check_zone_name_exist", "1", "Check if a zone exist with the same name. This prevents double spawning zones", _, true, 0.0, true, 1.0);
 	AutoExecConfig_ExecuteFile();
 	AutoExecConfig_CleanFile();
 
@@ -5663,6 +5665,11 @@ bool GetMenuString(Menu hndl, const char[] id, char[] Buffer, int size)
 
 int SpawnZone(const char[] name)
 {
+	if (g_cCheckZoneNameExist.BoolValue && CheckZoneNameExist(name))
+	{
+		return -1;
+	}
+
 	char sType[MAX_ZONE_TYPE_LENGTH];
 	g_kvConfig.GetString("type", sType, sizeof(sType));
 	int type = GetZoneTypeByName(sType);
@@ -6237,6 +6244,37 @@ bool IsInsideBox(float point[3], float mins[3], float maxs[3])
 {
 	if (mins[0] <= point[0] <= maxs[0] && mins[1] <= point[1] <= maxs[1] && mins[2] <= point[2] <= maxs[2])
 	{
+		return true;
+	}
+
+	return false;
+}
+
+bool CheckZoneNameExist(const char[] name)
+{
+	for (int entity = MaxClients; entity < MAX_ENTITY_LIMIT; entity++)
+	{
+		if (!IsValidEntity(entity))
+		{
+			continue;
+		}
+
+		char sClassname[64];
+		GetEntityClassname(entity, sClassname, sizeof(sClassname));
+
+		if (!StrEqual(sClassname, "trigger_multiple", false))
+		{
+			continue;
+		}
+
+		char sName[MAX_ZONE_NAME_LENGTH];
+		GetEntPropString(entity, Prop_Data, "m_iName", sName, sizeof(sName));
+
+		if (!StrEqual(sName, name, false))
+		{
+			continue;
+		}
+
 		return true;
 	}
 
