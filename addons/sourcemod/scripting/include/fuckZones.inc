@@ -60,6 +60,7 @@ native void fuckZones_RegisterEffectKey(const char[] name, const char[] effect, 
 native void fuckZones_ReloadEffects();
 native void fuckZones_RegenerateZones();
 native bool fuckZones_IsClientInZone(int client, const char[] name);
+native bool Zone_IsClientInZone(int client, char[] name, bool equals = true, bool caseSensitive = false);
 native bool fuckZones_IsClientInZoneIndex(int client, int zone);
 native bool fuckZones_TeleportClientToZone(int client, const char[] name);
 native bool fuckZones_TeleportClientToZoneIndex(int client, int zone);
