@@ -168,6 +168,16 @@ forward Action fuckZones_OnEndTouchZone(int client, int entity, const char[] zon
 forward void fuckZones_OnStartTouchZone_Post(int client, int entity, const char[] zone_name, int type);
 
 /**
+* Backwards compatibility forward.
+*
+* param client          Client index.
+* param zone_name       Name of the zone.
+*
+* noreturn
+**/
+forward void Zone_OnClientEntry(int client, const char[] zone_name);
+
+/**
 * Called right after each tick while a player is in a zone.
 *
 * param client          Client index.
@@ -191,6 +201,15 @@ forward void fuckZones_OnTouchZone_Post(int client, int entity, const char[] zon
 **/
 forward void fuckZones_OnEndTouchZone_Post(int client, int entity, const char[] zone_name, int type);
 
+/**
+* Backwards compatibility forward.
+*
+* param client          Client index.
+* param zone_name       Name of the zone.
+*
+* noreturn
+**/
+forward void Zone_OnClientLeave(int client, const char[] zone_name);
 /**
 * Called right after created zone
 *
@@ -259,7 +278,6 @@ public void __pl_fuckZones_SetNTVOptional()
 	MarkNativeAsOptional("fuckZones_ReloadEffects");
 	MarkNativeAsOptional("fuckZones_RegenerateZones");
 	MarkNativeAsOptional("fuckZones_IsClientInZone");
-	MarkNativeAsOptional("Zone_IsClientInZone");
 	MarkNativeAsOptional("fuckZones_IsClientInZoneIndex");
 	MarkNativeAsOptional("fuckZones_TeleportClientToZone");
 	MarkNativeAsOptional("fuckZones_TeleportClientToZoneIndex");
