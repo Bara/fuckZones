@@ -58,6 +58,8 @@ enum struct eForwards
 	GlobalForward EndTouchZone_Post;
 	GlobalForward OnZoneCreate;
 	GlobalForward OnEffectUpdate;
+	GlobalForward ZoneEntry;
+	GlobalForward ZoneLeave;
 }
 
 eForwards Forward;
@@ -175,6 +177,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	Forward.EndTouchZone_Post   = new GlobalForward("fuckZones_OnEndTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	Forward.OnZoneCreate        = new GlobalForward("fuckZones_OnZoneCreate", ET_Ignore, Param_Cell, Param_String, Param_Cell);
 	Forward.OnEffectUpdate      = new GlobalForward("fuckZones_OnEffectUpdate", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_Cell);
+	Forward.ZoneEntry			= new GlobalForward("Zone_OnClientEntry", ET_Ignore, Param_Cell, Param_String);
+	Forward.ZoneLeave			= new GlobalForward("Zone_OnClientLeave", ET_Ignore, Param_Cell, Param_String);
 
 	g_bLate = late;
 	return APLRes_Success;
@@ -4179,6 +4183,12 @@ void IsNearExternalZone_Post(int client, int entity, int type)
 		Call_PushCell(type);
 		Call_Finish();
 
+		Call_StartForward(Forward.ZoneEntry);
+		Call_PushCell(client);
+		Call_PushString(sName);
+
+		Call_Finish();
+
 		g_bIsInsideZone_Post[client][entity] = true;
 
 		g_bIsInZone[client][entity] = true;
@@ -4210,6 +4220,12 @@ void IsNotNearExternalZone_Post(int client, int entity, int type)
 		Call_PushCell(entity);
 		Call_PushString(sName);
 		Call_PushCell(type);
+		Call_Finish();
+
+		Call_StartForward(Forward.ZoneLeave);
+		Call_PushCell(client);
+		Call_PushString(sName);
+		
 		Call_Finish();
 
 		g_bIsInsideZone_Post[client][entity] = false;
@@ -4318,6 +4334,12 @@ public void Zones_StartTouchPost(int entity, int other)
 	Call_PushString(sName);
 	Call_PushCell(GetZoneTypeByIndex(entity));
 	Call_Finish();
+
+	Call_StartForward(Forward.ZoneEntry);
+	Call_PushCell(client);
+	Call_PushString(sName);
+
+	Call_Finish();
 }
 
 public void Zones_TouchPost(int entity, int other)
@@ -4366,6 +4388,12 @@ public void Zones_EndTouchPost(int entity, int other)
 	Call_PushCell(entity);
 	Call_PushString(sName);
 	Call_PushCell(GetZoneTypeByIndex(entity));
+	Call_Finish();
+
+	Call_StartForward(Forward.ZoneLeave);
+	Call_PushCell(client);
+	Call_PushString(sName);
+
 	Call_Finish();
 }
 
