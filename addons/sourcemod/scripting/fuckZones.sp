@@ -5397,6 +5397,8 @@ public int Native_BackwardsCompIsClientInZone(Handle plugin, int numParams)
 	bool equals = GetNativeCell(3);
 	bool caseSensitive = GetNativeCell(4);
 
+	bool bFound = false;
+
 	for (int i = 0; i < g_aZoneEntities.Length; i++)
 	{
 		int zone = EntRefToEntIndex(g_aZoneEntities.Get(i));
@@ -5406,14 +5408,19 @@ public int Native_BackwardsCompIsClientInZone(Handle plugin, int numParams)
 			char sName2[64];
 			GetZoneNameByIndex(zone, sName2, sizeof(sName2));
 			
-			if ((equals && StrEqual(sName2, sName, caseSensitive)) || StrContains(sName2, sName, caseSensitive) != -1)
+			if (StrEqual(sName2, sName, caseSensitive) || (!equals && StrContains(sName2, sName, caseSensitive) != -1))
 			{
-				return g_bIsInZone[client][zone];
+				if(g_bIsInZone[client][zone])
+				{
+					bFound = true;
+
+					break;
+				}
 			}
 		}
 	}
 
-	return false;
+	return bFound;
 }
 
 public int Native_IsClientInZoneIndex(Handle plugin, int numParams)
