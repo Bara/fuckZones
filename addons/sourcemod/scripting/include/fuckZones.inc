@@ -60,7 +60,20 @@ native void fuckZones_RegisterEffectKey(const char[] name, const char[] effect, 
 native void fuckZones_ReloadEffects();
 native void fuckZones_RegenerateZones();
 native bool fuckZones_IsClientInZone(int client, const char[] name);
+
+/*
+ * Backwards compatibility native for devZones.
+ *
+ * param client          Client index.
+ * param name			Name of the zone.
+ * param equals       	true for equality check, false for name contain check.
+ * param caseSensitive  Whether or not to match by case sensitive.
+ *
+ * return               true if client is inside the zone, false otherwise.
+ *
+ */
 native bool Zone_IsClientInZone(int client, char[] name, bool equals = true, bool caseSensitive = false);
+
 native bool fuckZones_IsClientInZoneIndex(int client, int zone);
 native bool fuckZones_TeleportClientToZone(int client, const char[] name);
 native bool fuckZones_TeleportClientToZoneIndex(int client, int zone);
@@ -168,7 +181,7 @@ forward Action fuckZones_OnEndTouchZone(int client, int entity, const char[] zon
 forward void fuckZones_OnStartTouchZone_Post(int client, int entity, const char[] zone_name, int type);
 
 /**
-* Backwards compatibility forward.
+* Backwards compatibility forward for devZones.
 *
 * param client          Client index.
 * param zone_name       Name of the zone.
@@ -202,7 +215,7 @@ forward void fuckZones_OnTouchZone_Post(int client, int entity, const char[] zon
 forward void fuckZones_OnEndTouchZone_Post(int client, int entity, const char[] zone_name, int type);
 
 /**
-* Backwards compatibility forward.
+* Backwards compatibility forward for devZones.
 *
 * param client          Client index.
 * param zone_name       Name of the zone.
