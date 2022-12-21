@@ -150,6 +150,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("fuckZones_ReloadEffects", Native_ReloadEffects);
 	CreateNative("fuckZones_RegenerateZones", Native_RegenerateZones);
 	CreateNative("fuckZones_IsClientInZone", Native_IsClientInZone);
+	CreateNative("Zone_IsClientInZone", Native_BackwardsCompIsClientInZone);
 	CreateNative("fuckZones_IsClientInZoneIndex", Native_IsClientInZoneIndex);
 	CreateNative("fuckZones_TeleportClientToZone", Native_TeleportClientToZone);
 	CreateNative("fuckZones_TeleportClientToZoneIndex", Native_TeleportClientToZoneIndex);
@@ -5340,6 +5341,44 @@ public int Native_IsClientInZone(Handle plugin, int numParams)
 			GetZoneNameByIndex(zone, sName2, sizeof(sName2));
 
 			if (StrEqual(sName, sName2))
+			{
+				return g_bIsInZone[client][zone];
+			}
+		}
+	}
+
+	return false;
+}
+
+
+public int Native_BackwardsCompIsClientInZone(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+
+	if (!IsClientValid(client))
+	{
+		return false;
+	}
+
+	int size;
+	GetNativeStringLength(2, size);
+
+	char[] sName = new char[size + 1];
+	GetNativeString(2, sName, size + 1);
+	
+	bool equals = GetNativeCell(3);
+	bool caseSensitive = GetNativeCell(4);
+
+	for (int i = 0; i < g_aZoneEntities.Length; i++)
+	{
+		int zone = EntRefToEntIndex(g_aZoneEntities.Get(i));
+
+		if (IsValidEntity(zone))
+		{
+			char sName2[64];
+			GetZoneNameByIndex(zone, sName2, sizeof(sName2));
+			
+			if ((equals && StrEqual(sName2, sName, caseSensitive)) || StrContains(sName2, sName, caseSensitive) != -1)
 			{
 				return g_bIsInZone[client][zone];
 			}
