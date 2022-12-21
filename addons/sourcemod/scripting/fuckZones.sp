@@ -58,6 +58,8 @@ enum struct eForwards
 	GlobalForward EndTouchZone_Post;
 	GlobalForward OnZoneCreate;
 	GlobalForward OnEffectUpdate;
+	GlobalForward ZoneEntry;
+	GlobalForward ZoneLeave;
 }
 
 eForwards Forward;
@@ -150,6 +152,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("fuckZones_ReloadEffects", Native_ReloadEffects);
 	CreateNative("fuckZones_RegenerateZones", Native_RegenerateZones);
 	CreateNative("fuckZones_IsClientInZone", Native_IsClientInZone);
+	CreateNative("Zone_IsClientInZone", Native_BackwardsCompIsClientInZone);
 	CreateNative("fuckZones_IsClientInZoneIndex", Native_IsClientInZoneIndex);
 	CreateNative("fuckZones_TeleportClientToZone", Native_TeleportClientToZone);
 	CreateNative("fuckZones_TeleportClientToZoneIndex", Native_TeleportClientToZoneIndex);
@@ -174,6 +177,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	Forward.EndTouchZone_Post   = new GlobalForward("fuckZones_OnEndTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	Forward.OnZoneCreate        = new GlobalForward("fuckZones_OnZoneCreate", ET_Ignore, Param_Cell, Param_String, Param_Cell);
 	Forward.OnEffectUpdate      = new GlobalForward("fuckZones_OnEffectUpdate", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_Cell);
+	Forward.ZoneEntry			= new GlobalForward("Zone_OnClientEntry", ET_Ignore, Param_Cell, Param_String);
+	Forward.ZoneLeave			= new GlobalForward("Zone_OnClientLeave", ET_Ignore, Param_Cell, Param_String);
 
 	g_bLate = late;
 	return APLRes_Success;
@@ -4178,6 +4183,12 @@ void IsNearExternalZone_Post(int client, int entity, int type)
 		Call_PushCell(type);
 		Call_Finish();
 
+		Call_StartForward(Forward.ZoneEntry);
+		Call_PushCell(client);
+		Call_PushString(sName);
+
+		Call_Finish();
+
 		g_bIsInsideZone_Post[client][entity] = true;
 
 		g_bIsInZone[client][entity] = true;
@@ -4209,6 +4220,12 @@ void IsNotNearExternalZone_Post(int client, int entity, int type)
 		Call_PushCell(entity);
 		Call_PushString(sName);
 		Call_PushCell(type);
+		Call_Finish();
+
+		Call_StartForward(Forward.ZoneLeave);
+		Call_PushCell(client);
+		Call_PushString(sName);
+		
 		Call_Finish();
 
 		g_bIsInsideZone_Post[client][entity] = false;
@@ -4317,6 +4334,12 @@ public void Zones_StartTouchPost(int entity, int other)
 	Call_PushString(sName);
 	Call_PushCell(GetZoneTypeByIndex(entity));
 	Call_Finish();
+
+	Call_StartForward(Forward.ZoneEntry);
+	Call_PushCell(client);
+	Call_PushString(sName);
+
+	Call_Finish();
 }
 
 public void Zones_TouchPost(int entity, int other)
@@ -4365,6 +4388,12 @@ public void Zones_EndTouchPost(int entity, int other)
 	Call_PushCell(entity);
 	Call_PushString(sName);
 	Call_PushCell(GetZoneTypeByIndex(entity));
+	Call_Finish();
+
+	Call_StartForward(Forward.ZoneLeave);
+	Call_PushCell(client);
+	Call_PushString(sName);
+
 	Call_Finish();
 }
 
@@ -5340,6 +5369,44 @@ public int Native_IsClientInZone(Handle plugin, int numParams)
 			GetZoneNameByIndex(zone, sName2, sizeof(sName2));
 
 			if (StrEqual(sName, sName2))
+			{
+				return g_bIsInZone[client][zone];
+			}
+		}
+	}
+
+	return false;
+}
+
+
+public int Native_BackwardsCompIsClientInZone(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+
+	if (!IsClientValid(client))
+	{
+		return false;
+	}
+
+	int size;
+	GetNativeStringLength(2, size);
+
+	char[] sName = new char[size + 1];
+	GetNativeString(2, sName, size + 1);
+	
+	bool equals = GetNativeCell(3);
+	bool caseSensitive = GetNativeCell(4);
+
+	for (int i = 0; i < g_aZoneEntities.Length; i++)
+	{
+		int zone = EntRefToEntIndex(g_aZoneEntities.Get(i));
+
+		if (IsValidEntity(zone))
+		{
+			char sName2[64];
+			GetZoneNameByIndex(zone, sName2, sizeof(sName2));
+			
+			if ((equals && StrEqual(sName2, sName, caseSensitive)) || StrContains(sName2, sName, caseSensitive) != -1)
 			{
 				return g_bIsInZone[client][zone];
 			}
