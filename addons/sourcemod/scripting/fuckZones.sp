@@ -277,6 +277,27 @@ public void OnMapStart()
 	g_aMapZones = new ArrayList();
 
 	RegenerateZones();
+
+	if (g_bLate)
+	{
+		SpawnAllZones();
+
+		for (int i = 1; i <= MaxClients; i++)
+		{
+			if (IsClientConnected(i))
+			{
+				OnClientConnected(i);
+				OnClientPutInServer(i);
+			}
+
+			if (AreClientCookiesCached(i))
+			{
+				OnClientCookiesCached(i);
+			}
+		}
+
+		g_bLate = false;
+	}
 }
 
 public void OnMapEnd()
@@ -320,27 +341,6 @@ void ReparseMapZonesConfig(bool delete_config = false)
 public void OnConfigsExecuted()
 {
 	ParseColorsData();
-
-	if (g_bLate)
-	{
-		SpawnAllZones();
-
-		for (int i = 1; i <= MaxClients; i++)
-		{
-			if (IsClientConnected(i))
-			{
-				OnClientConnected(i);
-				OnClientPutInServer(i);
-			}
-
-			if (AreClientCookiesCached(i))
-			{
-				OnClientCookiesCached(i);
-			}
-		}
-
-		g_bLate = false;
-	}
 }
 
 public void OnAllPluginsLoaded()
@@ -625,7 +625,8 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		char sName[MAX_ZONE_NAME_LENGTH];
 		GetZoneNameByIndex(entity, sName, sizeof(sName));
 
-		entity = RemakeZoneEntity(entity);
+		// Similar to remake but also renames.
+		entity = RenameZoneEntity(entity, sArgs);
 
 		CPrintToChat(client, "%T", "Chat - Zone Renamed", client, sName, sArgs);
 		g_iEditingName[client] = INVALID_ENT_REFERENCE;
@@ -2127,6 +2128,27 @@ int RemakeZoneEntity(int entity)
 
 	DeleteZone(entity);
 	return SpawnAZone(sName);
+}
+
+
+int RenameZoneEntity(int entity, const char[] newName)
+{
+	char sName[MAX_ZONE_NAME_LENGTH];
+	GetZoneNameByIndex(entity, sName, sizeof(sName));
+
+	g_kvConfig.Rewind();
+
+	if (g_kvConfig.JumpToKey(sName))
+	{
+		g_kvConfig.SetSectionName(newName);
+		g_kvConfig.Rewind();
+	}
+
+	SetEntPropString(entity, Prop_Data, "m_iName", newName);
+
+	SaveMapConfig();
+	
+	return entity;
 }
 
 void GetZonesVectorData(int entity, const char[] name, float vecdata[3])
