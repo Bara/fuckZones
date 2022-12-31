@@ -184,11 +184,11 @@ forward void fuckZones_OnStartTouchZone_Post(int client, int entity, const char[
 * Backwards compatibility forward for devZones.
 *
 * param client          Client index.
-* param zone_name       Name of the zone.
+* param zone       Name of the zone.
 *
 * noreturn
 **/
-forward void Zone_OnClientEntry(int client, const char[] zone_name);
+forward void Zone_OnClientEntry(int client, const char[] zone);
 
 /**
 * Called right after each tick while a player is in a zone.
@@ -218,11 +218,11 @@ forward void fuckZones_OnEndTouchZone_Post(int client, int entity, const char[] 
 * Backwards compatibility forward for devZones.
 *
 * param client          Client index.
-* param zone_name       Name of the zone.
+* param zone       Name of the zone.
 *
 * noreturn
 **/
-forward void Zone_OnClientLeave(int client, const char[] zone_name);
+forward void Zone_OnClientLeave(int client, const char[] zone);
 /**
 * Called right after created zone
 *
