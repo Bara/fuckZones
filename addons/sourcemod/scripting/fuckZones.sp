@@ -277,27 +277,6 @@ public void OnMapStart()
 	g_aMapZones = new ArrayList();
 
 	RegenerateZones();
-
-	if (g_bLate)
-	{
-		SpawnAllZones();
-
-		for (int i = 1; i <= MaxClients; i++)
-		{
-			if (IsClientConnected(i))
-			{
-				OnClientConnected(i);
-				OnClientPutInServer(i);
-			}
-
-			if (AreClientCookiesCached(i))
-			{
-				OnClientCookiesCached(i);
-			}
-		}
-
-		g_bLate = false;
-	}
 }
 
 public void OnMapEnd()
@@ -341,6 +320,27 @@ void ReparseMapZonesConfig(bool delete_config = false)
 public void OnConfigsExecuted()
 {
 	ParseColorsData();
+
+	if (g_bLate)
+	{
+		SpawnAllZones();
+
+		for (int i = 1; i <= MaxClients; i++)
+		{
+			if (IsClientConnected(i))
+			{
+				OnClientConnected(i);
+				OnClientPutInServer(i);
+			}
+
+			if (AreClientCookiesCached(i))
+			{
+				OnClientCookiesCached(i);
+			}
+		}
+
+		g_bLate = false;
+	}
 }
 
 public void OnAllPluginsLoaded()
@@ -2147,7 +2147,7 @@ int RenameZoneEntity(int entity, const char[] newName)
 	SetEntPropString(entity, Prop_Data, "m_iName", newName);
 
 	SaveMapConfig();
-	
+
 	return entity;
 }
 
