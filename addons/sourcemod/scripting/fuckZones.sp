@@ -56,6 +56,7 @@ enum struct eForwards
 	GlobalForward StartTouchZone_Post;
 	GlobalForward TouchZone_Post;
 	GlobalForward EndTouchZone_Post;
+	GlobalForward OnZoneCreatePre;
 	GlobalForward OnZoneCreate;
 	GlobalForward OnEffectUpdate;
 	GlobalForward ZoneEntry;
@@ -175,6 +176,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	Forward.StartTouchZone_Post = new GlobalForward("fuckZones_OnStartTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	Forward.TouchZone_Post      = new GlobalForward("fuckZones_OnTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	Forward.EndTouchZone_Post   = new GlobalForward("fuckZones_OnEndTouchZone_Post", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	Forward.OnZoneCreatePre     = new GlobalForward("fuckZones_OnZoneCreatePre", ET_Event, Param_String, Param_Cell);
 	Forward.OnZoneCreate        = new GlobalForward("fuckZones_OnZoneCreate", ET_Ignore, Param_Cell, Param_String, Param_Cell);
 	Forward.OnEffectUpdate      = new GlobalForward("fuckZones_OnEffectUpdate", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_Cell);
 	Forward.ZoneEntry			= new GlobalForward("Zone_OnClientEntry", ET_Ignore, Param_Cell, Param_String);
@@ -3839,6 +3841,11 @@ void GetAbsBoundingBox(int entity, float mins[3], float maxs[3])
 
 int CreateZone(eCreateZone Data, bool create)
 {
+	Call_StartForward(Forward.OnZoneCreatePre);
+	Call_PushString(Data.Name);
+	Call_PushCell(Data.Type);
+	Call_Finish();
+
 	char sType[MAX_ZONE_TYPE_LENGTH], sDType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneNameByType(Data.Type, sType, sizeof(sType));
 	GetDisplayNameByType(Data.Display, sDType, sizeof(sDType));

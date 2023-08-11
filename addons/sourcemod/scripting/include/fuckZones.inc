@@ -223,6 +223,17 @@ forward void fuckZones_OnEndTouchZone_Post(int client, int entity, const char[] 
 * noreturn
 **/
 forward void Zone_OnClientLeave(int client, const char[] zone);
+
+/**
+* Called right before creating zone
+*
+* param zone_name       Name of the zone.
+* param type            Type of zone.
+*
+* return                Plugin_Handled or Plugin_Stop = avoid spawning this zone
+**/
+forward Action fuckZones_OnZoneCreatePre(const char[] zone_name, int type);
+
 /**
 * Called right after created zone
 *
