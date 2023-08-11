@@ -3841,10 +3841,16 @@ void GetAbsBoundingBox(int entity, float mins[3], float maxs[3])
 
 int CreateZone(eCreateZone Data, bool create)
 {
+	Action result = Plugin_Continue;
 	Call_StartForward(Forward.OnZoneCreatePre);
 	Call_PushString(Data.Name);
 	Call_PushCell(Data.Type);
-	Call_Finish();
+	Call_Finish(result);
+
+	if (result >= Plugin_Handled)
+	{
+		return -2;
+	}
 
 	char sType[MAX_ZONE_TYPE_LENGTH], sDType[MAX_ZONE_TYPE_LENGTH];
 	GetZoneNameByType(Data.Type, sType, sizeof(sType));
@@ -5860,9 +5866,12 @@ int SpawnZone(const char[] name)
 
 	delete points;
 
-	if (iEntity == -1)
+	if (iEntity < 0)
 	{
-		LogStackTrace("Zone \"%s\" (CreateZone return: %d) can not be spawned.", zone.Name, iEntity);
+		if (iEntity == -1)
+		{
+			LogStackTrace("Zone \"%s\" (CreateZone return: %d) can not be spawned.", zone.Name, iEntity);
+		}
 		return -1;
 	}
 
