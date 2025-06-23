@@ -127,6 +127,7 @@ bool g_bSelectedZone[MAX_ENTITY_LIMIT] = { false, ... };
 int  g_iConfirmZone[MAXPLAYERS + 1]    = { -1, ... };
 int  g_iConfirmPoint[MAXPLAYERS + 1]   = { -1, ... };
 int  g_iLastButtons[MAXPLAYERS + 1]    = { 0, ... };
+bool g_bIsL4D;
 
 Handle g_coPrecision                = null;
 float  g_fPrecision[MAXPLAYERS + 1] = { 0.0, ... };
@@ -146,6 +147,10 @@ public Plugin myinfo =
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
+	EngineVersion engine = GetEngineVersion();
+	if (engine == Engine_Left4Dead || engine == Engine_Left4Dead2)
+		g_bIsL4D = true;
+
 	RegPluginLibrary("fuckZones");
 
 	CreateNative("fuckZones_RegisterEffect", Native_RegisterEffect);
@@ -211,8 +216,12 @@ public void OnPluginStart()
 	AutoExecConfig_ExecuteFile();
 	AutoExecConfig_CleanFile();
 
-	HookEventEx("teamplay_round_start", Event_RoundStart);
-	HookEventEx("teamplay_round_win", Event_RoundEnd);
+	if (!g_bIsL4D)
+	{
+		HookEventEx("teamplay_round_start", Event_RoundStart);
+		HookEventEx("teamplay_round_win", Event_RoundEnd);
+	}
+
 	HookEventEx("round_start", Event_RoundStart);
 	HookEventEx("round_end", Event_RoundEnd);
 	HookEventEx("player_death", Event_PlayerDeath);
@@ -325,7 +334,7 @@ public void OnConfigsExecuted()
 
 	if (g_bLate)
 	{
-		SpawnAllZones();
+		CreateTimer(0.1, SpawnAllZones);
 
 		for (int i = 1; i <= MaxClients; i++)
 		{
@@ -501,11 +510,11 @@ void ClearAllZones()
 	g_aZoneEntities.Clear();
 }
 
-void SpawnAllZones()
+Action SpawnAllZones(Handle timer)
 {
 	if (g_kvConfig == null)
 	{
-		return;
+		return Plugin_Continue;
 	}
 
 	if (g_cEnableLogging.BoolValue)
@@ -533,6 +542,8 @@ void SpawnAllZones()
 	{
 		LogMessage("Zones have been spawned.");
 	}
+
+	return Plugin_Continue;
 }
 
 int SpawnAZone(const char[] name)
@@ -1259,7 +1270,7 @@ bool RegenerateZones(int client = -1)
 	g_iRegenerationTime = GetTime();
 
 	ClearAllZones();
-	SpawnAllZones();
+	CreateTimer(0.1, SpawnAllZones);
 
 	if (IsClientValid(client))
 	{
